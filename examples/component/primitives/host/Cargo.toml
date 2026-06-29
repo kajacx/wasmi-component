@@ -1,0 +1,7 @@
+[package]
+name = "wasmi-component-example-host"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wasmi-component = { path = "../../../../crates/wasmi-component" }

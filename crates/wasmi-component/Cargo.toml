@@ -1,0 +1,9 @@
+[package]
+name = "wasmi-component"
+description = "Add the component model to wasmi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+wasmi = { version = "1.0" }

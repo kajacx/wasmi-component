@@ -1,0 +1,7 @@
+
+{
+  "rust-analyzer.linkedProjects": [
+    "examples/component/primitives/guest/Cargo.toml",
+    "examples/component/primitives/host/Cargo.toml",
+  ],
+}
