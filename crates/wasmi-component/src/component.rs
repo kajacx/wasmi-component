@@ -4,7 +4,7 @@ use crate::*;
 
 #[derive(Debug)]
 pub struct Component {
-    core_module: wasmi::Module,
+    pub core_module: wasmi::Module,
 }
 
 impl Component {
@@ -31,8 +31,6 @@ impl Component {
                 _ => {}
             }
         }
-
-        println!("Found modules: {:?}", modules.len());
 
         Ok(Self {
             core_module: modules.remove(0),
