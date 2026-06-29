@@ -7,3 +7,4 @@ license.workspace = true
 
 [dependencies]
 wasmi = { version = "1.0" }
+wasmparser = { version = "0.252.0" }
