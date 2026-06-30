@@ -22,4 +22,7 @@ pub fn main() {
 
     let result = exports.add_f32.call(&mut store, (4.5, 9.0)).unwrap();
     println!("Result is: {result}");
+
+    let result = exports.funcs_get_name.call(&mut store, ()).unwrap();
+    println!("Result is: {result}");
 }

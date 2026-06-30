@@ -27,12 +27,12 @@ impl Parser {
         let exports_name = format!("{}Exports", world.name.to_upper_camel_case());
         let exported_funcs = self.parse_exported_world_functions(world);
 
-        writeln!(output, "use wasmi_component::{{TypedFunc, Component}};").unwrap();
         writeln!(
             output,
             "use wasmi_component::wasmi::{{AsContextMut, Linker}};"
         )
         .unwrap();
+        writeln!(output, "use wasmi_component::{{Component, Lift, LowerList, TypedFunc}};").unwrap();
         writeln!(output).unwrap();
 
         writeln!(output, "#[allow(unused)]").unwrap();
@@ -70,13 +70,16 @@ impl Parser {
         exported_funcs.iter().for_each(|func| {
             writeln!(
                 output,
-                "    let module_func = instance.get_typed_func::<{}, {}>(ctx.as_context_mut(), {}).unwrap();",
+                "    let module_func = instance.get_typed_func::<<{} as LowerList>::CoreType, <{} as Lift>::CoreType>(ctx.as_context_mut(), \"{}\").unwrap();",
                 func.params_type_str, func.result_type_str, func.core_export_name
             )
             .unwrap();
+            writeln!(output, 
+            "    let cleanup_func = instance.get_typed_func::<i32, ()>(ctx.as_context_mut(), \"cabi_post_{}\").ok();", func.core_export_name
+            ).unwrap();
             writeln!(
                 output,
-                "    let {} = TypedFunc::new(module_func);",
+                "    let {} = TypedFunc::new(module_func, cleanup_func);",
                 func.field_name
             )
             .unwrap();
@@ -141,13 +144,13 @@ impl Parser {
                 };
 
                 let func_name = &func.name;
-                format!("\"{namespace}:{pkg_name}/{interface_name}{version}#{func_name}\"")
+                format!("{namespace}:{pkg_name}/{interface_name}{version}#{func_name}")
             }
             (Some(_), None) => {
-                format!("\"{}#{}\"", key.clone().unwrap_name(), func.name)
+                format!("{}#{}", key.clone().unwrap_name(), func.name)
             }
             (None, _) => {
-                format!("\"{}\"", func.name)
+                format!("{}", func.name)
             }
         };
 

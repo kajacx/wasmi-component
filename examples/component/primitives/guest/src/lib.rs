@@ -13,6 +13,10 @@ impl bindings::exports::wasmi_component::examples::funcs::Guest for GuestCompone
     fn add_s32(a: i32, b: i32) -> i32 {
         a + b
     }
+
+    fn get_name() -> String {
+        "Hello there!".to_string()
+    }
 }
 
 impl bindings::Guest for GuestComponent {
