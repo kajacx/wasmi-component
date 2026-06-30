@@ -32,7 +32,11 @@ impl Parser {
             "use wasmi_component::wasmi::{{AsContextMut, Linker}};"
         )
         .unwrap();
-        writeln!(output, "use wasmi_component::{{Component, Lift, LowerList, TypedFunc}};").unwrap();
+        writeln!(
+            output,
+            "use wasmi_component::{{Component, Lift, LowerList, TypedFunc}};"
+        )
+        .unwrap();
         writeln!(output).unwrap();
 
         writeln!(output, "#[allow(unused)]").unwrap();
@@ -67,19 +71,36 @@ impl Parser {
         .unwrap();
         writeln!(output).unwrap();
 
+        writeln!(
+            output,
+            "    let memory = instance.get_memory(ctx.as_context(), \"memory\").unwrap();"
+        )
+        .unwrap();
+        writeln!(output).unwrap();
+
         exported_funcs.iter().for_each(|func| {
             writeln!(
                 output,
-                "    let module_func = instance.get_typed_func::<<{} as LowerList>::CoreType, <{} as Lift>::CoreType>(ctx.as_context_mut(), \"{}\").unwrap();",
+                concat!(
+                    "    let module_func = instance.get_typed_func",
+                    "::<<{} as LowerList>::CoreType, <{} as Lift>::CoreType>",
+                    "(ctx.as_context_mut(), \"{}\").unwrap();"
+                ),
                 func.params_type_str, func.result_type_str, func.core_export_name
             )
             .unwrap();
-            writeln!(output, 
-            "    let cleanup_func = instance.get_typed_func::<i32, ()>(ctx.as_context_mut(), \"cabi_post_{}\").ok();", func.core_export_name
-            ).unwrap();
             writeln!(
                 output,
-                "    let {} = TypedFunc::new(module_func, cleanup_func);",
+                concat!(
+                    "    let cleanup_func = instance.get_typed_func::<i32, ()>",
+                    "(ctx.as_context_mut(), \"cabi_post_{}\").ok();"
+                ),
+                func.core_export_name
+            )
+            .unwrap();
+            writeln!(
+                output,
+                "    let {} = TypedFunc::new(memory.clone(), module_func, cleanup_func);",
                 func.field_name
             )
             .unwrap();
