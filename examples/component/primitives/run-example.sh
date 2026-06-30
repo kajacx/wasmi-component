@@ -7,7 +7,7 @@ cd guest
 cargo component build --target wasm32-unknown-unknown
 cd ..
 
-# wit-bindgen-wcl ./example.wit ./host/src/bindings.rs
+cargo run --manifest-path ../../../Cargo.toml -p wasmi-component-bindgen -- example.wit > host/src/bindings.rs
 
 rm -rf modules
 mkdir modules

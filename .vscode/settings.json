@@ -1,6 +1,7 @@
 
 {
   "rust-analyzer.linkedProjects": [
+    "crates/wasmi-component-bindgen/Cargo.toml",
     "examples/component/primitives/guest/Cargo.toml",
     "examples/component/primitives/host/Cargo.toml",
   ],
