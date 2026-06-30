@@ -1,6 +1,6 @@
 use heck::{ToSnakeCase, ToUpperCamelCase};
 use std::fmt::Write;
-use wit_parser::{Function, Interface, Type, UnresolvedPackage};
+use wit_parser::{Function, Interface, Type, UnresolvedPackage, WorldKey};
 use wit_parser::{World, WorldItem};
 
 pub struct Parser {
@@ -95,52 +95,60 @@ impl Parser {
     fn parse_exported_world_functions<'a>(&'a self, world: &World) -> Vec<PreparedFunction> {
         world
             .exports
-            .values()
-            .flat_map(|value| match value {
-                WorldItem::Function(func) => vec![self.parse_function(func, None)],
-                WorldItem::Interface { id, .. } => {
-                    self.parse_exported_interface_functions(self.pkg.interfaces.get(*id).unwrap())
-                }
+            .iter()
+            .flat_map(|(key, value)| match value {
+                WorldItem::Function(func) => vec![self.parse_function(func, key, None)],
+                WorldItem::Interface { id, .. } => self
+                    .parse_exported_interface_functions(key, self.pkg.interfaces.get(*id).unwrap()),
                 _ => vec![],
             })
             .collect()
     }
 
-    fn parse_exported_interface_functions(&self, interface: &Interface) -> Vec<PreparedFunction> {
+    fn parse_exported_interface_functions(
+        &self,
+        key: &WorldKey,
+        interface: &Interface,
+    ) -> Vec<PreparedFunction> {
         interface
             .functions
             .values()
-            .map(|func| self.parse_function(func, Some(interface)))
+            .map(|func| self.parse_function(func, key, Some(interface)))
             .collect()
     }
 
-    fn parse_function(&self, func: &Function, interface: Option<&Interface>) -> PreparedFunction {
-        let field_name = if let Some(iface) = interface {
-            format!(
-                "{}_{}",
-                iface.name.as_ref().unwrap().to_snake_case(),
-                func.name.to_snake_case()
-            )
+    fn parse_function(
+        &self,
+        func: &Function,
+        key: &WorldKey,
+        interface: Option<&Interface>,
+    ) -> PreparedFunction {
+        let field_name = if let Some(name) = interface.and_then(|iface| iface.name.as_ref()) {
+            format!("{}_{}", name.to_snake_case(), func.name.to_snake_case())
         } else {
             func.name.to_snake_case()
         };
 
-        let core_export_name = if let Some(iface) = interface {
-            // wasmi-component:examples/funcs@0.1.0#add-s32
-            let namespace = &self.pkg.name.namespace;
-            let pkg_name = &self.pkg.name.name;
-            let version = if let Some(ver) = &self.pkg.name.version {
-                format!("@{ver}")
-            } else {
-                "".to_string()
-            };
+        let interface_name = interface.and_then(|iface| iface.name.as_ref());
+        let core_export_name = match (interface, interface_name) {
+            (Some(_), Some(interface_name)) => {
+                let namespace = &self.pkg.name.namespace;
+                let pkg_name = &self.pkg.name.name;
+                let version = if let Some(ver) = &self.pkg.name.version {
+                    format!("@{ver}")
+                } else {
+                    "".to_string()
+                };
 
-            let interface_name = iface.name.as_ref().unwrap();
-            let func_name = &func.name;
-
-            format!("\"{namespace}:{pkg_name}/{interface_name}{version}#{func_name}\"")
-        } else {
-            format!("\"{}\"", func.name)
+                let func_name = &func.name;
+                format!("\"{namespace}:{pkg_name}/{interface_name}{version}#{func_name}\"")
+            }
+            (Some(_), None) => {
+                format!("\"{}#{}\"", key.clone().unwrap_name(), func.name)
+            }
+            (None, _) => {
+                format!("\"{}\"", func.name)
+            }
         };
 
         let params: Vec<_> = func

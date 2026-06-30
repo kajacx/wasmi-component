@@ -20,3 +20,9 @@ impl bindings::Guest for GuestComponent {
         a + b
     }
 }
+
+impl bindings::exports::additional::Guest for GuestComponent {
+    fn add_f32(a: f32, b: f32) -> f32 {
+        a + b
+    }
+}

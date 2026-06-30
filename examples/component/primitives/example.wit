@@ -8,4 +8,8 @@ world example {
     export funcs;
 
     export add-u32: func(a: u32, b: u32) -> u32;
+
+    export additional: interface {
+        add-f32: func(a: f32, b: f32) -> f32;
+    }
 }

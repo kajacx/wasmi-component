@@ -5,6 +5,7 @@ use wasmi_component::wasmi::{AsContextMut, Linker};
 pub struct ExampleExports {
     pub funcs_add_s32: TypedFunc<(i32, i32, ), i32>,
     pub add_u32: TypedFunc<(u32, u32, ), u32>,
+    pub add_f32: TypedFunc<(f32, f32, ), f32>,
 }
 
 pub fn instantiate_example_world(mut ctx: impl AsContextMut, component: &Component) -> ExampleExports {
@@ -17,8 +18,12 @@ pub fn instantiate_example_world(mut ctx: impl AsContextMut, component: &Compone
     let module_func = instance.get_typed_func::<(u32, u32, ), u32>(ctx.as_context_mut(), "add-u32").unwrap();
     let add_u32 = TypedFunc::new(module_func);
 
+    let module_func = instance.get_typed_func::<(f32, f32, ), f32>(ctx.as_context_mut(), "additional#add-f32").unwrap();
+    let add_f32 = TypedFunc::new(module_func);
+
     ExampleExports {
         funcs_add_s32,
         add_u32,
+        add_f32,
     }
 }
