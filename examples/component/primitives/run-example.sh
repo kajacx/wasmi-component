@@ -4,11 +4,13 @@ set -e
 # Run from this directory
 
 cd guest
+cargo expand > src/expanded.rs
 cargo component build --target wasm32-unknown-unknown
+wasm-tools print target/wasm32-unknown-unknown/debug/wasmi_component_example_guest.wasm \
+               > target/wasm32-unknown-unknown/debug/wasmi_component_example_guest.wat
 cd ..
 
 cargo run --manifest-path ../../../Cargo.toml -p wasmi-component-bindgen -- example.wit > host/src/bindings.rs
-cat host/src/bindings.rs
 
 rm -rf modules
 mkdir modules

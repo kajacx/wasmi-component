@@ -24,4 +24,7 @@ pub fn main() {
     // let result = add.call(&mut store, (5, 7)).unwrap();
     let result = exports.funcs_add_s32.call(&mut store, (8, 12)).unwrap();
     println!("Result is: {result}");
+
+    let result = exports.add_u32.call(&mut store, (8, 30)).unwrap();
+    println!("Result is: {result}");
 }

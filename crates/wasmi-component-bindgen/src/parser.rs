@@ -35,6 +35,7 @@ impl Parser {
         .unwrap();
         writeln!(output).unwrap();
 
+        writeln!(output, "#[allow(unused)]").unwrap();
         writeln!(output, "pub struct {exports_name} {{").unwrap();
         exported_funcs.iter().for_each(|func| {
             writeln!(
@@ -139,7 +140,7 @@ impl Parser {
 
             format!("\"{namespace}:{pkg_name}/{interface_name}{version}#{func_name}\"")
         } else {
-            todo!("exported function directly in the world")
+            format!("\"{}\"", func.name)
         };
 
         let params: Vec<_> = func
