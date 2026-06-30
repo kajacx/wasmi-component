@@ -1,6 +1,6 @@
 use heck::{ToSnakeCase, ToUpperCamelCase};
 use std::fmt::Write;
-use wit_parser::{Interface, Type, UnresolvedPackage};
+use wit_parser::{Function, Interface, Type, UnresolvedPackage};
 use wit_parser::{World, WorldItem};
 
 pub struct Parser {
@@ -25,59 +25,161 @@ impl Parser {
 
     fn generate_world(&self, world: &World, output: &mut String) {
         let exports_name = format!("{}Exports", world.name.to_upper_camel_case());
+        let exported_funcs = self.parse_exported_world_functions(world);
 
-        writeln!(output, "pub struct {exports_name} {{").unwrap();
-        world.exports.values().for_each(|value| match value {
-            WorldItem::Function(_func) => {
-                todo!("Exported function directly in the world.");
-            }
-            WorldItem::Interface { id, .. } => {
-                self.write_interface_export_fields(self.pkg.interfaces.get(*id).unwrap(), output);
-            }
-            _ => {}
-        });
-        writeln!(output, "}}").unwrap();
-
-        let args =
-            "store_ctx: &mut ::wasmi_component::Store, component: &::wasmi_component::Component";
+        writeln!(output, "use wasmi_component::{{TypedFunc, Component}};").unwrap();
         writeln!(
             output,
-            "pub fn instantiate_{}_world({args}) -> {exports_name}",
-            world.name.to_snake_case()
+            "use wasmi_component::wasmi::{{AsContextMut, Linker}};"
         )
         .unwrap();
-    }
+        writeln!(output).unwrap();
 
-    fn write_interface_export_fields(&self, interface: &Interface, output: &mut String) {
-        interface.functions.values().for_each(|func| {
-            let field_name = format!(
-                "{}_{}",
-                interface.name.as_ref().unwrap().to_snake_case(),
-                func.name.to_snake_case()
-            );
-
-            let mut param_types: Vec<_> = func
-                .params
-                .iter()
-                .map(|param| self.get_type_name(&param.ty))
-                .collect();
-
-            let params = if param_types.len() == 1 {
-                param_types.remove(0)
-            } else {
-                format!("({})", param_types.join(", "))
-            };
-
-            let result = func
-                .result
-                .map_or_else(|| "()".to_string(), |res| self.get_type_name(&res));
-
+        writeln!(output, "pub struct {exports_name} {{").unwrap();
+        exported_funcs.iter().for_each(|func| {
             writeln!(
                 output,
-                "    pub {field_name}: ::wasmi_component::TypedFunc<{params}, {result}>,"
+                "    pub {}: TypedFunc<{}, {}>,",
+                func.field_name, func.params_type_str, func.result_type_str
             )
             .unwrap();
         });
+        writeln!(output, "}}").unwrap();
+        writeln!(output).unwrap();
+
+        let args = "mut ctx: impl AsContextMut, component: &Component";
+        writeln!(
+            output,
+            "pub fn instantiate_{}_world({args}) -> {exports_name} {{",
+            world.name.to_snake_case()
+        )
+        .unwrap();
+        writeln!(
+            output,
+            "    let linker = Linker::new(ctx.as_context().engine());"
+        )
+        .unwrap();
+        writeln!(
+            output,
+            "    let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module).unwrap();"
+        )
+        .unwrap();
+        writeln!(output).unwrap();
+
+        exported_funcs.iter().for_each(|func| {
+            writeln!(
+                output,
+                "    let module_func = instance.get_typed_func::<{}, {}>(ctx.as_context_mut(), {}).unwrap();",
+                func.params_type_str, func.result_type_str, func.core_export_name
+            )
+            .unwrap();
+            writeln!(
+                output,
+                "    let {} = TypedFunc::new(module_func);",
+                func.field_name
+            )
+            .unwrap();
+            writeln!(output).unwrap();
+        });
+
+        writeln!(output, "    {exports_name} {{").unwrap();
+        exported_funcs.iter().for_each(|func| {
+            writeln!(output, "        {},", func.field_name).unwrap();
+        });
+        writeln!(output, "    }}").unwrap();
+
+        writeln!(output, "}}").unwrap();
+    }
+
+    fn parse_exported_world_functions<'a>(&'a self, world: &World) -> Vec<PreparedFunction> {
+        world
+            .exports
+            .values()
+            .flat_map(|value| match value {
+                WorldItem::Function(func) => vec![self.parse_function(func, None)],
+                WorldItem::Interface { id, .. } => {
+                    self.parse_exported_interface_functions(self.pkg.interfaces.get(*id).unwrap())
+                }
+                _ => vec![],
+            })
+            .collect()
+    }
+
+    fn parse_exported_interface_functions(&self, interface: &Interface) -> Vec<PreparedFunction> {
+        interface
+            .functions
+            .values()
+            .map(|func| self.parse_function(func, Some(interface)))
+            .collect()
+    }
+
+    fn parse_function(&self, func: &Function, interface: Option<&Interface>) -> PreparedFunction {
+        let field_name = if let Some(iface) = interface {
+            format!(
+                "{}_{}",
+                iface.name.as_ref().unwrap().to_snake_case(),
+                func.name.to_snake_case()
+            )
+        } else {
+            func.name.to_snake_case()
+        };
+
+        let core_export_name = if let Some(iface) = interface {
+            // wasmi-component:examples/funcs@0.1.0#add-s32
+            let namespace = &self.pkg.name.namespace;
+            let pkg_name = &self.pkg.name.name;
+            let version = if let Some(ver) = &self.pkg.name.version {
+                format!("@{ver}")
+            } else {
+                "".to_string()
+            };
+
+            let interface_name = iface.name.as_ref().unwrap();
+            let func_name = &func.name;
+
+            format!("\"{namespace}:{pkg_name}/{interface_name}{version}#{func_name}\"")
+        } else {
+            todo!("exported function directly in the world")
+        };
+
+        let params: Vec<_> = func
+            .params
+            .iter()
+            .map(|param| PreparedType {
+                wit_type: param.ty,
+                wit_type_str: self.get_type_name(&param.ty),
+            })
+            .collect();
+
+        let params_type_str = if params.len() == 1 {
+            params[0].wit_type_str.clone()
+        } else {
+            let mut params_str = String::from("(");
+            params.iter().for_each(|param| {
+                params_str.push_str(&param.wit_type_str);
+                params_str.push_str(", ");
+            });
+            params_str.push_str(")");
+            params_str
+        };
+
+        let result = func.result.map(|result| PreparedType {
+            wit_type: result,
+            wit_type_str: self.get_type_name(&result),
+        });
+
+        let result_type_str = result
+            .as_ref()
+            .map_or_else(|| "()".to_string(), |result| result.wit_type_str.clone());
+
+        PreparedFunction {
+            field_name,
+            core_export_name,
+            params,
+            params_type_str,
+            result,
+            result_type_str,
+        }
     }
 
     fn get_type_name(&self, ty: &Type) -> String {
@@ -99,4 +201,20 @@ impl Parser {
             Type::Id(_) => todo!(),
         }
     }
+}
+
+#[allow(unused)]
+struct PreparedFunction {
+    field_name: String,
+    core_export_name: String,
+    params: Vec<PreparedType>,
+    params_type_str: String,
+    result: Option<PreparedType>,
+    result_type_str: String,
+}
+
+#[allow(unused)]
+struct PreparedType {
+    wit_type: Type,
+    wit_type_str: String,
 }
