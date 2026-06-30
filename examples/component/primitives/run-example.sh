@@ -8,6 +8,7 @@ cargo component build --target wasm32-unknown-unknown
 cd ..
 
 cargo run --manifest-path ../../../Cargo.toml -p wasmi-component-bindgen -- example.wit > host/src/bindings.rs
+cat host/src/bindings.rs
 
 rm -rf modules
 mkdir modules

@@ -1,12 +1,6 @@
 pub use wasmi;
 pub use wasmi::Engine;
 
-mod component;
-mod instance;
-mod linker;
-mod store;
+mod structs;
 
-pub use component::*;
-pub use instance::*;
-pub use linker::*;
-pub use store::*;
+pub use structs::*;
