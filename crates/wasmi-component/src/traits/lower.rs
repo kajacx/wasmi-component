@@ -47,7 +47,7 @@ impl Lower for String {
         2
     }
 
-    fn lower(&self, output: &mut [Val], mut memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
         let (index, bytes) = memory.allocate(self.len())?;
         bytes.copy_from_slice(self.as_bytes());
 
@@ -73,7 +73,7 @@ impl<T0: Lower, T1: Lower> Lower for (T0, T1) {
         T0::args_amount() + T1::args_amount()
     }
 
-    fn lower(&self, output: &mut [Val], mut memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
         T0::lower(&self.0, &mut output[0..T0::args_amount()], memory)?;
         T1::lower(&self.1, &mut output[T0::args_amount()..], memory)?;
         Ok(())
