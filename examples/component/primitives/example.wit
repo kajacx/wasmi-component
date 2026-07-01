@@ -3,7 +3,7 @@ package wasmi-component:examples@0.1.0;
 interface funcs {
     add-s32: func(a: s32, b: s32) -> s32;
 
-    get-name: func() -> string;
+    greet: func(name: string) -> string;
 }
 
 world example {

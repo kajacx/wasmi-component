@@ -14,8 +14,8 @@ impl bindings::exports::wasmi_component::examples::funcs::Guest for GuestCompone
         a + b
     }
 
-    fn get_name() -> String {
-        "Hello there!".to_string()
+    fn greet(name: String) -> String {
+        format!("Hello {name}, I am a wasm component.")
     }
 }
 

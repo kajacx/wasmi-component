@@ -29,15 +29,13 @@ impl Parser {
 
         writeln!(
             output,
-            "use wasmi_component::wasmi::{{AsContextMut, Linker}};"
+            concat!(
+                "use wasmi_component::anyhow::{{Context, Result}};\n",
+                "use wasmi_component::wasmi::{{AsContextMut, Linker}};\n",
+                "use wasmi_component::{{Component, MemoryAccessPre, TypedFunc}};\n",
+            )
         )
         .unwrap();
-        writeln!(
-            output,
-            "use wasmi_component::{{Component, Lift, LowerList, TypedFunc}};"
-        )
-        .unwrap();
-        writeln!(output).unwrap();
 
         writeln!(output, "#[allow(unused)]").unwrap();
         writeln!(output, "pub struct {exports_name} {{").unwrap();
@@ -52,41 +50,44 @@ impl Parser {
         writeln!(output, "}}").unwrap();
         writeln!(output).unwrap();
 
-        let args = "mut ctx: impl AsContextMut, component: &Component";
         writeln!(
             output,
-            "pub fn instantiate_{}_world({args}) -> {exports_name} {{",
-            world.name.to_snake_case()
+            concat!(
+                "pub fn instantiate_{}_world",
+                "(mut ctx: impl AsContextMut, component: &Component)",
+                " -> Result<{}> {{",
+            ),
+            world.name.to_snake_case(),
+            exports_name
         )
         .unwrap();
-        writeln!(
-            output,
-            "    let linker = Linker::new(ctx.as_context().engine());"
-        )
-        .unwrap();
-        writeln!(
-            output,
-            "    let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module).unwrap();"
-        )
-        .unwrap();
-        writeln!(output).unwrap();
 
         writeln!(
             output,
-            "    let memory = instance.get_memory(ctx.as_context(), \"memory\").unwrap();"
+            concat!(
+                "    let linker = Linker::new(ctx.as_context().engine());\n",
+                "    let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module)?;\n"
+            )
         )
         .unwrap();
-        writeln!(output).unwrap();
+
+        writeln!(
+            output,
+            concat!(
+                "    let memory = instance.get_memory",
+                "(ctx.as_context(), \"memory\").context(\"get memory\")?;\n",
+                "    let cabi_realloc = instance.get_typed_func::<(i32, i32, i32, i32), i32>",
+                "(ctx.as_context_mut(), \"cabi_realloc\")?;\n",
+                "    let memory_pre = MemoryAccessPre::new(memory, cabi_realloc);\n",
+            )
+        )
+        .unwrap();
 
         exported_funcs.iter().for_each(|func| {
             writeln!(
                 output,
-                concat!(
-                    "    let module_func = instance.get_typed_func",
-                    "::<<{} as LowerList>::CoreType, <{} as Lift>::CoreType>",
-                    "(ctx.as_context_mut(), \"{}\").unwrap();"
-                ),
-                func.params_type_str, func.result_type_str, func.core_export_name
+                "    let module_func = instance.get_func(ctx.as_context_mut(), \"{}\").unwrap();",
+                func.core_export_name
             )
             .unwrap();
             writeln!(
@@ -100,18 +101,18 @@ impl Parser {
             .unwrap();
             writeln!(
                 output,
-                "    let {} = TypedFunc::new(memory.clone(), module_func, cleanup_func);",
+                "    let {} = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);",
                 func.field_name
             )
             .unwrap();
             writeln!(output).unwrap();
         });
 
-        writeln!(output, "    {exports_name} {{").unwrap();
+        writeln!(output, "    Ok({exports_name} {{").unwrap();
         exported_funcs.iter().for_each(|func| {
             writeln!(output, "        {},", func.field_name).unwrap();
         });
-        writeln!(output, "    }}").unwrap();
+        writeln!(output, "    }})").unwrap();
 
         writeln!(output, "}}").unwrap();
     }

@@ -1,11 +1,7 @@
 mod component;
-// mod instance;
-// mod linker;
-// mod store;
+mod memory_access;
 mod typed_func;
 
 pub use component::*;
-// pub use instance::*;
-// pub use linker::*;
-// pub use store::*;
+pub use memory_access::*;
 pub use typed_func::*;
