@@ -1,5 +1,5 @@
 pub use wasmi;
-pub use wasmi::Engine;
+pub use anyhow;
 
 mod structs;
 mod traits;

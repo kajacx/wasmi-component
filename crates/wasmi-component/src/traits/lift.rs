@@ -1,11 +1,16 @@
 use std::fmt::Debug;
 
-use wasmi::{AsContext, Memory, WasmResults};
+use anyhow::Result;
+use wasmi::WasmResults;
 
 pub trait Lift: Debug {
     type CoreType: WasmResults;
 
-    fn lift(val: Self::CoreType, store: impl AsContext, memory: &Memory) -> Self;
+    type Borrowed<'a>;
+
+    fn lift<'a>(val: Self::CoreType, memory: &'a [u8]) -> Result<Self::Borrowed<'a>>;
+
+    fn into_owned(val: Self::Borrowed<'_>) -> Self;
 
     fn as_address(_addr: &Self::CoreType) -> Option<i32> {
         None
@@ -14,38 +19,67 @@ pub trait Lift: Debug {
 
 impl Lift for i32 {
     type CoreType = Self;
+    type Borrowed<'a> = Self;
 
-    fn lift(val: Self::CoreType, _: impl AsContext, _: &Memory) -> Self {
+    fn lift<'a>(val: Self::CoreType, _memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+        Ok(val)
+    }
+
+    fn into_owned(val: Self::Borrowed<'_>) -> Self {
         val
     }
 }
 
 impl Lift for u32 {
     type CoreType = Self;
+    type Borrowed<'a> = Self;
 
-    fn lift(val: Self::CoreType, _: impl AsContext, _: &Memory) -> Self {
+    fn lift<'a>(val: Self::CoreType, _memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+        Ok(val)
+    }
+
+    fn into_owned(val: Self::Borrowed<'_>) -> Self {
         val
     }
 }
 
 impl Lift for f32 {
     type CoreType = Self;
+    type Borrowed<'a> = Self;
 
-    fn lift(val: Self::CoreType, _: impl AsContext, _: &Memory) -> Self {
+    fn lift<'a>(val: Self::CoreType, _memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+        Ok(val)
+    }
+
+    fn into_owned(val: Self::Borrowed<'_>) -> Self {
         val
     }
 }
 
 impl Lift for String {
     type CoreType = i32;
+    type Borrowed<'a> = &'a str;
 
-    fn lift(val: Self::CoreType, ctx: impl AsContext, memory: &Memory) -> Self {
-        let data = memory.data(ctx.as_context());
-        let ptr = FatPtr::from_data(data, val as usize);
-
-        let str_bytes = &data[ptr.start..(ptr.start + ptr.len)];
-        str::from_utf8(str_bytes).unwrap().to_string()
+    fn lift<'a>(val: Self::CoreType, memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+        let ptr = FatPtr::from_data(memory, val as usize);
+        let str_bytes = &memory[ptr.start..(ptr.start + ptr.len)];
+        Ok(str::from_utf8(str_bytes)?)
     }
+
+    fn into_owned(val: Self::Borrowed<'_>) -> Self {
+        val.to_string()
+    }
+
+    // fn with_lifted_value<'a, T>(
+    //     val: Self::CoreType,
+    //     ctx: impl AsContext,
+    //     memory: &'a [u8],
+    //     callback: FnOnce(Self::Borrowed<'a>) -> T,
+    // ) -> T {
+    //     let ptr = FatPtr::from_data(memory, val as usize);
+    //     let str_bytes = &memory[ptr.start..(ptr.start + ptr.len)];
+
+    // }
 
     fn as_address(addr: &Self::CoreType) -> Option<i32> {
         Some(*addr)

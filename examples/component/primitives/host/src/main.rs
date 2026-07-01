@@ -1,5 +1,5 @@
-use wasmi_component::wasmi::Store;
-use wasmi_component::*;
+use wasmi_component::Component;
+use wasmi_component::wasmi::{Engine, Store};
 
 mod bindings;
 
@@ -25,4 +25,11 @@ pub fn main() {
 
     let result = exports.funcs_get_name.call(&mut store, ()).unwrap();
     println!("Result is: {result}");
+
+    exports
+        .funcs_get_name
+        .call_with_results(&mut store, (), |name| {
+            println!("Printing name without any allocations skibidi {name}");
+        })
+        .unwrap();
 }

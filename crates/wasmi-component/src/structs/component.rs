@@ -1,3 +1,4 @@
+use wasmi::Engine;
 use wasmparser::{Parser, Payload};
 
 use crate::*;
