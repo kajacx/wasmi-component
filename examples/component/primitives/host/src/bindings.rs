@@ -1,5 +1,5 @@
 use wasmi_component::anyhow::{Context, Result};
-use wasmi_component::wasmi::{AsContextMut, Linker};
+use wasmi_component::wasmi::{AsContextMut, Caller, Linker};
 #[allow(unused)]
 use wasmi_component::{Component, MemoryAccessPre, TypedFunc, WitString};
 
@@ -12,8 +12,24 @@ pub struct ExampleExports {
     pub add_f32: TypedFunc<(f32, f32, ), f32>,
 }
 
-pub fn instantiate_example_world(mut ctx: impl AsContextMut, component: &Component) -> Result<ExampleExports> {
-    let linker = Linker::new(ctx.as_context().engine());
+pub trait HostImports {
+    fn sub_u32(&mut self, a: u32, b: u32) -> u32;
+}
+
+pub fn instantiate_example_world<D: HostImports>(
+    mut ctx: impl AsContextMut<Data = D>,
+    component: &Component,
+) -> Result<ExampleExports> {
+    let mut linker = Linker::new(ctx.as_context().engine());
+
+    linker
+        .func_wrap(
+            "$root",
+            "sub-u32",
+            |mut caller: Caller<D>, a: u32, b: u32| Ok(caller.data_mut().sub_u32(a, b)),
+        )
+        .unwrap();
+
     let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module)?;
 
     let memory = instance.get_memory(ctx.as_context(), "memory").context("get memory")?;

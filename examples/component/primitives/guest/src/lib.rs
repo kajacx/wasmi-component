@@ -25,7 +25,7 @@ impl bindings::exports::wasmi_component::examples::funcs::Guest for GuestCompone
 
 impl bindings::Guest for GuestComponent {
     fn add_u32(a: u32, b: u32) -> u32 {
-        a + b
+        bindings::sub_u32(a, 5) + b
     }
 }
 

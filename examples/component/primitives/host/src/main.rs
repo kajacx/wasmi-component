@@ -7,6 +7,12 @@ const WASM: &[u8] = include_bytes!(
     "../../guest/target/wasm32-unknown-unknown/debug/wasmi_component_example_guest.wasm"
 );
 
+impl bindings::HostImports for () {
+    fn sub_u32(&mut self, a: u32, b: u32) -> u32 {
+        a - b + 1000
+    }
+}
+
 pub fn main() {
     let engine = Engine::default();
     let mut store = Store::new(&engine, ());

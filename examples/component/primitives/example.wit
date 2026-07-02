@@ -16,4 +16,6 @@ world example {
     export additional: interface {
         add-f32: func(a: f32, b: f32) -> f32;
     }
+
+    import sub-u32: func(a: u32, b: u32) -> u32;
 }
