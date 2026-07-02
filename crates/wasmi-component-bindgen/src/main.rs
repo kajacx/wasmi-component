@@ -2,8 +2,11 @@ use std::path::{Path, PathBuf};
 
 use wit_parser::UnresolvedPackageGroup;
 
-mod parser;
-use parser::Parser;
+mod generator;
+mod parse;
+
+use generator::*;
+use parse::*;
 
 #[derive(clap::Parser)]
 #[command(version, about = "Experimental zero-copy component bindgen for wasmi")]
@@ -20,7 +23,10 @@ fn main() {
     let group = UnresolvedPackageGroup::parse(path, &content).unwrap();
 
     let parser = Parser::new(group.main);
-    let parsed = parser.parse_wit();
+    let worlds = parser.parse_wit();
 
-    print!("{parsed}");
+    let mut output = String::new();
+    generate_wit(&worlds, &mut output);
+
+    print!("{output}");
 }

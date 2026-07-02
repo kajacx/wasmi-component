@@ -7,7 +7,7 @@ const WASM: &[u8] = include_bytes!(
     "../../guest/target/wasm32-unknown-unknown/debug/wasmi_component_example_guest.wasm"
 );
 
-impl bindings::HostImports for () {
+impl bindings::ExampleImports for () {
     fn sub_u32(&mut self, a: u32, b: u32) -> HostResult<u32> {
         Ok(a - b + 1000)
     }
@@ -26,21 +26,27 @@ pub fn main() {
     let result = exports.add_u32.call(&mut store, (8u32, 30u32)).unwrap();
     println!("Result is: {result}");
 
-    let result = exports.add_f32.call(&mut store, (4.5, 9.0)).unwrap();
+    let result = exports
+        .additional_add_f32
+        .call(&mut store, (4.5, 9.0))
+        .unwrap();
     println!("Result is: {result}");
 
     let result = exports
         .funcs_greet
-        .call(&mut store, "Own it".to_string())
+        .call(&mut store, ("Own it".to_string(), 5))
         .unwrap();
     println!("Result is: {result}");
 
-    let result = exports.funcs_greet.call(&mut store, "kajacx").unwrap();
+    let result = exports
+        .funcs_greet
+        .call(&mut store, ("kajacx", 10))
+        .unwrap();
     println!("Result is: {result}");
 
     exports
         .funcs_greet
-        .call_with_results(&mut store, "yippie!", |name| {
+        .call_with_results(&mut store, ("yippie!", 20), |name| {
             println!("Printing name without any allocations skibidi {name}");
         })
         .unwrap();

@@ -7,17 +7,17 @@ use wasmi_component::{Component, HostResult, MemoryAccessPre, TypedFunc, WitStri
 #[allow(unused)]
 pub struct ExampleExports {
     pub funcs_add_s32: TypedFunc<(i32, i32, ), i32>,
-    pub funcs_greet: TypedFunc<WitString, WitString>,
+    pub funcs_greet: TypedFunc<(WitString, i32, ), WitString>,
     pub funcs_no_args: TypedFunc<(), ()>,
     pub add_u32: TypedFunc<(u32, u32, ), u32>,
-    pub add_f32: TypedFunc<(f32, f32, ), f32>,
+    pub additional_add_f32: TypedFunc<(f32, f32, ), f32>,
 }
 
-pub trait HostImports {
+pub trait ExampleImports {
     fn sub_u32(&mut self, a: u32, b: u32, ) -> HostResult<u32>;
 }
 
-pub fn instantiate_example_world<D: HostImports>(mut ctx: impl AsContextMut<Data = D>, component: &Component) -> Result<ExampleExports> {
+pub fn instantiate_example_world<D: ExampleImports>(mut ctx: impl AsContextMut<Data = D>, component: &Component) -> Result<ExampleExports> {
     #[allow(unused_mut)]
     let mut linker = Linker::new(ctx.as_context().engine());
 
@@ -46,13 +46,13 @@ pub fn instantiate_example_world<D: HostImports>(mut ctx: impl AsContextMut<Data
 
     let module_func = instance.get_func(ctx.as_context_mut(), "additional#add-f32").unwrap();
     let cleanup_func = instance.get_typed_func::<i32, ()>(ctx.as_context_mut(), "cabi_post_additional#add-f32").ok();
-    let add_f32 = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+    let additional_add_f32 = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
 
     Ok(ExampleExports {
         funcs_add_s32,
         funcs_greet,
         funcs_no_args,
         add_u32,
-        add_f32,
+        additional_add_f32,
     })
 }
