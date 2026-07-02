@@ -1,7 +1,8 @@
 use wasmi_component::anyhow::{Context, Result};
+#[allow(unused)]
 use wasmi_component::wasmi::{AsContextMut, Caller, Linker};
 #[allow(unused)]
-use wasmi_component::{Component, MemoryAccessPre, TypedFunc, WitString};
+use wasmi_component::{Component, HostResult, MemoryAccessPre, TypedFunc, WitString};
 
 #[allow(unused)]
 pub struct ExampleExports {
@@ -13,23 +14,14 @@ pub struct ExampleExports {
 }
 
 pub trait HostImports {
-    fn sub_u32(&mut self, a: u32, b: u32) -> u32;
+    fn sub_u32(&mut self, a: u32, b: u32, ) -> HostResult<u32>;
 }
 
-pub fn instantiate_example_world<D: HostImports>(
-    mut ctx: impl AsContextMut<Data = D>,
-    component: &Component,
-) -> Result<ExampleExports> {
+pub fn instantiate_example_world<D: HostImports>(mut ctx: impl AsContextMut<Data = D>, component: &Component) -> Result<ExampleExports> {
+    #[allow(unused_mut)]
     let mut linker = Linker::new(ctx.as_context().engine());
 
-    linker
-        .func_wrap(
-            "$root",
-            "sub-u32",
-            |mut caller: Caller<D>, a: u32, b: u32| Ok(caller.data_mut().sub_u32(a, b)),
-        )
-        .unwrap();
-
+    linker.func_wrap("$root", "sub-u32", |mut caller: Caller<D>, a: u32, b: u32, | caller.data_mut().sub_u32(a, b, ))?;
     let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module)?;
 
     let memory = instance.get_memory(ctx.as_context(), "memory").context("get memory")?;

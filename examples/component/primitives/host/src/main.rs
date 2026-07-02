@@ -1,5 +1,5 @@
-use wasmi_component::Component;
 use wasmi_component::wasmi::{Engine, Store};
+use wasmi_component::{Component, HostResult};
 
 mod bindings;
 
@@ -8,8 +8,8 @@ const WASM: &[u8] = include_bytes!(
 );
 
 impl bindings::HostImports for () {
-    fn sub_u32(&mut self, a: u32, b: u32) -> u32 {
-        a - b + 1000
+    fn sub_u32(&mut self, a: u32, b: u32) -> HostResult<u32> {
+        Ok(a - b + 1000)
     }
 }
 

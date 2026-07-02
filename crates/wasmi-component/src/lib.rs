@@ -8,3 +8,5 @@ mod wit_types;
 pub use structs::*;
 pub use traits::*;
 pub use wit_types::*;
+
+pub type HostResult<T> = Result<T, wasmi::Error>;

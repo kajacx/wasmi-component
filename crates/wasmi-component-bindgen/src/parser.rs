@@ -26,14 +26,17 @@ impl Parser {
     fn generate_world(&self, world: &World, output: &mut String) {
         let exports_name = format!("{}Exports", world.name.to_upper_camel_case());
         let exported_funcs = self.parse_exported_world_functions(world);
+        let imported_funcs = self.parse_imported_world_functions(world);
 
         writeln!(
             output,
             concat!(
                 "use wasmi_component::anyhow::{{Context, Result}};\n",
-                "use wasmi_component::wasmi::{{AsContextMut, Linker}};\n",
                 "#[allow(unused)]\n",
-                "use wasmi_component::{{Component, MemoryAccessPre, TypedFunc, WitString}};\n",
+                "use wasmi_component::wasmi::{{AsContextMut, Caller, Linker}};\n",
+                "#[allow(unused)]\n",
+                "use wasmi_component::{{Component, HostResult, ",
+                "MemoryAccessPre, TypedFunc, WitString}};\n",
             )
         )
         .unwrap();
@@ -51,14 +54,31 @@ impl Parser {
         writeln!(output, "}}").unwrap();
         writeln!(output).unwrap();
 
+        writeln!(output, "pub trait HostImports {{").unwrap();
+        imported_funcs.iter().for_each(|func| {
+            writeln!(
+                output,
+                "    fn {}(&mut self, {}) -> HostResult<{}>;",
+                func.host_func_name, func.params_decl, func.result
+            )
+            .unwrap();
+        });
+        writeln!(output, "}}").unwrap();
+        writeln!(output).unwrap();
+
         writeln!(
             output,
             concat!(
-                "pub fn instantiate_{}_world",
-                "(mut ctx: impl AsContextMut, component: &Component)",
+                "pub fn instantiate_{}_world<D{}>",
+                "(mut ctx: impl AsContextMut<Data = D>, component: &Component)",
                 " -> Result<{}> {{",
             ),
             world.name.to_snake_case(),
+            if imported_funcs.is_empty() {
+                ""
+            } else {
+                ": HostImports"
+            },
             exports_name
         )
         .unwrap();
@@ -66,15 +86,34 @@ impl Parser {
         writeln!(
             output,
             concat!(
-                "    let linker = Linker::new(ctx.as_context().engine());\n",
-                "    let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module)?;\n"
+                "    #[allow(unused_mut)]\n",
+                "    let mut linker = Linker::new(ctx.as_context().engine());\n",
             )
         )
         .unwrap();
 
+        imported_funcs.iter().for_each(|func| {
+            writeln!(
+                output,
+                concat!(
+                    "    linker.func_wrap(\"{}\", \"{}\", ",
+                    "|mut caller: Caller<D>, {}| caller.data_mut().{}({})",
+                    ")?;"
+                ),
+                func.core_module,
+                func.core_name,
+                func.params_decl,
+                func.host_func_name,
+                func.params_use
+            )
+            .unwrap();
+        });
+
         writeln!(
             output,
             concat!(
+                "    let instance = linker.instantiate_and_start",
+                "(ctx.as_context_mut(), &component.core_module)?;\n\n",
                 "    let memory = instance.get_memory",
                 "(ctx.as_context(), \"memory\").context(\"get memory\")?;\n",
                 "    let cabi_realloc = instance.get_typed_func::<(i32, i32, i32, i32), i32>",
@@ -118,7 +157,7 @@ impl Parser {
         writeln!(output, "}}").unwrap();
     }
 
-    fn parse_exported_world_functions<'a>(&'a self, world: &World) -> Vec<PreparedFunction> {
+    fn parse_exported_world_functions(&self, world: &World) -> Vec<PreparedFunction> {
         world
             .exports
             .iter()
@@ -140,6 +179,27 @@ impl Parser {
             .functions
             .values()
             .map(|func| self.parse_function(func, key, Some(interface)))
+            .collect()
+    }
+
+    fn parse_imported_world_functions(&self, world: &World) -> Vec<ImportedFunction> {
+        world
+            .imports
+            .iter()
+            .flat_map(|(_, value)| match value {
+                WorldItem::Function(func) => {
+                    let imported = ImportedFunction {
+                        host_func_name: func.name.to_snake_case(),
+                        core_module: "$root".to_string(),
+                        core_name: func.name.clone(),
+                        params_decl: "a: u32, b: u32, ".into(),
+                        params_use: "a, b, ".into(),
+                        result: "u32".into(),
+                    };
+                    vec![imported]
+                }
+                _ => vec![],
+            })
             .collect()
     }
 
@@ -217,6 +277,8 @@ impl Parser {
         }
     }
 
+    // fn parse_imported_function(&self, func: &Function) {}
+
     fn get_type_name(&self, ty: &Type) -> String {
         match ty {
             Type::Bool => "bool".to_string(),
@@ -252,4 +314,13 @@ struct PreparedFunction {
 struct PreparedType {
     wit_type: Type,
     wit_type_str: String,
+}
+
+struct ImportedFunction {
+    host_func_name: String,
+    core_module: String,
+    core_name: String,
+    params_decl: String,
+    params_use: String,
+    result: String,
 }
