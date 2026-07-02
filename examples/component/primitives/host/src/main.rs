@@ -38,4 +38,6 @@ pub fn main() {
             println!("Printing name without any allocations skibidi {name}");
         })
         .unwrap();
+
+    exports.funcs_no_args.call(&mut store, ()).unwrap();
 }

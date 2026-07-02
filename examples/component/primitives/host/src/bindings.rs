@@ -7,6 +7,7 @@ use wasmi_component::{Component, MemoryAccessPre, TypedFunc, WitString};
 pub struct ExampleExports {
     pub funcs_add_s32: TypedFunc<(i32, i32, ), i32>,
     pub funcs_greet: TypedFunc<WitString, WitString>,
+    pub funcs_no_args: TypedFunc<(), ()>,
     pub add_u32: TypedFunc<(u32, u32, ), u32>,
     pub add_f32: TypedFunc<(f32, f32, ), f32>,
 }
@@ -27,6 +28,10 @@ pub fn instantiate_example_world(mut ctx: impl AsContextMut, component: &Compone
     let cleanup_func = instance.get_typed_func::<i32, ()>(ctx.as_context_mut(), "cabi_post_wasmi-component:examples/funcs@0.1.0#greet").ok();
     let funcs_greet = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
 
+    let module_func = instance.get_func(ctx.as_context_mut(), "wasmi-component:examples/funcs@0.1.0#no-args").unwrap();
+    let cleanup_func = instance.get_typed_func::<i32, ()>(ctx.as_context_mut(), "cabi_post_wasmi-component:examples/funcs@0.1.0#no-args").ok();
+    let funcs_no_args = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+
     let module_func = instance.get_func(ctx.as_context_mut(), "add-u32").unwrap();
     let cleanup_func = instance.get_typed_func::<i32, ()>(ctx.as_context_mut(), "cabi_post_add-u32").ok();
     let add_u32 = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
@@ -38,6 +43,7 @@ pub fn instantiate_example_world(mut ctx: impl AsContextMut, component: &Compone
     Ok(ExampleExports {
         funcs_add_s32,
         funcs_greet,
+        funcs_no_args,
         add_u32,
         add_f32,
     })

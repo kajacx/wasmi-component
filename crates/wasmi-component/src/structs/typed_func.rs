@@ -49,8 +49,11 @@ impl<Params: CanonicalWitType, Results: CanonicalWitType> TypedFunc<Params, Resu
 
         let mut results = [Val::I32(0)]; // TODO: this will be bad if the function doesn't return anything
 
-        self.inner
-            .call(ctx.as_context_mut(), &args[0..args_len], &mut results)?;
+        self.inner.call(
+            ctx.as_context_mut(),
+            &args[0..args_len],
+            &mut results[0..Results::ReturnType::results_count()],
+        )?;
 
         let bytes = self.memory.memory.data(ctx.as_context());
         let lifted = Results::ReturnType::lift(results[0].clone(), bytes)?; // TODO: clone?

@@ -4,6 +4,8 @@ interface funcs {
     add-s32: func(a: s32, b: s32) -> s32;
 
     greet: func(name: string) -> string;
+
+    no-args: func();
 }
 
 world example {

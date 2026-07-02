@@ -6,6 +6,10 @@ use wasmi::Val;
 pub trait Lift: Debug {
     type Borrowed<'a>;
 
+    fn results_count() -> usize {
+        1
+    }
+
     fn lift<'a>(val: Val, memory: &'a [u8]) -> Result<Self::Borrowed<'a>>;
 
     fn into_owned(val: Self::Borrowed<'_>) -> Self;
@@ -49,6 +53,10 @@ impl Lift for f32 {
 
 impl Lift for () {
     type Borrowed<'a> = Self;
+
+    fn results_count() -> usize {
+        0
+    }
 
     fn lift<'a>(_val: Val, _memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
         Ok(())
