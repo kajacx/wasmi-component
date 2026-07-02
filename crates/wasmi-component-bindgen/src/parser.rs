@@ -32,7 +32,8 @@ impl Parser {
             concat!(
                 "use wasmi_component::anyhow::{{Context, Result}};\n",
                 "use wasmi_component::wasmi::{{AsContextMut, Linker}};\n",
-                "use wasmi_component::{{Component, MemoryAccessPre, TypedFunc}};\n",
+                "#[allow(unused)]\n",
+                "use wasmi_component::{{Component, MemoryAccessPre, TypedFunc, WitString}};\n",
             )
         )
         .unwrap();
@@ -230,7 +231,7 @@ impl Parser {
             Type::U64 => "u64".to_string(),
             Type::F32 => "f32".to_string(),
             Type::F64 => "f64".to_string(),
-            Type::String => "String".to_string(),
+            Type::String => "WitString".to_string(),
             Type::ErrorContext => todo!(),
             Type::Id(_) => todo!(),
         }

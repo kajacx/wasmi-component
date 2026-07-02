@@ -54,3 +54,16 @@ impl<'a, C: AsContextMut> MemoryAccess for MemoryAccessFilled<'a, C> {
         Ok((address, &mut bytes[address..(address + len)]))
     }
 }
+
+pub(crate) struct FatPtr {
+    pub start: usize,
+    pub len: usize,
+}
+
+impl FatPtr {
+    pub fn from_data(data: &[u8], addr: usize) -> Self {
+        let start = u32::from_le_bytes(data[addr..(addr + 4)].try_into().unwrap()) as usize;
+        let len = u32::from_le_bytes(data[(addr + 4)..(addr + 8)].try_into().unwrap()) as usize;
+        Self { start, len }
+    }
+}

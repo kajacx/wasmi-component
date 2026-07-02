@@ -1,11 +1,12 @@
 use wasmi_component::anyhow::{Context, Result};
 use wasmi_component::wasmi::{AsContextMut, Linker};
-use wasmi_component::{Component, MemoryAccessPre, TypedFunc};
+#[allow(unused)]
+use wasmi_component::{Component, MemoryAccessPre, TypedFunc, WitString};
 
 #[allow(unused)]
 pub struct ExampleExports {
     pub funcs_add_s32: TypedFunc<(i32, i32, ), i32>,
-    pub funcs_greet: TypedFunc<String, String>,
+    pub funcs_greet: TypedFunc<WitString, WitString>,
     pub add_u32: TypedFunc<(u32, u32, ), u32>,
     pub add_f32: TypedFunc<(f32, f32, ), f32>,
 }
