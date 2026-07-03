@@ -38,6 +38,14 @@ impl CanonicalWitType for () {
     }
 }
 
+impl<T0: CanonicalWitType> CanonicalWitType for (T0,) {
+    type ReturnType = T0::ReturnType;
+
+    fn argument_count() -> usize {
+        T0::argument_count()
+    }
+}
+
 impl<T0: CanonicalWitType, T1: CanonicalWitType> CanonicalWitType for (T0, T1) {
     type ReturnType = (T0::ReturnType, T1::ReturnType);
 

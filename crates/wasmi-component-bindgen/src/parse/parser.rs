@@ -1,3 +1,4 @@
+use heck::ToSnakeCase;
 use wit_parser::{Function, Interface, Type, UnresolvedPackage, WorldKey};
 use wit_parser::{World, WorldItem};
 
@@ -76,7 +77,7 @@ impl Parser {
 
     fn parse_function_param(&self, param: &wit_parser::Param) -> Param {
         Param {
-            name: param.name.clone(),
+            name: param.name.to_snake_case(),
             ty: self.get_type_name(&param.ty),
         }
     }

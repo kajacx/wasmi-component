@@ -7,9 +7,38 @@ const WASM: &[u8] = include_bytes!(
     "../../guest/target/wasm32-unknown-unknown/debug/wasmi_component_example_guest.wasm"
 );
 
-impl bindings::ExampleImports for () {
-    fn sub_u32(&mut self, a: u32, b: u32) -> HostResult<u32> {
-        Ok(a - b + 1000)
+impl bindings::TestExampleImports for () {
+    fn add_import(&mut self, value_a: u32, value_b: u32) -> HostResult<u32> {
+        Ok(value_a + value_b)
+    }
+
+    fn common_funcs_no_arguments(&mut self) -> HostResult<()> {
+        println!("No args called");
+        Ok(())
+    }
+
+    fn common_funcs_roundtrip_multiple(
+        &mut self,
+        value_a: wasmi_component::WitString,
+        value_b: i32,
+    ) -> HostResult<wasmi_component::WitString> {
+        println!("pls: {value_b}");
+        Ok(value_a)
+    }
+
+    fn common_funcs_roundtrip_s32(&mut self, value_a: i32) -> HostResult<i32> {
+        Ok(value_a)
+    }
+
+    fn common_funcs_roundtrip_string(
+        &mut self,
+        value_a: wasmi_component::WitString,
+    ) -> HostResult<wasmi_component::WitString> {
+        Ok(value_a)
+    }
+
+    fn inline_imports_inline_add(&mut self, value_a: u32, value_b: u32) -> HostResult<u32> {
+        Ok(value_a + value_b)
     }
 }
 
@@ -18,38 +47,50 @@ pub fn main() {
     let mut store = Store::new(&engine, ());
 
     let component = Component::new(&engine, WASM).unwrap();
-    let exports = bindings::instantiate_example_world(&mut store, &component).unwrap();
+    let exports = bindings::instantiate_test_example_world(&mut store, &component).unwrap();
 
-    let result = exports.funcs_add_s32.call(&mut store, (8, 12)).unwrap();
-    println!("Result is: {result}");
-
-    let result = exports.add_u32.call(&mut store, (8u32, 30u32)).unwrap();
+    let result = exports.add_export.call(&mut store, (8, 12)).unwrap();
     println!("Result is: {result}");
 
     let result = exports
-        .additional_add_f32
-        .call(&mut store, (4.5, 9.0))
+        .common_funcs_roundtrip_multiple
+        .call(&mut store, ("Hello", 42))
         .unwrap();
     println!("Result is: {result}");
 
     let result = exports
-        .funcs_greet
-        .call(&mut store, ("Own it".to_string(), 5))
+        .common_funcs_roundtrip_s32
+        .call(&mut store, 67)
         .unwrap();
     println!("Result is: {result}");
 
     let result = exports
-        .funcs_greet
-        .call(&mut store, ("kajacx", 10))
+        .common_funcs_roundtrip_s32
+        .call(&mut store, (69,))
+        .unwrap();
+    println!("Result is: {result}");
+
+    let result = exports
+        .common_funcs_roundtrip_string
+        .call(&mut store, "Hello")
+        .unwrap();
+    println!("Result is: {result}");
+
+    let result = exports
+        .inline_exports_inline_add
+        .call(&mut store, (420, 666))
         .unwrap();
     println!("Result is: {result}");
 
     exports
-        .funcs_greet
-        .call_with_results(&mut store, ("yippie!", 20), |name| {
-            println!("Printing name without any allocations skibidi {name}");
+        .common_funcs_roundtrip_string
+        .call_with_results(&mut store, "world!", |name| {
+            println!("Hello {name}");
         })
         .unwrap();
 
-    exports.funcs_no_args.call(&mut store, ()).unwrap();
+    exports
+        .common_funcs_no_arguments
+        .call(&mut store, ())
+        .unwrap();
 }

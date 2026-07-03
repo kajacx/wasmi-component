@@ -44,6 +44,14 @@ impl Lower for () {
     }
 }
 
+impl<T0: Lower> Lower for (T0,) {
+    type WitType = T0::WitType;
+
+    fn lower(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+        T0::lower(&self.0, output, memory)
+    }
+}
+
 impl<T0: Lower, T1: Lower> Lower for (T0, T1) {
     type WitType = (T0::WitType, T1::WitType);
 

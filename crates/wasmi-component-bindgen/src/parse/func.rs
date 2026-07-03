@@ -33,7 +33,7 @@ impl Func {
         });
 
         let rust_name = if let Some(prefix) = prefix_name {
-            format!("{prefix}_{}", func.name.to_snake_case())
+            format!("{}_{}", prefix.to_snake_case(), func.name.to_snake_case())
         } else {
             func.name.to_snake_case()
         };

@@ -67,6 +67,18 @@ impl Lift for () {
     }
 }
 
+impl<T0: Lift> Lift for (T0,) {
+    type Borrowed<'a> = T0::Borrowed<'a>;
+
+    fn lift<'a>(val: Val, memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+        T0::lift(val, memory)
+    }
+
+    fn into_owned(val: Self::Borrowed<'_>) -> Self {
+        (T0::into_owned(val),)
+    }
+}
+
 impl<T0: Lift, T1: Lift> Lift for (T0, T1) {
     type Borrowed<'a> = (T0::Borrowed<'a>, T1::Borrowed<'a>);
 
