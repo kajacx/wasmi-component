@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use anyhow::{Context, Result};
 use wasmi::{AsContextMut, Val};
 
-use crate::{CanonicalWitType, Lift, Lower, MemoryAccessFilled, MemoryAccessPre};
+use crate::{Lift, Lower, LowerVal, MemoryAccessFilled, MemoryAccessPre};
 
 pub struct TypedFunc<Params, Results> {
     memory: MemoryAccessPre,
@@ -12,7 +12,7 @@ pub struct TypedFunc<Params, Results> {
     _signature: PhantomData<fn(Params) -> Results>,
 }
 
-impl<Params: CanonicalWitType, Results: CanonicalWitType> TypedFunc<Params, Results> {
+impl<Params: Lower, Results: Lift> TypedFunc<Params, Results> {
     pub fn new(
         memory: MemoryAccessPre,
         inner: wasmi::Func,
@@ -29,34 +29,34 @@ impl<Params: CanonicalWitType, Results: CanonicalWitType> TypedFunc<Params, Resu
     pub fn call(
         &self,
         ctx: impl AsContextMut,
-        params: impl Lower<WitType = Params>,
-    ) -> Result<Results::ReturnType> {
-        self.call_with_results(ctx, params, Results::ReturnType::into_owned)
+        params: impl LowerVal<Target = Params>,
+    ) -> Result<Results> {
+        self.call_with_results(ctx, params, Results::into_owned)
     }
 
-    pub fn call_with_results<T, P: Lower<WitType = Params>>(
+    pub fn call_with_results<T, P: LowerVal<Target = Params>>(
         &self,
         mut ctx: impl AsContextMut,
         params: P,
-        callback: impl FnOnce(<Results::ReturnType as Lift>::Borrowed<'_>) -> T,
+        callback: impl FnOnce(Results::Borrowed<'_>) -> T,
     ) -> Result<T> {
         let mut args: [Val; 16] = std::array::from_fn(|_| Val::I32(0));
-        let args_len = P::WitType::argument_count();
+        let args_len = Params::params_count();
 
         let mut memory_access = MemoryAccessFilled::new(&self.memory, ctx.as_context_mut());
         params.lower(&mut args[0..args_len], &mut memory_access)?;
         drop(memory_access);
 
-        let mut results = [Val::I32(0)]; // TODO: this will be bad if the function doesn't return anything
+        let mut results = [Val::I32(0)];
 
         self.inner.call(
             ctx.as_context_mut(),
             &args[0..args_len],
-            &mut results[0..Results::ReturnType::results_count()],
+            &mut results[0..Results::results_count()],
         )?;
 
         let bytes = self.memory.memory.data(ctx.as_context());
-        let lifted = Results::ReturnType::lift(results[0].clone(), bytes)?; // TODO: clone?
+        let lifted = Results::lift(&results, bytes)?;
 
         let return_val = callback(lifted);
 

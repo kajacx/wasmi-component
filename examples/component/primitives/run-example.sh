@@ -25,5 +25,6 @@ cd ..
 cargo run --manifest-path ../../../Cargo.toml -p wasmi-component-bindgen -- example.wit > host/src/bindings.rs
 
 cd host
+cargo fmt
 cargo run || true
 cd ..

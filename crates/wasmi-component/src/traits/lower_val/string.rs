@@ -1,36 +1,12 @@
 use std::borrow::Cow;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use wasmi::Val;
 
-use crate::{CanonicalWitType, FatPtr, Lift, Lower, MemoryAccess};
+use crate::{LowerVal, MemoryAccess};
 
-pub struct WitString {}
-
-impl CanonicalWitType for WitString {
-    type ReturnType = String;
-
-    fn argument_count() -> usize {
-        2
-    }
-}
-
-impl Lift for String {
-    type Borrowed<'a> = &'a str;
-
-    fn lift<'a>(val: Val, memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
-        let ptr = FatPtr::from_data(memory, val.i32().context("Lifting String")? as usize);
-        let str_bytes = &memory[ptr.start..(ptr.start + ptr.len)];
-        Ok(str::from_utf8(str_bytes)?)
-    }
-
-    fn into_owned(val: Self::Borrowed<'_>) -> Self {
-        val.to_string()
-    }
-}
-
-impl<T: AsStr> Lower for T {
-    type WitType = WitString;
+impl<T: AsStr> LowerVal for T {
+    type Target = String;
 
     fn lower(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
         let contents = self.as_str();

@@ -11,7 +11,7 @@ pub struct Func {
 
     pub param_full: String,
     pub param_types: String,
-    pub param_names: String,
+    pub param_args: String,
 
     pub result_type: String,
 }
@@ -70,7 +70,7 @@ impl Func {
 
         let param_full = params
             .iter()
-            .map(|param| format!("{}: {}, ", param.name, param.ty))
+            .map(|param| format!("{}: <{} as Lift>::Borrowed<'_>, ", param.name, param.ty))
             .collect();
 
         let param_types = params
@@ -78,9 +78,8 @@ impl Func {
             .map(|param| format!("{}, ", param.ty))
             .collect();
 
-        let param_names = params
-            .iter()
-            .map(|param| format!("{}, ", param.name))
+        let param_args = (0..params.len())
+            .map(|index| format!("params.{index}, "))
             .collect();
 
         let result_type = result.unwrap_or("()".to_string());
@@ -92,7 +91,7 @@ impl Func {
             imported_name,
             param_full,
             param_types,
-            param_names,
+            param_args,
             result_type,
         }
     }

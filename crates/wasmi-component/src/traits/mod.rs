@@ -1,7 +1,9 @@
-mod canonical_wit_type;
+mod as_host_storage;
 mod lift;
 mod lower;
+mod lower_val;
 
-pub use canonical_wit_type::*;
+pub use as_host_storage::*;
 pub use lift::*;
 pub use lower::*;
+pub use lower_val::*;

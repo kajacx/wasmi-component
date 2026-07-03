@@ -96,7 +96,7 @@ impl Parser {
             Type::U64 => "u64".to_string(),
             Type::F32 => "f32".to_string(),
             Type::F64 => "f64".to_string(),
-            Type::String => "WitString".to_string(),
+            Type::String => "String".to_string(),
             Type::ErrorContext => todo!(),
             Type::Id(_) => todo!(),
         }

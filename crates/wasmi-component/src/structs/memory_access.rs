@@ -1,7 +1,7 @@
 use anyhow::Result;
 use wasmi::{AsContextMut, Memory};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct MemoryAccessPre {
     pub memory: Memory,
     pub cabi_realloc: wasmi::TypedFunc<(i32, i32, i32, i32), i32>,
@@ -13,6 +13,10 @@ impl MemoryAccessPre {
             memory,
             cabi_realloc,
         }
+    }
+
+    pub fn fill<C: AsContextMut>(&self, ctx: C) -> MemoryAccessFilled<'_, C> {
+        MemoryAccessFilled::new(self, ctx)
     }
 }
 
@@ -49,7 +53,7 @@ impl<'a, C: AsContextMut> MemoryAccess for MemoryAccessFilled<'a, C> {
             .cabi_realloc
             .call(&mut self.ctx, (0, 0, 1, len as i32))? as usize;
 
-        let bytes = self.memory.data_mut(&mut self.ctx);
+        let bytes = self.memory.data_mut(self.ctx.as_context_mut());
 
         Ok((address, &mut bytes[address..(address + len)]))
     }
