@@ -22,9 +22,9 @@ impl Component {
                 } => {
                     let module_bytes = &bytes[unchecked_range];
 
-                    let module_name = format!("../modules/module{}.core.wasm", modules.len());
-                    let mut file = std::fs::File::create(module_name).unwrap();
-                    std::io::Write::write_all(&mut file, module_bytes).unwrap();
+                    // let module_name = format!("../modules/module{}.core.wasm", modules.len());
+                    // let mut file = std::fs::File::create(module_name).unwrap();
+                    // std::io::Write::write_all(&mut file, module_bytes).unwrap();
 
                     let module = wasmi::Module::new(engine, module_bytes)?;
                     modules.push(module);

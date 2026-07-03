@@ -51,13 +51,13 @@ impl Func {
 
                 let func_name = &func.name;
                 (
-                    "$root".to_string(),
+                    format!("{namespace}:{pkg_name}/{interface_name}{version}"),
                     func.name.to_string(),
                     format!("{namespace}:{pkg_name}/{interface_name}{version}#{func_name}"),
                 )
             }
             (Some(_), None) => (
-                "$root".to_string(),
+                key.clone().unwrap_name(),
                 func.name.to_string(),
                 format!("{}#{}", key.clone().unwrap_name(), func.name),
             ),

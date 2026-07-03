@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-wasmi = { version = "1.0" }
+# wasmi = { version = "1.0" }
+wasmi = { path = "../../../wasmi/crates/wasmi" }
 wasmparser = { version = "0.252.0" }
 anyhow = { version = "1.0" }

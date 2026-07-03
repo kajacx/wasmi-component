@@ -10,9 +10,10 @@ pub fn generate_wit(worlds: &[ParsedWorld], output: &mut String) {
         concat!(
             "use wasmi_component::anyhow::{{Context, Result}};\n",
             "#[allow(unused)]\n",
-            "use wasmi_component::wasmi::{{AsContext, AsContextMut, Caller, FuncType, Linker}};\n",
+            "use wasmi_component::wasmi::{{AsContext, AsContextMut, Caller, ",
+            "FuncType, Linker, ValType}};\n",
             "#[allow(unused)]\n",
-            "use wasmi_component::{{AsHostStorage, Component, HostResult, Lift, LowerVal, ",
+            "use wasmi_component::{{AsHostStorage, Component, HostResult, Lift, Lower, LowerVal, ",
             "MemoryAccessPre, TypedFunc, anyhow_result_to_wasmi}};\n",
         )
     )
@@ -87,10 +88,25 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
         writeln!(
             output,
             concat!(
-                "  linker.func_new(\"{}\", \"{}\", ",
-                "FuncType::new(<{}>::imported_params(), []), move |mut caller, params, results| {{",
+                "    let mut params_ty = <({})>::imported_params();\n",
+                "    let result_ty = <{}>::imported_result();\n",
+                "    let has_external_result = result_ty.len() < <{}>::params_count();\n",
+                "    if has_external_result {{\n",
+                "      params_ty.push(ValType::I32);\n",
+                "    }}\n",
             ),
-            func.imported_module, func.imported_name, func.result_type,
+            func.param_types, func.result_type, func.result_type
+        )
+        .unwrap();
+
+        writeln!(
+            output,
+            concat!(
+                "  linker.func_new(\"{}\", \"{}\", ",
+                "FuncType::new(params_ty, result_ty), ",
+                "move |mut caller, params, results| {{",
+            ),
+            func.imported_module, func.imported_name,
         )
         .unwrap();
 
@@ -102,6 +118,7 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
                 "    let (bytes, user_data) = memory_pre.memory.",
                 "data_and_store_mut(caller.as_context_mut());\n",
                 "\n",
+                "    #[allow(unused)]\n",
                 "    let params = anyhow_result_to_wasmi(<({})>::lift(params, bytes))?;\n",
                 "    let res = user_data.{}({})?;",
                 "\n",
@@ -109,7 +126,7 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
                 "    anyhow_result_to_wasmi(res.lower(results, &mut memory_filled))?;\n",
                 "\n",
                 "    Ok(())\n",
-                "  }});\n"
+                "  }})?;\n"
             ),
             func.param_types, func.rust_name, func.param_args
         )
