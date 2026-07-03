@@ -1,21 +1,29 @@
-package wasmi-component:examples@0.1.0;
+package wasmi-component:component-examples@0.1.0;
 
-interface funcs {
-    add-s32: func(a: s32, b: s32) -> s32;
+interface common-funcs {
+    roundtrip-s32: func(value-a: s32) -> s32;
+    
+    roundtrip-string: func(value-a: string) -> string;
 
-    greet: func(name: string, count: s32) -> string;
+    roundtrip-multiple: func(value-a: string, value-b: s32) -> string;
 
-    no-args: func();
+    no-arguments: func();
 }
 
-world example {
-    export funcs;
+world test-example {
+    export common-funcs;
 
-    export add-u32: func(a: u32, b: u32) -> u32;
+    import common-funcs;
 
-    export additional: interface {
-        add-f32: func(a: f32, b: f32) -> f32;
+    export add-export: func(value-a: u32, value-b: u32) -> u32;
+
+    import add-import: func(value-a: u32, value-b: u32) -> u32;
+
+    export inline-exports: interface {
+        inline-add: func(value-a: u32, value-b: u32) -> u32;
     }
 
-    import sub-u32: func(a: u32, b: u32) -> u32;
+    import inline-imports: interface {
+        inline-add: func(value-a: u32, value-b: u32) -> u32;
+    }
 }
