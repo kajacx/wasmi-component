@@ -11,7 +11,7 @@ impl<T: AsStr> LowerVal for T {
     fn lower(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
         let contents = self.as_str();
 
-        let (index, bytes) = memory.allocate(contents.len())?;
+        let (index, bytes) = memory.allocate(contents.len(), "String::LowerVal")?;
         bytes.copy_from_slice(contents.as_bytes());
 
         output[0] = Val::from(index as i32);

@@ -8,12 +8,8 @@ impl Lift for String {
 
     fn lift<'a>(vals: &[Val], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
         let ptr = FatPtr::from_data(memory, vals[0].i32().context("Lifting String")? as usize);
-
-        let str_bytes = memory
-            .get(ptr.as_range())
-            .context("Memory access out of bounds")?;
-
-        Ok(str::from_utf8(str_bytes)?)
+        let slice = ptr.try_index(memory, "String::lift")?;
+        Ok(str::from_utf8(slice)?)
     }
 
     fn into_owned(val: Self::Borrowed<'_>) -> Self {
