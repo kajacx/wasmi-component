@@ -230,8 +230,12 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
         .context("get memory")?;
     let cabi_realloc = instance
         .get_typed_func::<(i32, i32, i32, i32), i32>(ctx.as_context_mut(), "cabi_realloc")?;
-    let memory_pre = MemoryAccessPre::new(memory, cabi_realloc);
 
+    let memory_pre = MemoryAccessPre::new(memory, cabi_realloc);
+    ctx.as_context_mut()
+        .data_mut()
+        .as_host_storage_mut()
+        .insert_memory(memory_index, memory_pre);
     let module_func = instance
         .get_func(
             ctx.as_context_mut(),

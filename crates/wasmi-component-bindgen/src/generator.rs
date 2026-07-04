@@ -142,7 +142,10 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
             "(ctx.as_context(), \"memory\").context(\"get memory\")?;\n",
             "  let cabi_realloc = instance.get_typed_func::<(i32, i32, i32, i32), i32>",
             "(ctx.as_context_mut(), \"cabi_realloc\")?;\n",
+            "\n",
             "  let memory_pre = MemoryAccessPre::new(memory, cabi_realloc);\n",
+            "  ctx.as_context_mut().data_mut().as_host_storage_mut()",
+            ".insert_memory(memory_index, memory_pre);"
         )
     )
     .unwrap();
