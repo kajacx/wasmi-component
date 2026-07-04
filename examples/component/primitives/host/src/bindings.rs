@@ -3,50 +3,39 @@ use wasmi_component::anyhow::{Context, Result};
 use wasmi_component::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
 use wasmi_component::{
-    AsHostStorage, Component, FlatArgs, HostResult, Lift, Lower, LowerVal, MemoryAccessPre,
+    AsHostStorage, Component, FatPtr, FlatArgs, HostResult, Lift, Lower, LowerVal, MemoryAccessPre,
     TypedFunc, anyhow_result_to_wasmi,
 };
 
 pub trait TestExampleImports {
-    fn common_funcs_roundtrip_s32(
-        &mut self,
-        value_a: <i32 as Lift>::Borrowed<'_>,
-    ) -> HostResult<impl LowerVal<Target = i32> + 'static>;
+    fn roundtrip_s32(&mut self, value_a: i32) -> HostResult<i32>;
 
-    fn common_funcs_roundtrip_string(
+    fn roundtrip_string(
         &mut self,
-        value_a: <String as Lift>::Borrowed<'_>,
+        value_a: &str,
     ) -> HostResult<impl LowerVal<Target = String> + 'static>;
 
-    fn common_funcs_roundtrip_multiple(
+    fn roundtrip_multiple(
         &mut self,
-        value_a: <String as Lift>::Borrowed<'_>,
-        value_b: <i32 as Lift>::Borrowed<'_>,
+        value_a: &str,
+        value_b: i32,
     ) -> HostResult<impl LowerVal<Target = String> + 'static>;
 
-    fn common_funcs_no_arguments(&mut self) -> HostResult<impl LowerVal<Target = ()> + 'static>;
+    fn no_arguments(&mut self) -> HostResult<()>;
 
-    fn add_import(
-        &mut self,
-        value_a: <u32 as Lift>::Borrowed<'_>,
-        value_b: <u32 as Lift>::Borrowed<'_>,
-    ) -> HostResult<impl LowerVal<Target = u32> + 'static>;
+    fn add_import(&mut self, value_a: u32, value_b: u32) -> HostResult<u32>;
 
-    fn inline_imports_inline_add(
-        &mut self,
-        value_a: <u32 as Lift>::Borrowed<'_>,
-        value_b: <u32 as Lift>::Borrowed<'_>,
-    ) -> HostResult<impl LowerVal<Target = u32> + 'static>;
+    fn inline_add(&mut self, value_a: u32, value_b: u32) -> HostResult<u32>;
 }
 
 #[allow(unused)]
 pub struct TestExampleExports {
-    pub common_funcs_roundtrip_s32: TypedFunc<(i32,), i32>,
-    pub common_funcs_roundtrip_string: TypedFunc<(String,), String>,
-    pub common_funcs_roundtrip_multiple: TypedFunc<(String, i32), String>,
-    pub common_funcs_no_arguments: TypedFunc<(), ()>,
+    pub roundtrip_s32: TypedFunc<(i32,), i32>,
+    pub roundtrip_string: TypedFunc<(String,), String>,
+    pub roundtrip_multiple: TypedFunc<(String, i32), String>,
+    pub no_arguments: TypedFunc<(), ()>,
     pub add_export: TypedFunc<(u32, u32), u32>,
-    pub inline_exports_inline_add: TypedFunc<(u32, u32), u32>,
+    pub inline_add: TypedFunc<(u32, u32), u32>,
 }
 
 pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
@@ -79,11 +68,24 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<(i32,)>::lift_args(params, bytes))?;
-            let res = user_data.common_funcs_roundtrip_s32(params.0)?;
+            let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.roundtrip_s32(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <i32>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
 
             Ok(())
         },
@@ -107,11 +109,24 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<(String,)>::lift_args(params, bytes))?;
-            let res = user_data.common_funcs_roundtrip_string(params.0)?;
+            let args = anyhow_result_to_wasmi(<(String,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.roundtrip_string(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <String>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
 
             Ok(())
         },
@@ -135,11 +150,24 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<(String, i32)>::lift_args(params, bytes))?;
-            let res = user_data.common_funcs_roundtrip_multiple(params.0, params.1)?;
+            let args = anyhow_result_to_wasmi(<(String, i32)>::lift_args(params_slice, bytes))?;
+            let res = user_data.roundtrip_multiple(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <String>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
 
             Ok(())
         },
@@ -163,11 +191,24 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<()>::lift_args(params, bytes))?;
-            let res = user_data.common_funcs_no_arguments()?;
+            let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
+            let res = user_data.no_arguments()?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <()>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
 
             Ok(())
         },
@@ -191,11 +232,24 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<(u32, u32)>::lift_args(params, bytes))?;
-            let res = user_data.add_import(params.0, params.1)?;
+            let args = anyhow_result_to_wasmi(<(u32, u32)>::lift_args(params_slice, bytes))?;
+            let res = user_data.add_import(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <u32>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
 
             Ok(())
         },
@@ -219,11 +273,24 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<(u32, u32)>::lift_args(params, bytes))?;
-            let res = user_data.inline_imports_inline_add(params.0, params.1)?;
+            let args = anyhow_result_to_wasmi(<(u32, u32)>::lift_args(params_slice, bytes))?;
+            let res = user_data.inline_add(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <u32>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
 
             Ok(())
         },
@@ -254,7 +321,7 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
             "cabi_post_wasmi-component:component-examples/common-funcs@0.1.0#roundtrip-s32",
         )
         .ok();
-    let common_funcs_roundtrip_s32 = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+    let roundtrip_s32 = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
 
     let module_func = instance
         .get_func(
@@ -268,8 +335,7 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
             "cabi_post_wasmi-component:component-examples/common-funcs@0.1.0#roundtrip-string",
         )
         .ok();
-    let common_funcs_roundtrip_string =
-        TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+    let roundtrip_string = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
 
     let module_func = instance
         .get_func(
@@ -283,8 +349,7 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
             "cabi_post_wasmi-component:component-examples/common-funcs@0.1.0#roundtrip-multiple",
         )
         .ok();
-    let common_funcs_roundtrip_multiple =
-        TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+    let roundtrip_multiple = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
 
     let module_func = instance
         .get_func(
@@ -298,7 +363,7 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
             "cabi_post_wasmi-component:component-examples/common-funcs@0.1.0#no-arguments",
         )
         .ok();
-    let common_funcs_no_arguments = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+    let no_arguments = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
 
     let module_func = instance
         .get_func(ctx.as_context_mut(), "add-export")
@@ -314,14 +379,14 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
     let cleanup_func = instance
         .get_typed_func::<i32, ()>(ctx.as_context_mut(), "cabi_post_inline-exports#inline-add")
         .ok();
-    let inline_exports_inline_add = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+    let inline_add = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
 
     Ok(TestExampleExports {
-        common_funcs_roundtrip_s32,
-        common_funcs_roundtrip_string,
-        common_funcs_roundtrip_multiple,
-        common_funcs_no_arguments,
+        roundtrip_s32,
+        roundtrip_string,
+        roundtrip_multiple,
+        no_arguments,
         add_export,
-        inline_exports_inline_add,
+        inline_add,
     })
 }

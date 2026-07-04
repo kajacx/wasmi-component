@@ -64,6 +64,24 @@ impl Parser {
         key: &WorldKey,
         interface: Option<&Interface>,
     ) -> Func {
+        let interface_name = interface.and_then(|iface| iface.name.as_ref());
+        let module_name = match (interface, interface_name) {
+            (Some(_), Some(interface_name)) => {
+                let namespace = &self.pkg.name.namespace;
+                let pkg_name = &self.pkg.name.name;
+                let version = self
+                    .pkg
+                    .name
+                    .version
+                    .as_ref()
+                    .map_or("".to_string(), |v| format!("@{v}"));
+
+                Some(format!("{namespace}:{pkg_name}/{interface_name}{version}"))
+            }
+            (Some(_), None) => Some(key.clone().unwrap_name()),
+            (None, _) => None,
+        };
+
         let params: Vec<_> = func
             .params
             .iter()
@@ -72,7 +90,7 @@ impl Parser {
 
         let result = func.result.map(|ty| self.get_type_name(&ty));
 
-        Func::new(&self.pkg, func, key, interface, params, result)
+        Func::new(module_name, func.name.clone(), params, result)
     }
 
     fn parse_function_param(&self, param: &wit_parser::Param) -> Param {

@@ -1,5 +1,6 @@
 use crate::MemoryAccessPre;
 
+#[derive(Clone, Debug, Default)]
 pub struct HostStorage {
     memory_table: Vec<MemoryAccessPre>,
 }

@@ -13,7 +13,7 @@ pub fn generate_wit(worlds: &[ParsedWorld], output: &mut String) {
             "use wasmi_component::wasmi::{{AsContext, AsContextMut, Caller, ",
             "FuncType, Linker, ValType}};\n",
             "#[allow(unused)]\n",
-            "use wasmi_component::{{AsHostStorage, Component, FlatArgs, HostResult, ",
+            "use wasmi_component::{{AsHostStorage, Component, FatPtr, FlatArgs, HostResult, ",
             "Lift, Lower, LowerVal, MemoryAccessPre, TypedFunc, anyhow_result_to_wasmi}};\n",
         )
     )
@@ -32,8 +32,10 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
     world.imports.iter().for_each(|func| {
         writeln!(
             output,
-            "  fn {}(&mut self, {}) -> HostResult<impl LowerVal<Target = {}> + 'static>;\n",
-            func.rust_name, func.param_full, func.result_type
+            "  fn {}(&mut self, {}) -> HostResult<{}>;\n",
+            func.rust_name(),
+            func.host_params_full(),
+            func.host_return_type()
         )
         .unwrap();
     });
@@ -46,7 +48,9 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
         writeln!(
             output,
             "  pub {}: TypedFunc<({}), {}>,",
-            func.rust_name, func.param_types, func.result_type
+            func.rust_name(),
+            func.param_types(),
+            func.result
         )
         .unwrap();
     });
@@ -96,7 +100,8 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
                 "      result_ty.clear();\n",
                 "    }}\n",
             ),
-            func.param_types, func.result_type
+            func.param_types(),
+            func.result
         )
         .unwrap();
 
@@ -107,7 +112,8 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
                 "FuncType::new(params_ty, result_ty), ",
                 "move |mut caller, params, results| {{",
             ),
-            func.imported_module, func.imported_name,
+            func.module_name.as_deref().unwrap_or("$root"),
+            func.func_name,
         )
         .unwrap();
 
@@ -119,17 +125,33 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
                 "    let (bytes, user_data) = memory_pre.memory.",
                 "data_and_store_mut(caller.as_context_mut());\n",
                 "\n",
+                "    let params_slice = if has_external_result {{\n",
+                "        &params[0..(params.len() - 1)]\n",
+                "    }} else {{\n",
+                "        params\n",
+                "    }};\n",
+                "\n",
                 "    #[allow(unused)]\n",
-                "    let params = anyhow_result_to_wasmi(<({})>::lift_args(params, bytes))?;\n",
+                "    let args = anyhow_result_to_wasmi(<({})>::lift_args(params_slice, bytes))?;\n",
                 "    let res = user_data.{}({})?;",
                 "\n",
                 "    let mut memory_filled = memory_pre.fill(caller);\n",
-                "    anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;\n",
+                "\n",
+                "    if has_external_result {{\n",
+                "      let address = params[params.len() - 1].i32().unwrap() as usize;\n",
+                "      let range = address..(address + <{}>::byte_size());\n",
+                "      anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;\n",
+                "    }} else {{\n",
+                "      anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;\n",
+                "    }}\n",
                 "\n",
                 "    Ok(())\n",
                 "  }})?;\n"
             ),
-            func.param_types, func.rust_name, func.param_args
+            func.param_types(),
+            func.rust_name(),
+            func.param_args(),
+            func.result
         )
         .unwrap();
     });
@@ -155,7 +177,7 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
         writeln!(
             output,
             "  let module_func = instance.get_func(ctx.as_context_mut(), \"{}\").unwrap();",
-            func.exported_name
+            func.exported_name()
         )
         .unwrap();
         writeln!(
@@ -164,13 +186,13 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
                 "  let cleanup_func = instance.get_typed_func::<i32, ()>",
                 "(ctx.as_context_mut(), \"cabi_post_{}\").ok();"
             ),
-            func.exported_name
+            func.exported_name()
         )
         .unwrap();
         writeln!(
             output,
             "  let {} = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);",
-            func.rust_name
+            func.rust_name()
         )
         .unwrap();
         writeln!(output).unwrap();
@@ -178,7 +200,7 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
 
     writeln!(output, "  Ok({exports_name} {{").unwrap();
     world.exports.iter().for_each(|func| {
-        writeln!(output, "      {},", func.rust_name).unwrap();
+        writeln!(output, "      {},", func.rust_name()).unwrap();
     });
     writeln!(output, "  }})").unwrap();
 

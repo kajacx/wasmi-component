@@ -9,10 +9,9 @@ impl Lift for String {
     fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
         debug_assert_eq!(vals.len(), Self::arg_count());
 
-        dbg!(vals);
-
         let ptr = FatPtr::from_args(vals)?;
         let slice = ptr.try_index(memory, "String::lift")?;
+
         Ok(str::from_utf8(slice)?)
     }
 
@@ -21,6 +20,7 @@ impl Lift for String {
 
         let ptr = FatPtr::from_bytes(bytes)?;
         let slice = ptr.try_index(memory, "String::lift")?;
+
         Ok(str::from_utf8(slice)?)
     }
 

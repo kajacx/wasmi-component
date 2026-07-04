@@ -74,7 +74,7 @@ impl<'a, C: AsContextMut> MemoryAccess for MemoryAccessFilled<'a, C> {
 }
 
 #[derive(Debug)]
-pub(crate) struct FatPtr {
+pub struct FatPtr {
     pub start: usize,
     pub len: usize,
 }

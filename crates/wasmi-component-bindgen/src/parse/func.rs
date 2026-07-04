@@ -1,98 +1,79 @@
 use heck::ToSnakeCase;
-use wit_parser::{Function, Interface, UnresolvedPackage, WorldKey};
 
 use crate::parse::Param;
 
 pub struct Func {
-    pub rust_name: String,
-    pub exported_name: String,
-    pub imported_module: String,
-    pub imported_name: String,
+    pub module_name: Option<String>,
+    pub func_name: String,
 
-    pub param_full: String,
-    pub param_types: String,
-    pub param_args: String,
-
-    pub result_type: String,
+    pub params: Vec<Param>,
+    pub result: String,
 }
 
 impl Func {
     pub fn new(
-        pkg: &UnresolvedPackage,
-        func: &Function,
-        key: &WorldKey,
-        interface: Option<&Interface>,
+        module_name: Option<String>,
+        func_name: String,
         params: Vec<Param>,
         result: Option<String>,
     ) -> Self {
-        let prefix_name = interface.map(|iface| {
-            iface
-                .name
-                .clone()
-                .unwrap_or_else(|| key.clone().unwrap_name())
-        });
+        Self {
+            module_name,
+            func_name,
+            params,
+            result: result.unwrap_or_else(|| "()".to_string()),
+        }
+    }
 
-        let rust_name = if let Some(prefix) = prefix_name {
-            format!("{}_{}", prefix.to_snake_case(), func.name.to_snake_case())
+    pub fn rust_name(&self) -> String {
+        self.func_name.to_snake_case()
+    }
+
+    pub fn exported_name(&self) -> String {
+        if let Some(module) = self.module_name.as_ref() {
+            format!("{module}#{}", self.func_name)
         } else {
-            func.name.to_snake_case()
-        };
+            self.func_name.clone()
+        }
+    }
 
-        let interface_name = interface.and_then(|iface| iface.name.as_ref());
-        let (imported_module, imported_name, exported_name) = match (interface, interface_name) {
-            (Some(_), Some(interface_name)) => {
-                let namespace = &pkg.name.namespace;
-                let pkg_name = &pkg.name.name;
-                let version = pkg
-                    .name
-                    .version
-                    .as_ref()
-                    .map_or("".to_string(), |v| format!("@{v}"));
-
-                let func_name = &func.name;
-                (
-                    format!("{namespace}:{pkg_name}/{interface_name}{version}"),
-                    func.name.to_string(),
-                    format!("{namespace}:{pkg_name}/{interface_name}{version}#{func_name}"),
-                )
-            }
-            (Some(_), None) => (
-                key.clone().unwrap_name(),
-                func.name.to_string(),
-                format!("{}#{}", key.clone().unwrap_name(), func.name),
-            ),
-            (None, _) => (
-                "$root".to_string(),
-                func.name.to_string(),
-                func.name.to_string(),
-            ),
-        };
-
-        let param_full = params
+    pub fn host_params_full(&self) -> String {
+        self.params
             .iter()
-            .map(|param| format!("{}: <{} as Lift>::Borrowed<'_>, ", param.name, param.ty))
-            .collect();
+            .map(|param| format!("{}: {}, ", param.name, param_type(&param.ty)))
+            .collect()
+    }
 
-        let param_types = params
+    pub fn param_types(&self) -> String {
+        self.params
             .iter()
             .map(|param| format!("{}, ", param.ty))
-            .collect();
+            .collect()
+    }
 
-        let param_args = (0..params.len())
-            .map(|index| format!("params.{index}, "))
-            .collect();
+    pub fn param_args(&self) -> String {
+        (0..self.params.len())
+            .map(|index| format!("args.{index}, "))
+            .collect()
+    }
 
-        let result_type = result.unwrap_or("()".to_string());
-
-        Self {
-            rust_name,
-            exported_name,
-            imported_module,
-            imported_name,
-            param_full,
-            param_types,
-            param_args,
-            result_type,
+    pub fn host_return_type(&self) -> String {
+        if PRIMITIVES.contains(&self.result.as_str()) {
+            self.result.clone()
+        } else {
+            format!("impl LowerVal<Target = {}> + 'static", self.result)
         }
+    }
+}
+
+static PRIMITIVES: &[&str] = &["()", "i32", "u32", "f32"];
+
+fn param_type(ty: &str) -> String {
+    if PRIMITIVES.contains(&ty) {
+        ty.to_string()
+    } else if ty == "String" {
+        "&str".to_string()
+    } else {
+        format!("<{ty} as Lift>::Borrowed<'_>")
     }
 }
