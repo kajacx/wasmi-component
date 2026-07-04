@@ -1,14 +1,16 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, ops::Range};
 
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{LowerVal, MemoryAccess};
+use crate::{FlatArgs, LowerVal, MemoryAccess};
 
 impl<T: AsStr> LowerVal for T {
     type Target = String;
 
-    fn lower(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower_args(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+        debug_assert_eq!(output.len(), Self::Target::arg_count());
+
         let contents = self.as_str();
 
         let (index, bytes) = memory.allocate(contents.len(), "String::LowerVal")?;
@@ -16,6 +18,21 @@ impl<T: AsStr> LowerVal for T {
 
         output[0] = Val::from(index as i32);
         output[1] = Val::from(contents.len() as i32);
+
+        Ok(())
+    }
+
+    fn lower_bytes(&self, range: Range<usize>, memory: &mut impl MemoryAccess) -> Result<()> {
+        debug_assert_eq!(range.len(), Self::Target::byte_size());
+
+        let contents = self.as_str();
+
+        let (index, bytes) = memory.allocate(contents.len(), "String::LowerVal")?;
+        bytes.copy_from_slice(contents.as_bytes());
+
+        let slice = memory.slice(range)?;
+        slice[0..4].copy_from_slice(&(index as u32).to_le_bytes());
+        slice[4..8].copy_from_slice(&(contents.len() as u32).to_le_bytes());
 
         Ok(())
     }

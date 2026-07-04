@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use anyhow::{Context, Result};
-use wasmi::{AsContextMut, Memory};
+use wasmi::{AsContextMut, Memory, Val};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MemoryAccessPre {
@@ -41,11 +41,17 @@ impl<'a, C> MemoryAccessFilled<'a, C> {
 
 pub trait MemoryAccess {
     fn allocate(&mut self, len: usize, hint: &str) -> Result<(usize, &mut [u8])>;
+
+    fn slice(&mut self, range: Range<usize>) -> Result<&mut [u8]>;
 }
 
 impl<T: MemoryAccess> MemoryAccess for &mut T {
     fn allocate(&mut self, len: usize, hint: &str) -> Result<(usize, &mut [u8])> {
         T::allocate(*self, len, hint)
+    }
+
+    fn slice(&mut self, range: Range<usize>) -> Result<&mut [u8]> {
+        T::slice(*self, range)
     }
 }
 
@@ -60,6 +66,11 @@ impl<'a, C: AsContextMut> MemoryAccess for MemoryAccessFilled<'a, C> {
 
         Ok((address, slice))
     }
+
+    fn slice(&mut self, range: Range<usize>) -> Result<&mut [u8]> {
+        let bytes = self.memory.data_mut(self.ctx.as_context_mut());
+        Ok(bytes.get_mut(range).context("MemoryAccess::slice")?)
+    }
 }
 
 #[derive(Debug)]
@@ -73,10 +84,22 @@ impl FatPtr {
         Self { start, len }
     }
 
-    pub fn from_data(data: &[u8], addr: usize) -> Self {
-        let start = u32::from_le_bytes(data[addr..(addr + 4)].try_into().unwrap()) as usize;
-        let len = u32::from_le_bytes(data[(addr + 4)..(addr + 8)].try_into().unwrap()) as usize;
-        Self { start, len }
+    pub fn from_args(args: &[Val]) -> Result<Self> {
+        debug_assert_eq!(args.len(), 2);
+
+        let start = args[0].i32().context("FatPtr::from_args start")? as usize;
+        let len = args[1].i32().context("FatPtr::from_args len")? as usize;
+
+        Ok(Self { start, len })
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        debug_assert_eq!(bytes.len(), 8);
+
+        let start = u32::from_le_bytes(bytes[0..4].try_into()?) as usize;
+        let len = u32::from_le_bytes(bytes[4..8].try_into()?) as usize;
+
+        Ok(Self { start, len })
     }
 
     pub fn as_range(&self) -> Range<usize> {
