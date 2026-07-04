@@ -1,4 +1,6 @@
-use anyhow::Result;
+use std::ops::Range;
+
+use anyhow::{Context, Result};
 use wasmi::{AsContextMut, Memory};
 
 #[derive(Debug, Clone, Copy)]
@@ -55,7 +57,12 @@ impl<'a, C: AsContextMut> MemoryAccess for MemoryAccessFilled<'a, C> {
 
         let bytes = self.memory.data_mut(self.ctx.as_context_mut());
 
-        Ok((address, &mut bytes[address..(address + len)]))
+        Ok((
+            address,
+            bytes
+                .get_mut(address..(address + len))
+                .context("Returned address range is out of memory range")?,
+        ))
     }
 }
 
@@ -69,5 +76,9 @@ impl FatPtr {
         let start = u32::from_le_bytes(data[addr..(addr + 4)].try_into().unwrap()) as usize;
         let len = u32::from_le_bytes(data[(addr + 4)..(addr + 8)].try_into().unwrap()) as usize;
         Self { start, len }
+    }
+
+    pub fn as_range(&self) -> Range<usize> {
+        self.start..(self.start + self.len)
     }
 }
