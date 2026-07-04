@@ -3,8 +3,8 @@ use wasmi_component::anyhow::{Context, Result};
 use wasmi_component::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
 use wasmi_component::{
-    AsHostStorage, Component, HostResult, Lift, Lower, LowerVal, MemoryAccessPre, TypedFunc,
-    anyhow_result_to_wasmi,
+    AsHostStorage, Component, FlatArgs, HostResult, Lift, Lower, LowerVal, MemoryAccessPre,
+    TypedFunc, anyhow_result_to_wasmi,
 };
 
 pub trait TestExampleImports {
@@ -61,11 +61,12 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
         .as_host_storage_mut()
         .next_memory_index();
 
-    let mut params_ty = <(i32,)>::imported_params();
-    let result_ty = <i32>::imported_result();
-    let has_external_result = result_ty.len() < <i32>::params_count();
+    let mut params_ty = <(i32,)>::arg_types();
+    let mut result_ty = <i32>::arg_types();
+    let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
+        result_ty.clear();
     }
 
     linker.func_new(
@@ -79,20 +80,21 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .data_and_store_mut(caller.as_context_mut());
 
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<(i32,)>::lift(params, bytes))?;
+            let params = anyhow_result_to_wasmi(<(i32,)>::lift_args(params, bytes))?;
             let res = user_data.common_funcs_roundtrip_s32(params.0)?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower(results, &mut memory_filled))?;
+            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
 
             Ok(())
         },
     )?;
 
-    let mut params_ty = <(String,)>::imported_params();
-    let result_ty = <String>::imported_result();
-    let has_external_result = result_ty.len() < <String>::params_count();
+    let mut params_ty = <(String,)>::arg_types();
+    let mut result_ty = <String>::arg_types();
+    let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
+        result_ty.clear();
     }
 
     linker.func_new(
@@ -106,20 +108,21 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .data_and_store_mut(caller.as_context_mut());
 
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<(String,)>::lift(params, bytes))?;
+            let params = anyhow_result_to_wasmi(<(String,)>::lift_args(params, bytes))?;
             let res = user_data.common_funcs_roundtrip_string(params.0)?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower(results, &mut memory_filled))?;
+            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
 
             Ok(())
         },
     )?;
 
-    let mut params_ty = <(String, i32)>::imported_params();
-    let result_ty = <String>::imported_result();
-    let has_external_result = result_ty.len() < <String>::params_count();
+    let mut params_ty = <(String, i32)>::arg_types();
+    let mut result_ty = <String>::arg_types();
+    let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
+        result_ty.clear();
     }
 
     linker.func_new(
@@ -133,20 +136,21 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .data_and_store_mut(caller.as_context_mut());
 
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<(String, i32)>::lift(params, bytes))?;
+            let params = anyhow_result_to_wasmi(<(String, i32)>::lift_args(params, bytes))?;
             let res = user_data.common_funcs_roundtrip_multiple(params.0, params.1)?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower(results, &mut memory_filled))?;
+            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
 
             Ok(())
         },
     )?;
 
-    let mut params_ty = <()>::imported_params();
-    let result_ty = <()>::imported_result();
-    let has_external_result = result_ty.len() < <()>::params_count();
+    let mut params_ty = <()>::arg_types();
+    let mut result_ty = <()>::arg_types();
+    let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
+        result_ty.clear();
     }
 
     linker.func_new(
@@ -160,20 +164,21 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .data_and_store_mut(caller.as_context_mut());
 
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<()>::lift(params, bytes))?;
+            let params = anyhow_result_to_wasmi(<()>::lift_args(params, bytes))?;
             let res = user_data.common_funcs_no_arguments()?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower(results, &mut memory_filled))?;
+            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
 
             Ok(())
         },
     )?;
 
-    let mut params_ty = <(u32, u32)>::imported_params();
-    let result_ty = <u32>::imported_result();
-    let has_external_result = result_ty.len() < <u32>::params_count();
+    let mut params_ty = <(u32, u32)>::arg_types();
+    let mut result_ty = <u32>::arg_types();
+    let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
+        result_ty.clear();
     }
 
     linker.func_new(
@@ -187,20 +192,21 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .data_and_store_mut(caller.as_context_mut());
 
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<(u32, u32)>::lift(params, bytes))?;
+            let params = anyhow_result_to_wasmi(<(u32, u32)>::lift_args(params, bytes))?;
             let res = user_data.add_import(params.0, params.1)?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower(results, &mut memory_filled))?;
+            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
 
             Ok(())
         },
     )?;
 
-    let mut params_ty = <(u32, u32)>::imported_params();
-    let result_ty = <u32>::imported_result();
-    let has_external_result = result_ty.len() < <u32>::params_count();
+    let mut params_ty = <(u32, u32)>::arg_types();
+    let mut result_ty = <u32>::arg_types();
+    let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
+        result_ty.clear();
     }
 
     linker.func_new(
@@ -214,10 +220,10 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
                 .data_and_store_mut(caller.as_context_mut());
 
             #[allow(unused)]
-            let params = anyhow_result_to_wasmi(<(u32, u32)>::lift(params, bytes))?;
+            let params = anyhow_result_to_wasmi(<(u32, u32)>::lift_args(params, bytes))?;
             let res = user_data.inline_imports_inline_add(params.0, params.1)?;
             let mut memory_filled = memory_pre.fill(caller);
-            anyhow_result_to_wasmi(res.lower(results, &mut memory_filled))?;
+            anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
 
             Ok(())
         },

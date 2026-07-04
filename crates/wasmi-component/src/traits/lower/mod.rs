@@ -1,5 +1,3 @@
-use wasmi::ValType;
-
 use crate::FlatArgs;
 
 mod primitive;

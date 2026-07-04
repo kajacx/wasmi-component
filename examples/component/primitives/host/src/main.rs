@@ -64,6 +64,8 @@ pub fn main() {
     let component = Component::new(&engine, WASM).unwrap();
     let exports = bindings::instantiate_test_example_world(&mut store, &component).unwrap();
 
+    println!("Starting host execution");
+
     let result = exports.add_export.call(&mut store, (8u32, 12u32)).unwrap();
     println!("Result is: {result}");
 

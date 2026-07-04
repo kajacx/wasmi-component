@@ -67,7 +67,7 @@ impl<Params: Lower, Results: Lift> TypedFunc<Params, Results> {
             let slice = ptr.try_index(bytes, "Typed fn export")?;
             Results::lift_bytes(slice, bytes)?
         } else {
-            Results::lift_args(&results[0..args_len], bytes)?
+            Results::lift_args(results_slice, bytes)?
         };
 
         let return_val = callback(lifted);

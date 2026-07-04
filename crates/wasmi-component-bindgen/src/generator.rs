@@ -13,8 +13,8 @@ pub fn generate_wit(worlds: &[ParsedWorld], output: &mut String) {
             "use wasmi_component::wasmi::{{AsContext, AsContextMut, Caller, ",
             "FuncType, Linker, ValType}};\n",
             "#[allow(unused)]\n",
-            "use wasmi_component::{{AsHostStorage, Component, HostResult, Lift, Lower, LowerVal, ",
-            "MemoryAccessPre, TypedFunc, anyhow_result_to_wasmi}};\n",
+            "use wasmi_component::{{AsHostStorage, Component, FlatArgs, HostResult, ",
+            "Lift, Lower, LowerVal, MemoryAccessPre, TypedFunc, anyhow_result_to_wasmi}};\n",
         )
     )
     .unwrap();
@@ -88,14 +88,15 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
         writeln!(
             output,
             concat!(
-                "    let mut params_ty = <({})>::imported_params();\n",
-                "    let result_ty = <{}>::imported_result();\n",
-                "    let has_external_result = result_ty.len() < <{}>::params_count();\n",
+                "    let mut params_ty = <({})>::arg_types();\n",
+                "    let mut result_ty = <{}>::arg_types();\n",
+                "    let has_external_result = result_ty.len() > 1;\n",
                 "    if has_external_result {{\n",
                 "      params_ty.push(ValType::I32);\n",
+                "      result_ty.clear();\n",
                 "    }}\n",
             ),
-            func.param_types, func.result_type, func.result_type
+            func.param_types, func.result_type
         )
         .unwrap();
 
@@ -119,11 +120,11 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
                 "data_and_store_mut(caller.as_context_mut());\n",
                 "\n",
                 "    #[allow(unused)]\n",
-                "    let params = anyhow_result_to_wasmi(<({})>::lift(params, bytes))?;\n",
+                "    let params = anyhow_result_to_wasmi(<({})>::lift_args(params, bytes))?;\n",
                 "    let res = user_data.{}({})?;",
                 "\n",
                 "    let mut memory_filled = memory_pre.fill(caller);\n",
-                "    anyhow_result_to_wasmi(res.lower(results, &mut memory_filled))?;\n",
+                "    anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;\n",
                 "\n",
                 "    Ok(())\n",
                 "  }})?;\n"
