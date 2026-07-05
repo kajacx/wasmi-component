@@ -1,7 +1,7 @@
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{FlatArgs, LowerVal, MemoryAccess, round_up};
+use crate::{CompValue, LowerVal, MemoryAccess, round_up};
 
 impl LowerVal for () {
     type Target = Self;

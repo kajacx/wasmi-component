@@ -3,14 +3,14 @@ use std::ops::Range;
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{Lower, MemoryAccess};
+use crate::{CompValue, MemoryAccess};
 
 mod primitive;
 mod string;
 mod tuple;
 
 pub trait LowerVal {
-    type Target: Lower;
+    type Target: CompValue;
 
     fn lower_args(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()>;
 

@@ -3,7 +3,7 @@ use std::{borrow::Cow, ops::Range};
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{FlatArgs, LowerVal, MemoryAccess};
+use crate::{CompValue, LowerVal, MemoryAccess};
 
 impl<T: AsStr> LowerVal for T {
     type Target = String;

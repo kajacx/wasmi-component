@@ -13,8 +13,8 @@ pub fn generate_wit(worlds: &[ParsedWorld], output: &mut String) {
             "use wasmi_component::wasmi::{{AsContext, AsContextMut, Caller, ",
             "FuncType, Linker, ValType}};\n",
             "#[allow(unused)]\n",
-            "use wasmi_component::{{AsHostStorage, Component, FatPtr, FlatArgs, HostResult, ",
-            "Lift, Lower, LowerVal, MemoryAccessPre, TypedFunc, anyhow_result_to_wasmi}};\n",
+            "use wasmi_component::{{AsHostStorage, Component, CompValue, HostResult, ",
+            "LowerVal, MemoryAccessPre, TypedFunc, anyhow_result_to_wasmi}};\n",
         )
     )
     .unwrap();

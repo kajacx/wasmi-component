@@ -3,7 +3,7 @@ use std::ops::Range;
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{FlatArgs, LowerVal, MemoryAccess};
+use crate::{CompValue, LowerVal, MemoryAccess};
 
 impl LowerVal for i32 {
     type Target = Self;

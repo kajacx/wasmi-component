@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use anyhow::{Context, Result};
 use wasmi::{AsContextMut, Val};
 
-use crate::{FatPtr, Lift, Lower, LowerVal, MemoryAccessFilled, MemoryAccessPre};
+use crate::{CompValue, FatPtr, LowerVal, MemoryAccessFilled, MemoryAccessPre};
 
 pub struct TypedFunc<Params, Results> {
     memory: MemoryAccessPre,
@@ -12,7 +12,7 @@ pub struct TypedFunc<Params, Results> {
     _signature: PhantomData<fn(Params) -> Results>,
 }
 
-impl<Params: Lower, Results: Lift> TypedFunc<Params, Results> {
+impl<Params: CompValue, Results: CompValue> TypedFunc<Params, Results> {
     pub fn new(
         memory: MemoryAccessPre,
         inner: wasmi::Func,

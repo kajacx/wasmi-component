@@ -3,8 +3,8 @@ use wasmi_component::anyhow::{Context, Result};
 use wasmi_component::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
 use wasmi_component::{
-    AsHostStorage, Component, FatPtr, FlatArgs, HostResult, Lift, Lower, LowerVal, MemoryAccessPre,
-    TypedFunc, anyhow_result_to_wasmi,
+    AsHostStorage, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, TypedFunc,
+    anyhow_result_to_wasmi,
 };
 
 pub trait TestExampleImports {
