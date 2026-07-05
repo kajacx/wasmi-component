@@ -5,14 +5,13 @@ use wasmi::Val;
 
 use crate::{CompValue, MemoryAccess};
 
+mod list;
 mod primitive;
 mod string;
 mod tuple;
 
-pub trait LowerVal {
-    type Target: CompValue;
-
-    fn lower_args(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()>;
+pub trait LowerVal<T: CompValue> {
+    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()>;
 
     fn lower_bytes(&self, range: Range<usize>, memory: &mut impl MemoryAccess) -> Result<()>;
 }

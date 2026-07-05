@@ -36,7 +36,7 @@ impl bindings::TestExampleImports for HostData {
         &mut self,
         value_a: &str,
         value_b: i32,
-    ) -> HostResult<impl LowerVal<Target = String> + 'static> {
+    ) -> HostResult<impl LowerVal<String> + 'static> {
         Ok(format!("Hello {value_a} and {value_b}!"))
     }
 
@@ -44,12 +44,8 @@ impl bindings::TestExampleImports for HostData {
         Ok(value_a)
     }
 
-    fn roundtrip_string(
-        &mut self,
-        value_a: &str,
-    ) -> HostResult<impl LowerVal<Target = String> + 'static> {
-        println!("incoming string: {value_a}");
-        Ok("outgoing string")
+    fn roundtrip_string(&mut self, value_a: &str) -> HostResult<impl LowerVal<String> + 'static> {
+        Ok(value_a.to_string())
     }
 
     fn inline_add(&mut self, value_a: u32, value_b: u32) -> HostResult<u32> {
@@ -84,10 +80,7 @@ pub fn main() {
     let result = exports.roundtrip_s32.call(&mut store, (69,)).unwrap();
     println!("Result is: {result}");
 
-    let result = exports
-        .roundtrip_string
-        .call(&mut store, ("Hello",))
-        .unwrap();
+    let result = exports.roundtrip_string.call(&mut store, ("",)).unwrap();
     println!("Result is: {result}");
 
     let result = exports

@@ -17,8 +17,8 @@ impl CompValue for String {
     fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
         debug_assert_eq!(vals.len(), Self::arg_count());
 
-        let ptr = FatPtr::from_args(vals)?;
-        let slice = ptr.try_index(memory, "String::lift_args")?;
+        let ptr = FatPtr::from_args(vals, 1)?;
+        let slice = ptr.try_index(memory)?;
 
         Ok(str::from_utf8(slice)?)
     }
@@ -34,8 +34,8 @@ impl CompValue for String {
     fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
         debug_assert_eq!(bytes.len(), Self::byte_size());
 
-        let ptr = FatPtr::from_bytes(bytes)?;
-        let slice = ptr.try_index(memory, "String::lift_bytes")?;
+        let ptr = FatPtr::from_bytes(bytes, 1)?;
+        let slice = ptr.try_index(memory)?;
 
         Ok(str::from_utf8(slice)?)
     }

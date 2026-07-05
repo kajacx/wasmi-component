@@ -3,11 +3,9 @@ use wasmi::Val;
 
 use crate::{CompValue, LowerVal, MemoryAccess, round_up};
 
-impl LowerVal for () {
-    type Target = Self;
-
-    fn lower_args(&self, output: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {
-        debug_assert_eq!(output.len(), Self::Target::arg_count());
+impl LowerVal<Self> for () {
+    fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
         Ok(())
     }
@@ -17,19 +15,17 @@ impl LowerVal for () {
         range: std::ops::Range<usize>,
         _memory: &mut impl MemoryAccess,
     ) -> Result<()> {
-        debug_assert_eq!(range.len(), Self::Target::byte_size());
+        debug_assert_eq!(range.len(), Self::byte_size());
 
         Ok(())
     }
 }
 
-impl<T: LowerVal> LowerVal for (T,) {
-    type Target = (T::Target,);
+impl<U: CompValue, T: LowerVal<U>> LowerVal<(U,)> for (T,) {
+    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+        debug_assert_eq!(args.len(), U::arg_count());
 
-    fn lower_args(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
-        debug_assert_eq!(output.len(), Self::Target::arg_count());
-
-        T::lower_args(&self.0, output, memory)
+        T::lower_args(&self.0, args, memory)
     }
 
     fn lower_bytes(
@@ -37,35 +33,27 @@ impl<T: LowerVal> LowerVal for (T,) {
         range: std::ops::Range<usize>,
         memory: &mut impl MemoryAccess,
     ) -> Result<()> {
-        debug_assert_eq!(range.len(), Self::Target::byte_size());
+        debug_assert_eq!(range.len(), U::byte_size());
 
         T::lower_bytes(&self.0, range, memory)
     }
 }
 
-impl<T0: LowerVal, T1: LowerVal> LowerVal for (T0, T1) {
-    type Target = (T0::Target, T1::Target);
-
-    fn lower_args(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
-        debug_assert_eq!(output.len(), Self::Target::arg_count());
+impl<U0: CompValue, T0: LowerVal<U0>, U1: CompValue, T1: LowerVal<U1>> LowerVal<(U0, U1)>
+    for (T0, T1)
+{
+    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+        debug_assert_eq!(args.len(), <(U0, U1)>::arg_count());
 
         let mut index = 0;
 
-        T0::lower_args(
-            &self.0,
-            &mut output[index..(index + T0::Target::arg_count())],
-            memory,
-        )?;
-        index += T0::Target::arg_count();
+        T0::lower_args(&self.0, &mut args[index..(index + U0::arg_count())], memory)?;
+        index += U0::arg_count();
 
-        T1::lower_args(
-            &self.1,
-            &mut output[index..(index + T1::Target::arg_count())],
-            memory,
-        )?;
-        index += T1::Target::arg_count();
+        T1::lower_args(&self.1, &mut args[index..(index + U1::arg_count())], memory)?;
+        index += U1::arg_count();
 
-        debug_assert_eq!(index, Self::Target::arg_count());
+        debug_assert_eq!(index, <(U0, U1)>::arg_count());
 
         Ok(())
     }
@@ -75,16 +63,16 @@ impl<T0: LowerVal, T1: LowerVal> LowerVal for (T0, T1) {
         range: std::ops::Range<usize>,
         memory: &mut impl MemoryAccess,
     ) -> Result<()> {
-        debug_assert_eq!(range.len(), Self::Target::byte_size());
+        debug_assert_eq!(range.len(), <(U0, U1)>::byte_size());
 
-        let align = Self::Target::byte_align();
+        let align = <(U0, U1)>::byte_align();
         let mut index = range.start;
 
-        T0::lower_bytes(&self.0, index..(index + T0::Target::byte_size()), memory)?;
-        index += round_up(T0::Target::byte_size(), align);
+        T0::lower_bytes(&self.0, index..(index + U0::byte_size()), memory)?;
+        index += round_up(U0::byte_size(), align);
 
-        T1::lower_bytes(&self.1, index..(index + T1::Target::byte_size()), memory)?;
-        index += round_up(T1::Target::byte_size(), align);
+        T1::lower_bytes(&self.1, index..(index + U1::byte_size()), memory)?;
+        index += round_up(U1::byte_size(), align);
 
         debug_assert_eq!(index, range.end);
 

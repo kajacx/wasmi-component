@@ -15,7 +15,6 @@ impl Component {
         let mut modules = Vec::with_capacity(4);
 
         for payload in parser.parse_all(bytes) {
-            // println!("reading: {:?}", payload);
             match payload.expect("TODO:") {
                 Payload::ModuleSection {
                     unchecked_range, ..

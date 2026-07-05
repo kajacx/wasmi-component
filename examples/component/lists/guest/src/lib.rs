@@ -6,10 +6,11 @@ mod bindings {
     use super::GuestComponent;
     export!(GuestComponent);
 }
+
 struct GuestComponent;
 
-impl bindings::Guest for GuestComponent {
-    fn round_trip_u32(values: Vec<u32>) -> Vec<u32> {
-        values
+impl bindings::exports::wasmi_component::component_examples::round_trip::Guest for GuestComponent {
+    fn list_i32(value: Vec<i32>) -> Vec<i32> {
+        value
     }
 }

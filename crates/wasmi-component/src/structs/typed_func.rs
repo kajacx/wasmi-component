@@ -26,15 +26,11 @@ impl<Params: CompValue, Results: CompValue> TypedFunc<Params, Results> {
         }
     }
 
-    pub fn call(
-        &self,
-        ctx: impl AsContextMut,
-        params: impl LowerVal<Target = Params>,
-    ) -> Result<Results> {
+    pub fn call(&self, ctx: impl AsContextMut, params: impl LowerVal<Params>) -> Result<Results> {
         self.call_with_results(ctx, params, Results::into_owned)
     }
 
-    pub fn call_with_results<T, P: LowerVal<Target = Params>>(
+    pub fn call_with_results<T, P: LowerVal<Params>>(
         &self,
         mut ctx: impl AsContextMut,
         params: P,
@@ -62,9 +58,9 @@ impl<Params: CompValue, Results: CompValue> TypedFunc<Params, Results> {
         let bytes = self.memory.memory.data(ctx.as_context());
         let lifted = if results_indirect {
             let address = results[0].i32().context("i32 address return")? as usize;
-            let ptr = FatPtr::new(address, Results::byte_size());
+            let ptr = FatPtr::new(address, Results::byte_size(), 1);
 
-            let slice = ptr.try_index(bytes, "Typed fn export")?;
+            let slice = ptr.try_index(bytes)?;
             Results::lift_bytes(slice, bytes)?
         } else {
             Results::lift_args(results_slice, bytes)?

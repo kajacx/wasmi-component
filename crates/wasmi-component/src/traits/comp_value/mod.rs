@@ -1,11 +1,14 @@
+use std::fmt::Debug;
+
 use anyhow::Result;
 use wasmi::{Val, ValType};
 
+mod list;
 mod primitive;
 mod string;
 mod tuple;
 
-pub trait CompValue {
+pub trait CompValue: Debug {
     type Borrowed<'a>;
 
     fn arg_count() -> usize;

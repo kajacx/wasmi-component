@@ -37,17 +37,24 @@ impl<'a, C> MemoryAccessFilled<'a, C> {
             ctx,
         }
     }
+
+    pub fn mem_len(&self) -> usize
+    where
+        C: AsContextMut,
+    {
+        self.memory.data_size(self.ctx.as_context())
+    }
 }
 
 pub trait MemoryAccess {
-    fn allocate(&mut self, len: usize, hint: &str) -> Result<(usize, &mut [u8])>;
+    fn allocate(&mut self, len: usize, align: usize) -> Result<usize>;
 
     fn slice(&mut self, range: Range<usize>) -> Result<&mut [u8]>;
 }
 
 impl<T: MemoryAccess> MemoryAccess for &mut T {
-    fn allocate(&mut self, len: usize, hint: &str) -> Result<(usize, &mut [u8])> {
-        T::allocate(*self, len, hint)
+    fn allocate(&mut self, len: usize, align: usize) -> Result<usize> {
+        T::allocate(*self, len, align)
     }
 
     fn slice(&mut self, range: Range<usize>) -> Result<&mut [u8]> {
@@ -56,15 +63,12 @@ impl<T: MemoryAccess> MemoryAccess for &mut T {
 }
 
 impl<'a, C: AsContextMut> MemoryAccess for MemoryAccessFilled<'a, C> {
-    fn allocate(&mut self, len: usize, hint: &str) -> Result<(usize, &mut [u8])> {
+    fn allocate(&mut self, len: usize, align: usize) -> Result<usize> {
         let address = self
             .cabi_realloc
-            .call(&mut self.ctx, (0, 0, 1, len as i32))? as usize;
+            .call(&mut self.ctx, (0, 0, align as i32, len as i32))? as usize;
 
-        let bytes = self.memory.data_mut(self.ctx.as_context_mut());
-        let slice = FatPtr::new(address, len).try_index_mut(bytes, hint)?;
-
-        Ok((address, slice))
+        Ok(address)
     }
 
     fn slice(&mut self, range: Range<usize>) -> Result<&mut [u8]> {
@@ -73,58 +77,67 @@ impl<'a, C: AsContextMut> MemoryAccess for MemoryAccessFilled<'a, C> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct FatPtr {
+    /// Address where the memory starts
     pub start: usize,
-    pub len: usize,
+
+    /// The number of items
+    pub count: usize,
+
+    /// Size in bytes of one item
+    pub size: usize,
 }
 
 impl FatPtr {
-    pub fn new(start: usize, len: usize) -> Self {
-        Self { start, len }
+    pub fn new(start: usize, count: usize, size: usize) -> Self {
+        Self { start, count, size }
     }
 
-    pub fn from_args(args: &[Val]) -> Result<Self> {
+    pub fn from_args(args: &[Val], size: usize) -> Result<Self> {
         debug_assert_eq!(args.len(), 2);
 
         let start = args[0].i32().context("FatPtr::from_args start")? as usize;
-        let len = args[1].i32().context("FatPtr::from_args len")? as usize;
+        let count = args[1].i32().context("FatPtr::from_args count")? as usize;
 
-        Ok(Self { start, len })
+        Ok(Self { start, count, size })
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+    pub fn from_bytes(bytes: &[u8], size: usize) -> Result<Self> {
         debug_assert_eq!(bytes.len(), 8);
 
         let start = u32::from_le_bytes(bytes[0..4].try_into()?) as usize;
-        let len = u32::from_le_bytes(bytes[4..8].try_into()?) as usize;
+        let count = u32::from_le_bytes(bytes[4..8].try_into()?) as usize;
 
-        Ok(Self { start, len })
+        Ok(Self { start, count, size })
     }
 
     pub fn as_range(&self) -> Range<usize> {
-        self.start..(self.start + self.len)
+        self.start..(self.start + (self.count * self.size))
     }
 
-    pub fn try_index<'a>(&self, bytes: &'a [u8], hint: &str) -> Result<&'a [u8]> {
+    pub fn try_index<'a>(&self, bytes: &'a [u8]) -> Result<&'a [u8]> {
         bytes.get(self.as_range()).with_context(|| {
             format!(
-                "Tried to index memory or size {} at {} with length {}, hint: {}",
+                "Tried to index memory or size {} at {} with length {}",
                 bytes.len(),
                 self.start,
-                self.len,
-                hint
+                self.count * self.size
             )
         })
     }
 
-    pub fn try_index_mut<'a>(&self, bytes: &'a mut [u8], hint: &str) -> Result<&'a mut [u8]> {
-        let bytes_len = bytes.len();
-        bytes.get_mut(self.as_range()).with_context(|| {
-            format!(
-                "Tried to index memory or size {} at {} with length {}, hint: {}",
-                bytes_len, self.start, self.len, hint
-            )
-        })
+    pub fn write_to_args(&self, args: &mut [Val]) {
+        debug_assert_eq!(args.len(), 2);
+
+        args[0] = Val::I32(self.start as _);
+        args[1] = Val::I32(self.count as _);
+    }
+
+    pub fn write_to_bytes(&self, bytes: &mut [u8]) {
+        debug_assert_eq!(bytes.len(), 8);
+
+        bytes[0..4].copy_from_slice(&(self.start as u32).to_le_bytes());
+        bytes[4..8].copy_from_slice(&(self.count as u32).to_le_bytes());
     }
 }

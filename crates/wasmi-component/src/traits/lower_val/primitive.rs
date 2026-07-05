@@ -5,13 +5,11 @@ use wasmi::Val;
 
 use crate::{CompValue, LowerVal, MemoryAccess};
 
-impl LowerVal for i32 {
-    type Target = Self;
+impl LowerVal<Self> for i32 {
+    fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
-    fn lower_args(&self, output: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {
-        debug_assert_eq!(output.len(), Self::arg_count());
-
-        output[0] = Val::from(*self);
+        args[0] = Val::from(*self);
 
         Ok(())
     }
@@ -25,13 +23,11 @@ impl LowerVal for i32 {
     }
 }
 
-impl LowerVal for u32 {
-    type Target = Self;
+impl LowerVal<Self> for u32 {
+    fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
-    fn lower_args(&self, output: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {
-        debug_assert_eq!(output.len(), Self::arg_count());
-
-        output[0] = Val::from(*self as i32);
+        args[0] = Val::from(*self as i32);
 
         Ok(())
     }
@@ -45,13 +41,11 @@ impl LowerVal for u32 {
     }
 }
 
-impl LowerVal for f32 {
-    type Target = Self;
+impl LowerVal<Self> for f32 {
+    fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
-    fn lower_args(&self, output: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {
-        debug_assert_eq!(output.len(), Self::arg_count());
-
-        output[0] = Val::from(*self);
+        args[0] = Val::from(*self);
 
         Ok(())
     }

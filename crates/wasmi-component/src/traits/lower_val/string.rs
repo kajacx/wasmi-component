@@ -3,39 +3,35 @@ use std::{borrow::Cow, ops::Range};
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{CompValue, LowerVal, MemoryAccess};
+use crate::{CompValue, FatPtr, LowerVal, MemoryAccess};
 
-impl<T: AsStr> LowerVal for T {
-    type Target = String;
-
-    fn lower_args(&self, output: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
-        debug_assert_eq!(output.len(), Self::Target::arg_count());
+impl<T: AsStr> LowerVal<String> for T {
+    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+        debug_assert_eq!(args.len(), String::arg_count());
 
         let contents = self.as_str();
-
-        let (index, bytes) = memory.allocate(contents.len(), "String::LowerVal")?;
-        bytes.copy_from_slice(contents.as_bytes());
-
-        output[0] = Val::from(index as i32);
-        output[1] = Val::from(contents.len() as i32);
+        let ptr = write_contents(contents, memory)?;
+        ptr.write_to_args(args);
 
         Ok(())
     }
 
     fn lower_bytes(&self, range: Range<usize>, memory: &mut impl MemoryAccess) -> Result<()> {
-        debug_assert_eq!(range.len(), Self::Target::byte_size());
+        debug_assert_eq!(range.len(), String::byte_size());
 
         let contents = self.as_str();
-
-        let (index, bytes) = memory.allocate(contents.len(), "String::LowerVal")?;
-        bytes.copy_from_slice(contents.as_bytes());
-
-        let slice = memory.slice(range)?;
-        slice[0..4].copy_from_slice(&(index as u32).to_le_bytes());
-        slice[4..8].copy_from_slice(&(contents.len() as u32).to_le_bytes());
+        let ptr = write_contents(contents, memory)?;
+        ptr.write_to_bytes(memory.slice(range)?);
 
         Ok(())
     }
+}
+
+fn write_contents(contents: &str, memory: &mut impl MemoryAccess) -> Result<FatPtr> {
+    let index = memory.allocate(contents.len(), 1)?;
+    let slice = memory.slice(index..(index + contents.len()))?;
+    slice.copy_from_slice(contents.as_bytes());
+    Ok(FatPtr::new(index, contents.len(), 1))
 }
 
 // Unfortunately cannot use AsRef<str> directly
@@ -45,13 +41,13 @@ pub trait AsStr {
 
 impl<T: AsStr + ?Sized> AsStr for &T {
     fn as_str(&self) -> &str {
-        T::as_str(self)
+        T::as_str(*self)
     }
 }
 
 impl<T: AsStr + ?Sized> AsStr for &mut T {
     fn as_str(&self) -> &str {
-        T::as_str(self)
+        T::as_str(*self)
     }
 }
 

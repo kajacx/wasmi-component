@@ -61,7 +61,7 @@ impl Func {
         if PRIMITIVES.contains(&self.result.as_str()) {
             self.result.clone()
         } else {
-            format!("impl LowerVal<Target = {}> + 'static", self.result)
+            format!("impl LowerVal<{}> + 'static", self.result)
         }
     }
 }
@@ -74,6 +74,6 @@ fn param_type(ty: &str) -> String {
     } else if ty == "String" {
         "&str".to_string()
     } else {
-        format!("<{ty} as Lift>::Borrowed<'_>")
+        format!("<{ty} as CompValue>::Borrowed<'_>")
     }
 }

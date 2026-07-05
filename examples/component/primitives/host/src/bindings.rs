@@ -10,16 +10,13 @@ use wasmi_component::{
 pub trait TestExampleImports {
     fn roundtrip_s32(&mut self, value_a: i32) -> HostResult<i32>;
 
-    fn roundtrip_string(
-        &mut self,
-        value_a: &str,
-    ) -> HostResult<impl LowerVal<Target = String> + 'static>;
+    fn roundtrip_string(&mut self, value_a: &str) -> HostResult<impl LowerVal<String> + 'static>;
 
     fn roundtrip_multiple(
         &mut self,
         value_a: &str,
         value_b: i32,
-    ) -> HostResult<impl LowerVal<Target = String> + 'static>;
+    ) -> HostResult<impl LowerVal<String> + 'static>;
 
     fn no_arguments(&mut self) -> HostResult<()>;
 

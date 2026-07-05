@@ -1,6 +1,7 @@
 use heck::ToSnakeCase;
-use wit_parser::{Function, Interface, Type, UnresolvedPackage, WorldKey};
-use wit_parser::{World, WorldItem};
+use wit_parser::{
+    Function, Interface, Type, TypeDefKind, UnresolvedPackage, World, WorldItem, WorldKey,
+};
 
 use crate::parse::{Func, Param, ParsedWorld};
 
@@ -116,7 +117,13 @@ impl Parser {
             Type::F64 => "f64".to_string(),
             Type::String => "String".to_string(),
             Type::ErrorContext => todo!(),
-            Type::Id(_) => todo!(),
+            Type::Id(id) => {
+                let ty = self.pkg.types.get(*id).unwrap();
+                match ty.kind {
+                    TypeDefKind::List(list_ty) => format!("Vec<{}>", self.get_type_name(&list_ty)),
+                    _ => todo!(),
+                }
+            }
         }
     }
 }
