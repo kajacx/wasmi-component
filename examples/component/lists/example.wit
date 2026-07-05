@@ -1,0 +1,7 @@
+package wasmi-component:component-examples@0.1.0;
+
+world test-example {
+    export round-trip-u32: func(values: list<u32>) -> list<u32>;
+
+    import round-trip-u32: func(values: list<u32>) -> list<u32>;
+}
