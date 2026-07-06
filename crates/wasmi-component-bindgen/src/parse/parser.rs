@@ -1,8 +1,6 @@
-use std::fmt::format;
-
-use heck::ToSnakeCase;
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use wit_parser::{
-    Function, Handle, Interface, Resolve, Type, TypeDefKind, World, WorldItem, WorldKey,
+    Function, Handle, Interface, Resolve, Type, TypeDefKind, TypeId, World, WorldItem, WorldKey,
 };
 
 use crate::parse::{Func, Param, ParsedWorld};
@@ -59,12 +57,6 @@ impl Parser {
             WorldItem::Interface { id, .. } => {
                 let interface = &self.resolve.interfaces[*id];
                 eprintln!("processing interface {:?}", interface.name.as_ref());
-
-                interface.types.iter().for_each(|(name, id)| {
-                    eprintln!("Found resource? {}", name);
-                });
-
-                // interface.
 
                 interface
                     .functions
@@ -149,8 +141,12 @@ impl Parser {
                 match &ty.kind {
                     TypeDefKind::List(list_ty) => format!("Vec<{}>", self.get_type_name(&list_ty)),
                     TypeDefKind::Resource => format!("TODO_Resource"),
-                    TypeDefKind::Handle(Handle::Own(id)) => format!("TODO_Own"),
-                    TypeDefKind::Handle(Handle::Borrow(id)) => format!("TODO_Borrow"),
+                    TypeDefKind::Handle(Handle::Own(id)) => {
+                        format!("Own<{}>", self.resource_name(*id))
+                    }
+                    TypeDefKind::Handle(Handle::Borrow(id)) => {
+                        format!("Borrow<{}>", self.resource_name(*id))
+                    }
                     TypeDefKind::Result(res) => {
                         let ok = res
                             .ok
@@ -181,6 +177,11 @@ impl Parser {
                 }
             }
         }
+    }
+
+    fn resource_name(&self, id: TypeId) -> String {
+        let name = self.resolve.types[id].name.as_ref().unwrap();
+        format!("{}Resource", name.to_upper_camel_case())
     }
 }
 

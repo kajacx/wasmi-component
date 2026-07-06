@@ -1,9 +1,11 @@
 use crate::anyhow::{Context, Result};
 #[allow(unused)]
+use crate::wasi_p2::resources::*;
+#[allow(unused)]
 use crate::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
 use crate::{
-    AsHostStorage, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, TypedFunc,
+    AsHostStorage, Borrow, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, TypedFunc,
     anyhow_result_to_wasmi,
 };
 
@@ -11,56 +13,62 @@ use crate::{
 pub trait RootImports {
     fn method_pollable_block(
         &mut self,
-        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+        self_: <Borrow<PollableResource> as CompValue>::Borrowed<'_>,
     ) -> HostResult<()>;
 
     fn method_input_stream_blocking_read(
         &mut self,
-        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+        self_: <Borrow<InputStreamResource> as CompValue>::Borrowed<'_>,
         len: <u64 as CompValue>::Borrowed<'_>,
     ) -> HostResult<impl LowerVal<Result<Vec<u8>, TODO_Variant>> + 'static>;
 
     fn method_input_stream_subscribe(
         &mut self,
-        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
-    ) -> HostResult<impl LowerVal<TODO_Own> + 'static>;
+        self_: <Borrow<InputStreamResource> as CompValue>::Borrowed<'_>,
+    ) -> HostResult<impl LowerVal<Own<PollableResource>> + 'static>;
 
     fn method_output_stream_check_write(
         &mut self,
-        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
     ) -> HostResult<impl LowerVal<Result<u64, TODO_Variant>> + 'static>;
 
     fn method_output_stream_write(
         &mut self,
-        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
         contents: <Vec<u8> as CompValue>::Borrowed<'_>,
     ) -> HostResult<impl LowerVal<Result<(), TODO_Variant>> + 'static>;
 
     fn method_output_stream_blocking_flush(
         &mut self,
-        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
     ) -> HostResult<impl LowerVal<Result<(), TODO_Variant>> + 'static>;
 
     fn method_output_stream_subscribe(
         &mut self,
-        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
-    ) -> HostResult<impl LowerVal<TODO_Own> + 'static>;
+        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
+    ) -> HostResult<impl LowerVal<Own<PollableResource>> + 'static>;
 
     fn get_environment(&mut self) -> HostResult<impl LowerVal<Vec<(String, String)>> + 'static>;
 
     fn exit(&mut self, status: <Result<(), ()> as CompValue>::Borrowed<'_>) -> HostResult<()>;
 
-    fn get_stdin(&mut self) -> HostResult<impl LowerVal<TODO_Own> + 'static>;
+    fn get_stdin(&mut self) -> HostResult<impl LowerVal<Own<InputStreamResource>> + 'static>;
 
-    fn get_stdout(&mut self) -> HostResult<impl LowerVal<TODO_Own> + 'static>;
+    fn get_stdout(&mut self) -> HostResult<impl LowerVal<Own<OutputStreamResource>> + 'static>;
 
-    fn get_stderr(&mut self) -> HostResult<impl LowerVal<TODO_Own> + 'static>;
+    fn get_stderr(&mut self) -> HostResult<impl LowerVal<Own<OutputStreamResource>> + 'static>;
 
-    fn get_terminal_stdin(&mut self) -> HostResult<impl LowerVal<Option<TODO_Own>> + 'static>;
+    fn get_terminal_stdin(
+        &mut self,
+    ) -> HostResult<impl LowerVal<Option<Own<TerminalInputResource>>> + 'static>;
 
-    fn get_terminal_stdout(&mut self) -> HostResult<impl LowerVal<Option<TODO_Own>> + 'static>;
+    fn get_terminal_stdout(
+        &mut self,
+    ) -> HostResult<impl LowerVal<Option<Own<TerminalOutputResource>>> + 'static>;
 
-    fn get_terminal_stderr(&mut self) -> HostResult<impl LowerVal<Option<TODO_Own>> + 'static>;
+    fn get_terminal_stderr(
+        &mut self,
+    ) -> HostResult<impl LowerVal<Option<Own<TerminalOutputResource>>> + 'static>;
 }
 
 #[allow(unused)]
@@ -78,7 +86,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         .as_host_storage_mut()
         .next_memory_index();
 
-    let mut params_ty = <(TODO_Borrow,)>::arg_types();
+    let mut params_ty = <(Borrow<PollableResource>,)>::arg_types();
     let mut result_ty = <()>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
@@ -103,7 +111,10 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
             };
 
             #[allow(unused)]
-            let args = anyhow_result_to_wasmi(<(TODO_Borrow,)>::lift_args(params_slice, bytes))?;
+            let args = anyhow_result_to_wasmi(<(Borrow<PollableResource>,)>::lift_args(
+                params_slice,
+                bytes,
+            ))?;
             let res = user_data.method_pollable_block(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
@@ -119,7 +130,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         },
     )?;
 
-    let mut params_ty = <(TODO_Borrow, u64)>::arg_types();
+    let mut params_ty = <(Borrow<InputStreamResource>, u64)>::arg_types();
     let mut result_ty = <Result<Vec<u8>, TODO_Variant>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
@@ -144,8 +155,10 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
             };
 
             #[allow(unused)]
-            let args =
-                anyhow_result_to_wasmi(<(TODO_Borrow, u64)>::lift_args(params_slice, bytes))?;
+            let args = anyhow_result_to_wasmi(<(Borrow<InputStreamResource>, u64)>::lift_args(
+                params_slice,
+                bytes,
+            ))?;
             let res = user_data.method_input_stream_blocking_read(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
 
@@ -161,8 +174,8 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         },
     )?;
 
-    let mut params_ty = <(TODO_Borrow,)>::arg_types();
-    let mut result_ty = <TODO_Own>::arg_types();
+    let mut params_ty = <(Borrow<InputStreamResource>,)>::arg_types();
+    let mut result_ty = <Own<PollableResource>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
@@ -186,13 +199,16 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
             };
 
             #[allow(unused)]
-            let args = anyhow_result_to_wasmi(<(TODO_Borrow,)>::lift_args(params_slice, bytes))?;
+            let args = anyhow_result_to_wasmi(<(Borrow<InputStreamResource>,)>::lift_args(
+                params_slice,
+                bytes,
+            ))?;
             let res = user_data.method_input_stream_subscribe(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
                 let address = params[params.len() - 1].i32().unwrap() as usize;
-                let range = address..(address + <TODO_Own>::byte_size());
+                let range = address..(address + <Own<PollableResource>>::byte_size());
                 anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
             } else {
                 anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
@@ -202,7 +218,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         },
     )?;
 
-    let mut params_ty = <(TODO_Borrow,)>::arg_types();
+    let mut params_ty = <(Borrow<OutputStreamResource>,)>::arg_types();
     let mut result_ty = <Result<u64, TODO_Variant>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
@@ -227,7 +243,10 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
             };
 
             #[allow(unused)]
-            let args = anyhow_result_to_wasmi(<(TODO_Borrow,)>::lift_args(params_slice, bytes))?;
+            let args = anyhow_result_to_wasmi(<(Borrow<OutputStreamResource>,)>::lift_args(
+                params_slice,
+                bytes,
+            ))?;
             let res = user_data.method_output_stream_check_write(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
@@ -243,7 +262,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         },
     )?;
 
-    let mut params_ty = <(TODO_Borrow, Vec<u8>)>::arg_types();
+    let mut params_ty = <(Borrow<OutputStreamResource>, Vec<u8>)>::arg_types();
     let mut result_ty = <Result<(), TODO_Variant>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
@@ -268,8 +287,9 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
             };
 
             #[allow(unused)]
-            let args =
-                anyhow_result_to_wasmi(<(TODO_Borrow, Vec<u8>)>::lift_args(params_slice, bytes))?;
+            let args = anyhow_result_to_wasmi(
+                <(Borrow<OutputStreamResource>, Vec<u8>)>::lift_args(params_slice, bytes),
+            )?;
             let res = user_data.method_output_stream_write(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
 
@@ -285,7 +305,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         },
     )?;
 
-    let mut params_ty = <(TODO_Borrow,)>::arg_types();
+    let mut params_ty = <(Borrow<OutputStreamResource>,)>::arg_types();
     let mut result_ty = <Result<(), TODO_Variant>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
@@ -310,7 +330,10 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
             };
 
             #[allow(unused)]
-            let args = anyhow_result_to_wasmi(<(TODO_Borrow,)>::lift_args(params_slice, bytes))?;
+            let args = anyhow_result_to_wasmi(<(Borrow<OutputStreamResource>,)>::lift_args(
+                params_slice,
+                bytes,
+            ))?;
             let res = user_data.method_output_stream_blocking_flush(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
@@ -326,8 +349,8 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         },
     )?;
 
-    let mut params_ty = <(TODO_Borrow,)>::arg_types();
-    let mut result_ty = <TODO_Own>::arg_types();
+    let mut params_ty = <(Borrow<OutputStreamResource>,)>::arg_types();
+    let mut result_ty = <Own<PollableResource>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
@@ -351,13 +374,16 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
             };
 
             #[allow(unused)]
-            let args = anyhow_result_to_wasmi(<(TODO_Borrow,)>::lift_args(params_slice, bytes))?;
+            let args = anyhow_result_to_wasmi(<(Borrow<OutputStreamResource>,)>::lift_args(
+                params_slice,
+                bytes,
+            ))?;
             let res = user_data.method_output_stream_subscribe(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
                 let address = params[params.len() - 1].i32().unwrap() as usize;
-                let range = address..(address + <TODO_Own>::byte_size());
+                let range = address..(address + <Own<PollableResource>>::byte_size());
                 anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
             } else {
                 anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
@@ -450,7 +476,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
     )?;
 
     let mut params_ty = <()>::arg_types();
-    let mut result_ty = <TODO_Own>::arg_types();
+    let mut result_ty = <Own<InputStreamResource>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
@@ -480,7 +506,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             if has_external_result {
                 let address = params[params.len() - 1].i32().unwrap() as usize;
-                let range = address..(address + <TODO_Own>::byte_size());
+                let range = address..(address + <Own<InputStreamResource>>::byte_size());
                 anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
             } else {
                 anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
@@ -491,7 +517,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
     )?;
 
     let mut params_ty = <()>::arg_types();
-    let mut result_ty = <TODO_Own>::arg_types();
+    let mut result_ty = <Own<OutputStreamResource>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
@@ -521,7 +547,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             if has_external_result {
                 let address = params[params.len() - 1].i32().unwrap() as usize;
-                let range = address..(address + <TODO_Own>::byte_size());
+                let range = address..(address + <Own<OutputStreamResource>>::byte_size());
                 anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
             } else {
                 anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
@@ -532,7 +558,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
     )?;
 
     let mut params_ty = <()>::arg_types();
-    let mut result_ty = <TODO_Own>::arg_types();
+    let mut result_ty = <Own<OutputStreamResource>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
@@ -562,7 +588,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             if has_external_result {
                 let address = params[params.len() - 1].i32().unwrap() as usize;
-                let range = address..(address + <TODO_Own>::byte_size());
+                let range = address..(address + <Own<OutputStreamResource>>::byte_size());
                 anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
             } else {
                 anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
@@ -573,7 +599,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
     )?;
 
     let mut params_ty = <()>::arg_types();
-    let mut result_ty = <Option<TODO_Own>>::arg_types();
+    let mut result_ty = <Option<Own<TerminalInputResource>>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
@@ -603,7 +629,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             if has_external_result {
                 let address = params[params.len() - 1].i32().unwrap() as usize;
-                let range = address..(address + <Option<TODO_Own>>::byte_size());
+                let range = address..(address + <Option<Own<TerminalInputResource>>>::byte_size());
                 anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
             } else {
                 anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
@@ -614,7 +640,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
     )?;
 
     let mut params_ty = <()>::arg_types();
-    let mut result_ty = <Option<TODO_Own>>::arg_types();
+    let mut result_ty = <Option<Own<TerminalOutputResource>>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
@@ -644,7 +670,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             if has_external_result {
                 let address = params[params.len() - 1].i32().unwrap() as usize;
-                let range = address..(address + <Option<TODO_Own>>::byte_size());
+                let range = address..(address + <Option<Own<TerminalOutputResource>>>::byte_size());
                 anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
             } else {
                 anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
@@ -655,7 +681,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
     )?;
 
     let mut params_ty = <()>::arg_types();
-    let mut result_ty = <Option<TODO_Own>>::arg_types();
+    let mut result_ty = <Option<Own<TerminalOutputResource>>>::arg_types();
     let has_external_result = result_ty.len() > 1;
     if has_external_result {
         params_ty.push(ValType::I32);
@@ -685,7 +711,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             if has_external_result {
                 let address = params[params.len() - 1].i32().unwrap() as usize;
-                let range = address..(address + <Option<TODO_Own>>::byte_size());
+                let range = address..(address + <Option<Own<TerminalOutputResource>>>::byte_size());
                 anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
             } else {
                 anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
