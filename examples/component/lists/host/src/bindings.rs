@@ -12,11 +12,20 @@ pub trait TestExampleImports {
         &mut self,
         value: <Vec<i32> as CompValue>::Borrowed<'_>,
     ) -> HostResult<impl LowerVal<Vec<i32>> + 'static>;
+
+    fn list_string(
+        &mut self,
+        value: <Vec<String> as CompValue>::Borrowed<'_>,
+    ) -> HostResult<impl LowerVal<Vec<String>> + 'static>;
+
+    fn log(&mut self, message: &str) -> HostResult<()>;
 }
 
 #[allow(unused)]
 pub struct TestExampleExports {
     pub list_i32: TypedFunc<(Vec<i32>,), Vec<i32>>,
+    pub list_string: TypedFunc<(Vec<String>,), Vec<String>>,
+    pub init: TypedFunc<(), ()>,
 }
 
 pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
@@ -72,6 +81,88 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
         },
     )?;
 
+    let mut params_ty = <(Vec<String>,)>::arg_types();
+    let mut result_ty = <Vec<String>>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-string",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(Vec<String>,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.list_string(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <Vec<String>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(String,)>::arg_types();
+    let mut result_ty = <()>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "$root",
+        "log",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(String,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.log(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <()>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
     let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module)?;
 
     let memory = instance
@@ -99,5 +190,29 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
         .ok();
     let list_i32 = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
 
-    Ok(TestExampleExports { list_i32 })
+    let module_func = instance
+        .get_func(
+            ctx.as_context_mut(),
+            "wasmi-component:component-examples/round-trip@0.1.0#list-string",
+        )
+        .unwrap();
+    let cleanup_func = instance
+        .get_typed_func::<i32, ()>(
+            ctx.as_context_mut(),
+            "cabi_post_wasmi-component:component-examples/round-trip@0.1.0#list-string",
+        )
+        .ok();
+    let list_string = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+
+    let module_func = instance.get_func(ctx.as_context_mut(), "init").unwrap();
+    let cleanup_func = instance
+        .get_typed_func::<i32, ()>(ctx.as_context_mut(), "cabi_post_init")
+        .ok();
+    let init = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+
+    Ok(TestExampleExports {
+        list_i32,
+        list_string,
+        init,
+    })
 }

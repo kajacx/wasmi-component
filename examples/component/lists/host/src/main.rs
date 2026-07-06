@@ -29,6 +29,18 @@ impl bindings::TestExampleImports for HostData {
     ) -> HostResult<impl LowerVal<Vec<i32>> + 'static> {
         Ok(value.to_owned())
     }
+
+    fn list_string(
+        &mut self,
+        value: <Vec<String> as CompValue>::Borrowed<'_>,
+    ) -> HostResult<impl LowerVal<Vec<String>> + 'static> {
+        Ok(value.to_owned())
+    }
+
+    fn log(&mut self, message: &str) -> HostResult<()> {
+        println!("{message}");
+        Ok(())
+    }
 }
 
 pub fn main() {
@@ -40,6 +52,15 @@ pub fn main() {
 
     println!("Starting host execution");
 
+    exports.init.call(&mut store, ()).unwrap();
+    println!("Init called");
+
     let res = exports.list_i32.call(&mut store, ([1, 2, 3],)).unwrap();
+    println!("Result is: {res:?}");
+
+    let res = exports
+        .list_string
+        .call(&mut store, (["a", "b", "c"],))
+        .unwrap();
     println!("Result is: {res:?}");
 }

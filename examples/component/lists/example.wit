@@ -2,10 +2,16 @@ package wasmi-component:component-examples@0.1.0;
 
 interface round-trip {
     list-i32: func(value: list<s32>) -> list<s32>;
+
+    list-string: func(value: list<string>) -> list<string>;
 }
 
 world test-example {
     export round-trip;
 
     import round-trip;
+
+    export init: func();
+
+    import log: func(message: string);
 }
