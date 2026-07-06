@@ -2,9 +2,9 @@ use std::fmt::Write;
 
 use heck::{ToSnakeCase, ToUpperCamelCase};
 
-use crate::parse::ParsedWorld;
+use crate::parse::{ParsedWit, ParsedWorld};
 
-pub fn generate_wit(worlds: &[ParsedWorld], output: &mut String) {
+pub fn generate_wit(wit: ParsedWit, output: &mut String) {
     writeln!(
         output,
         concat!(
@@ -14,14 +14,18 @@ pub fn generate_wit(worlds: &[ParsedWorld], output: &mut String) {
             "FuncType, Linker, ValType}};\n",
             "#[allow(unused)]\n",
             "use wasmi_component::{{AsHostStorage, Borrow, Component, CompValue, HostResult, ",
-            "LowerVal, MemoryAccessPre, TypedFunc, anyhow_result_to_wasmi}};\n",
+            "LowerVal, MemoryAccessPre, Own, TypedFunc, anyhow_result_to_wasmi}};\n",
             "#[allow(unused)]\n",
             "use crate::wasi_p2::resources::*;\n"
         )
     )
     .unwrap();
 
-    worlds
+    wit.types
+        .iter()
+        .for_each(|ty| writeln!(output, "{ty}").unwrap());
+
+    wit.worlds
         .iter()
         .for_each(|world| generate_world(world, output));
 }

@@ -66,7 +66,7 @@ impl Func {
     }
 }
 
-static PRIMITIVES: &[&str] = &["()", "i32", "u32", "f32"];
+static PRIMITIVES: &[&str] = &["()", "i32", "u32", "u64", "f32"];
 
 fn param_type(ty: &str) -> String {
     if PRIMITIVES.contains(&ty) {

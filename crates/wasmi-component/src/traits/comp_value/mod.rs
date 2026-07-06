@@ -6,6 +6,7 @@ use wasmi::{Val, ValType};
 mod list;
 mod primitive;
 mod resource;
+mod result;
 mod string;
 mod tuple;
 

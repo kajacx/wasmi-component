@@ -141,3 +141,22 @@ impl FatPtr {
         bytes[4..8].copy_from_slice(&(self.count as u32).to_le_bytes());
     }
 }
+
+pub trait Slice {
+    fn slice(&self, range: Range<usize>) -> Range<usize>;
+}
+
+impl Slice for Range<usize> {
+    fn slice(&self, range: Range<usize>) -> Range<usize> {
+        let end = self.start + range.end;
+
+        assert!(
+            end <= self.end,
+            "Slicing range {:?} with {:?} would be out of bounds",
+            self,
+            range
+        );
+
+        (self.start + range.start)..end
+    }
+}

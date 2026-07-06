@@ -1,9 +1,10 @@
 use heck::{ToSnakeCase, ToUpperCamelCase};
 use wit_parser::{
-    Function, Handle, Interface, Resolve, Type, TypeDefKind, TypeId, World, WorldItem, WorldKey,
+    Function, Handle, Interface, Resolve, Type, TypeDef, TypeDefKind, TypeId, World, WorldItem,
+    WorldKey,
 };
 
-use crate::parse::{Func, Param, ParsedWorld};
+use crate::parse::{Func, Param, ParsedWit, ParsedWorld};
 
 pub struct Parser {
     resolve: Resolve,
@@ -14,23 +15,53 @@ impl Parser {
         Self { resolve }
     }
 
-    pub fn parse_wit(&self) -> Vec<ParsedWorld> {
-        self.resolve
+    pub fn parse_wit(&self) -> ParsedWit {
+        let types = self
+            .resolve
+            .types
+            .iter()
+            .flat_map(|(_, ty)| self.parse_type(ty))
+            .collect();
+
+        let worlds = self
+            .resolve
             .worlds
             .iter()
             .map(|(_, world)| self.parse_world(world))
-            .collect()
+            .collect();
+
+        ParsedWit { types, worlds }
+    }
+
+    fn parse_type(&self, ty: &TypeDef) -> Vec<String> {
+        match &ty.kind {
+            TypeDefKind::Variant(var) => {
+                let mut output = String::from("#[derive(Debug)]\n");
+
+                output.push_str("pub enum ");
+                output.push_str(&ty.name.as_ref().unwrap().to_upper_camel_case());
+                output.push_str(" {\n");
+
+                var.cases.iter().for_each(|case| {
+                    output.push_str(&case.name.to_upper_camel_case());
+                    if let Some(ty) = case.ty {
+                        output.push('(');
+                        output.push_str(&self.get_type_name(ty));
+                        output.push(')');
+                    }
+                    output.push_str(",\n");
+                });
+
+                output.push_str("}\n");
+
+                vec![output]
+            }
+            _ => vec![],
+        }
     }
 
     fn parse_world(&self, world: &World) -> ParsedWorld {
         let world_name = world.name.clone();
-
-        eprintln!(
-            "world: {world_name}, {}, {}, {}",
-            world.imports.len(),
-            self.resolve.types.len(),
-            self.resolve.interfaces.len()
-        );
 
         let imports = world
             .imports
@@ -56,7 +87,6 @@ impl Parser {
             WorldItem::Function(func) => vec![self.parse_function(func, key, None)],
             WorldItem::Interface { id, .. } => {
                 let interface = &self.resolve.interfaces[*id];
-                eprintln!("processing interface {:?}", interface.name.as_ref());
 
                 interface
                     .functions
@@ -64,15 +94,7 @@ impl Parser {
                     .map(|(_name, func)| self.parse_function(func, key, Some(interface)))
                     .collect()
             }
-            WorldItem::Type { id, .. } => {
-                let ty = &self.resolve.types[*id];
-                eprintln!("Found Type {:?}", ty);
-                match ty.kind {
-                    TypeDefKind::Resource => {
-                        eprintln!("Found resource {}", key.clone().unwrap_name());
-                    }
-                    _ => {}
-                }
+            WorldItem::Type { .. } => {
                 vec![]
             }
         }
@@ -107,7 +129,7 @@ impl Parser {
             .map(|param| self.parse_function_param(param))
             .collect();
 
-        let result = func.result.map(|ty| self.get_type_name(&ty));
+        let result = func.result.map(|ty| self.get_type_name(ty));
 
         Func::new(module_name, func.name.clone(), params, result)
     }
@@ -115,11 +137,11 @@ impl Parser {
     fn parse_function_param(&self, param: &wit_parser::Param) -> Param {
         Param {
             name: rust_snake_case(&param.name),
-            ty: self.get_type_name(&param.ty),
+            ty: self.get_type_name(param.ty),
         }
     }
 
-    fn get_type_name(&self, ty: &Type) -> String {
+    fn get_type_name(&self, ty: Type) -> String {
         match ty {
             Type::Bool => "bool".to_string(),
             Type::Char => "char".to_string(),
@@ -136,10 +158,9 @@ impl Parser {
             Type::String => "String".to_string(),
             Type::ErrorContext => todo!(),
             Type::Id(id) => {
-                let ty = &self.resolve.types[*id];
-                eprintln!("matching {:?}", ty.kind);
+                let ty = &self.resolve.types[id];
                 match &ty.kind {
-                    TypeDefKind::List(list_ty) => format!("Vec<{}>", self.get_type_name(&list_ty)),
+                    TypeDefKind::List(list_ty) => format!("Vec<{}>", self.get_type_name(*list_ty)),
                     TypeDefKind::Resource => format!("TODO_Resource"),
                     TypeDefKind::Handle(Handle::Own(id)) => {
                         format!("Own<{}>", self.resource_name(*id))
@@ -150,28 +171,26 @@ impl Parser {
                     TypeDefKind::Result(res) => {
                         let ok = res
                             .ok
-                            .as_ref()
-                            .map_or_else(|| "()".to_string(), |ok| self.get_type_name(&ok));
+                            .map_or_else(|| "()".to_string(), |ok| self.get_type_name(ok));
 
                         let err = res
                             .err
-                            .as_ref()
-                            .map_or_else(|| "()".to_string(), |err| self.get_type_name(&err));
+                            .map_or_else(|| "()".to_string(), |err| self.get_type_name(err));
 
                         format!("Result<{ok}, {err}>")
                     }
-                    TypeDefKind::Variant(var) => format!("TODO_Variant"),
+                    TypeDefKind::Variant(_) => ty.name.as_ref().unwrap().to_upper_camel_case(),
                     TypeDefKind::Tuple(tuple) => {
                         let mut result = String::from("(");
                         for item in &tuple.types {
-                            result.push_str(&self.get_type_name(item));
+                            result.push_str(&self.get_type_name(*item));
                             result.push_str(", ");
                         }
                         result.push(')');
                         result
                     }
                     TypeDefKind::Option(option) => {
-                        format!("Option<{}>", self.get_type_name(option))
+                        format!("Option<{}>", self.get_type_name(*option))
                     }
                     _ => todo!(),
                 }

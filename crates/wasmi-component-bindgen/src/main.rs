@@ -26,10 +26,10 @@ fn main() {
     resolve.push_group(group.clone()).unwrap();
 
     let parser = Parser::new(resolve);
-    let worlds = parser.parse_wit();
+    let wit = parser.parse_wit();
 
     let mut output = String::new();
-    generate_wit(&worlds, &mut output);
+    generate_wit(wit, &mut output);
 
     print!("{output}");
 }

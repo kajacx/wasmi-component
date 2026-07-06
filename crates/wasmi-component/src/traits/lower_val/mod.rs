@@ -7,6 +7,7 @@ use crate::{CompValue, MemoryAccess};
 
 mod list;
 mod primitive;
+mod result;
 mod string;
 mod tuple;
 
