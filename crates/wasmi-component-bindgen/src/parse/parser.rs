@@ -1,21 +1,23 @@
+use std::fmt::format;
+
 use heck::ToSnakeCase;
 use wit_parser::{
-    Function, Interface, Type, TypeDefKind, UnresolvedPackage, World, WorldItem, WorldKey,
+    Function, Handle, Interface, Resolve, Type, TypeDefKind, World, WorldItem, WorldKey,
 };
 
 use crate::parse::{Func, Param, ParsedWorld};
 
 pub struct Parser {
-    pkg: UnresolvedPackage,
+    resolve: Resolve,
 }
 
 impl Parser {
-    pub fn new(pkg: UnresolvedPackage) -> Self {
-        Self { pkg }
+    pub fn new(resolve: Resolve) -> Self {
+        Self { resolve }
     }
 
     pub fn parse_wit(&self) -> Vec<ParsedWorld> {
-        self.pkg
+        self.resolve
             .worlds
             .iter()
             .map(|(_, world)| self.parse_world(world))
@@ -24,6 +26,13 @@ impl Parser {
 
     fn parse_world(&self, world: &World) -> ParsedWorld {
         let world_name = world.name.clone();
+
+        eprintln!(
+            "world: {world_name}, {}, {}, {}",
+            world.imports.len(),
+            self.resolve.types.len(),
+            self.resolve.interfaces.len()
+        );
 
         let imports = world
             .imports
@@ -48,14 +57,32 @@ impl Parser {
         match item {
             WorldItem::Function(func) => vec![self.parse_function(func, key, None)],
             WorldItem::Interface { id, .. } => {
-                let interface = self.pkg.interfaces.get(*id).unwrap();
+                let interface = &self.resolve.interfaces[*id];
+                eprintln!("processing interface {:?}", interface.name.as_ref());
+
+                interface.types.iter().for_each(|(name, id)| {
+                    eprintln!("Found resource? {}", name);
+                });
+
+                // interface.
+
                 interface
                     .functions
                     .iter()
                     .map(|(_name, func)| self.parse_function(func, key, Some(interface)))
                     .collect()
             }
-            _ => vec![],
+            WorldItem::Type { id, .. } => {
+                let ty = &self.resolve.types[*id];
+                eprintln!("Found Type {:?}", ty);
+                match ty.kind {
+                    TypeDefKind::Resource => {
+                        eprintln!("Found resource {}", key.clone().unwrap_name());
+                    }
+                    _ => {}
+                }
+                vec![]
+            }
         }
     }
 
@@ -67,17 +94,16 @@ impl Parser {
     ) -> Func {
         let interface_name = interface.and_then(|iface| iface.name.as_ref());
         let module_name = match (interface, interface_name) {
-            (Some(_), Some(interface_name)) => {
-                let namespace = &self.pkg.name.namespace;
-                let pkg_name = &self.pkg.name.name;
-                let version = self
-                    .pkg
-                    .name
-                    .version
-                    .as_ref()
-                    .map_or("".to_string(), |v| format!("@{v}"));
+            (Some(iface), Some(interface_name)) => {
+                let pkg = &self.resolve.packages[iface.package.unwrap()];
 
-                Some(format!("{namespace}:{pkg_name}/{interface_name}{version}"))
+                let namespace = &pkg.name.namespace;
+                let name = &pkg.name.name;
+
+                let version = pkg.name.version.as_ref();
+                let version = version.map(|v| format!("@{v}")).unwrap_or_default();
+
+                Some(format!("{namespace}:{name}/{interface_name}{version}"))
             }
             (Some(_), None) => Some(key.clone().unwrap_name()),
             (None, _) => None,
@@ -96,7 +122,7 @@ impl Parser {
 
     fn parse_function_param(&self, param: &wit_parser::Param) -> Param {
         Param {
-            name: param.name.to_snake_case(),
+            name: rust_snake_case(&param.name),
             ty: self.get_type_name(&param.ty),
         }
     }
@@ -118,12 +144,58 @@ impl Parser {
             Type::String => "String".to_string(),
             Type::ErrorContext => todo!(),
             Type::Id(id) => {
-                let ty = self.pkg.types.get(*id).unwrap();
-                match ty.kind {
+                let ty = &self.resolve.types[*id];
+                eprintln!("matching {:?}", ty.kind);
+                match &ty.kind {
                     TypeDefKind::List(list_ty) => format!("Vec<{}>", self.get_type_name(&list_ty)),
+                    TypeDefKind::Resource => format!("TODO_Resource"),
+                    TypeDefKind::Handle(Handle::Own(id)) => format!("TODO_Own"),
+                    TypeDefKind::Handle(Handle::Borrow(id)) => format!("TODO_Borrow"),
+                    TypeDefKind::Result(res) => {
+                        let ok = res
+                            .ok
+                            .as_ref()
+                            .map_or_else(|| "()".to_string(), |ok| self.get_type_name(&ok));
+
+                        let err = res
+                            .err
+                            .as_ref()
+                            .map_or_else(|| "()".to_string(), |err| self.get_type_name(&err));
+
+                        format!("Result<{ok}, {err}>")
+                    }
+                    TypeDefKind::Variant(var) => format!("TODO_Variant"),
+                    TypeDefKind::Tuple(tuple) => {
+                        let mut result = String::from("(");
+                        for item in &tuple.types {
+                            result.push_str(&self.get_type_name(item));
+                            result.push_str(", ");
+                        }
+                        result.push(')');
+                        result
+                    }
+                    TypeDefKind::Option(option) => {
+                        format!("Option<{}>", self.get_type_name(option))
+                    }
                     _ => todo!(),
                 }
             }
         }
+    }
+}
+
+static KEYWORDS: [&'static str; 38] = [
+    "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern",
+    "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub",
+    "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type",
+    "unsafe", "use", "where", "while",
+];
+
+fn rust_snake_case(name: impl AsRef<str>) -> String {
+    let name = name.as_ref().to_snake_case();
+    if KEYWORDS.contains(&name.as_str()) {
+        format!("{name}_")
+    } else {
+        name
     }
 }

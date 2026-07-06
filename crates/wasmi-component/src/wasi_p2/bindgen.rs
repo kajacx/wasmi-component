@@ -1,0 +1,712 @@
+use crate::anyhow::{Context, Result};
+#[allow(unused)]
+use crate::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
+#[allow(unused)]
+use crate::{
+    AsHostStorage, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, TypedFunc,
+    anyhow_result_to_wasmi,
+};
+
+#[allow(unused)]
+pub trait RootImports {
+    fn method_pollable_block(
+        &mut self,
+        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+    ) -> HostResult<()>;
+
+    fn method_input_stream_blocking_read(
+        &mut self,
+        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+        len: <u64 as CompValue>::Borrowed<'_>,
+    ) -> HostResult<impl LowerVal<Result<Vec<u8>, TODO_Variant>> + 'static>;
+
+    fn method_input_stream_subscribe(
+        &mut self,
+        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+    ) -> HostResult<impl LowerVal<TODO_Own> + 'static>;
+
+    fn method_output_stream_check_write(
+        &mut self,
+        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+    ) -> HostResult<impl LowerVal<Result<u64, TODO_Variant>> + 'static>;
+
+    fn method_output_stream_write(
+        &mut self,
+        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+        contents: <Vec<u8> as CompValue>::Borrowed<'_>,
+    ) -> HostResult<impl LowerVal<Result<(), TODO_Variant>> + 'static>;
+
+    fn method_output_stream_blocking_flush(
+        &mut self,
+        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+    ) -> HostResult<impl LowerVal<Result<(), TODO_Variant>> + 'static>;
+
+    fn method_output_stream_subscribe(
+        &mut self,
+        self_: <TODO_Borrow as CompValue>::Borrowed<'_>,
+    ) -> HostResult<impl LowerVal<TODO_Own> + 'static>;
+
+    fn get_environment(&mut self) -> HostResult<impl LowerVal<Vec<(String, String)>> + 'static>;
+
+    fn exit(&mut self, status: <Result<(), ()> as CompValue>::Borrowed<'_>) -> HostResult<()>;
+
+    fn get_stdin(&mut self) -> HostResult<impl LowerVal<TODO_Own> + 'static>;
+
+    fn get_stdout(&mut self) -> HostResult<impl LowerVal<TODO_Own> + 'static>;
+
+    fn get_stderr(&mut self) -> HostResult<impl LowerVal<TODO_Own> + 'static>;
+
+    fn get_terminal_stdin(&mut self) -> HostResult<impl LowerVal<Option<TODO_Own>> + 'static>;
+
+    fn get_terminal_stdout(&mut self) -> HostResult<impl LowerVal<Option<TODO_Own>> + 'static>;
+
+    fn get_terminal_stderr(&mut self) -> HostResult<impl LowerVal<Option<TODO_Own>> + 'static>;
+}
+
+#[allow(unused)]
+pub struct RootExports {}
+
+pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
+    mut ctx: impl AsContextMut<Data = D>,
+    component: &Component,
+) -> Result<RootExports> {
+    #[allow(unused_mut)]
+    let mut linker = Linker::<D>::new(ctx.as_context().engine());
+    let memory_index = ctx
+        .as_context_mut()
+        .data_mut()
+        .as_host_storage_mut()
+        .next_memory_index();
+
+    let mut params_ty = <(TODO_Borrow,)>::arg_types();
+    let mut result_ty = <()>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/poll@0.2.6",
+        "[method]pollable.block",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(TODO_Borrow,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.method_pollable_block(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <()>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(TODO_Borrow, u64)>::arg_types();
+    let mut result_ty = <Result<Vec<u8>, TODO_Variant>>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/streams@0.2.6",
+        "[method]input-stream.blocking-read",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args =
+                anyhow_result_to_wasmi(<(TODO_Borrow, u64)>::lift_args(params_slice, bytes))?;
+            let res = user_data.method_input_stream_blocking_read(args.0, args.1)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <Result<Vec<u8>, TODO_Variant>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(TODO_Borrow,)>::arg_types();
+    let mut result_ty = <TODO_Own>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/streams@0.2.6",
+        "[method]input-stream.subscribe",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(TODO_Borrow,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.method_input_stream_subscribe(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <TODO_Own>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(TODO_Borrow,)>::arg_types();
+    let mut result_ty = <Result<u64, TODO_Variant>>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/streams@0.2.6",
+        "[method]output-stream.check-write",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(TODO_Borrow,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.method_output_stream_check_write(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <Result<u64, TODO_Variant>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(TODO_Borrow, Vec<u8>)>::arg_types();
+    let mut result_ty = <Result<(), TODO_Variant>>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/streams@0.2.6",
+        "[method]output-stream.write",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args =
+                anyhow_result_to_wasmi(<(TODO_Borrow, Vec<u8>)>::lift_args(params_slice, bytes))?;
+            let res = user_data.method_output_stream_write(args.0, args.1)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <Result<(), TODO_Variant>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(TODO_Borrow,)>::arg_types();
+    let mut result_ty = <Result<(), TODO_Variant>>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/streams@0.2.6",
+        "[method]output-stream.blocking-flush",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(TODO_Borrow,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.method_output_stream_blocking_flush(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <Result<(), TODO_Variant>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(TODO_Borrow,)>::arg_types();
+    let mut result_ty = <TODO_Own>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/streams@0.2.6",
+        "[method]output-stream.subscribe",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(TODO_Borrow,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.method_output_stream_subscribe(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <TODO_Own>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <()>::arg_types();
+    let mut result_ty = <Vec<(String, String)>>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:cli/environment@0.2.6",
+        "get-environment",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
+            let res = user_data.get_environment()?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <Vec<(String, String)>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(Result<(), ()>,)>::arg_types();
+    let mut result_ty = <()>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:cli/exit@0.2.6",
+        "exit",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(Result<(), ()>,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.exit(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <()>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <()>::arg_types();
+    let mut result_ty = <TODO_Own>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:cli/stdin@0.2.6",
+        "get-stdin",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
+            let res = user_data.get_stdin()?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <TODO_Own>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <()>::arg_types();
+    let mut result_ty = <TODO_Own>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:cli/stdout@0.2.6",
+        "get-stdout",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
+            let res = user_data.get_stdout()?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <TODO_Own>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <()>::arg_types();
+    let mut result_ty = <TODO_Own>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:cli/stderr@0.2.6",
+        "get-stderr",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
+            let res = user_data.get_stderr()?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <TODO_Own>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <()>::arg_types();
+    let mut result_ty = <Option<TODO_Own>>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:cli/terminal-stdin@0.2.6",
+        "get-terminal-stdin",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
+            let res = user_data.get_terminal_stdin()?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <Option<TODO_Own>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <()>::arg_types();
+    let mut result_ty = <Option<TODO_Own>>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:cli/terminal-stdout@0.2.6",
+        "get-terminal-stdout",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
+            let res = user_data.get_terminal_stdout()?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <Option<TODO_Own>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <()>::arg_types();
+    let mut result_ty = <Option<TODO_Own>>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:cli/terminal-stderr@0.2.6",
+        "get-terminal-stderr",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
+            let res = user_data.get_terminal_stderr()?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <Option<TODO_Own>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module)?;
+
+    let memory = instance
+        .get_memory(ctx.as_context(), "memory")
+        .context("get memory")?;
+    let cabi_realloc = instance
+        .get_typed_func::<(i32, i32, i32, i32), i32>(ctx.as_context_mut(), "cabi_realloc")?;
+
+    let memory_pre = MemoryAccessPre::new(memory, cabi_realloc);
+    ctx.as_context_mut()
+        .data_mut()
+        .as_host_storage_mut()
+        .insert_memory(memory_index, memory_pre);
+    Ok(RootExports {})
+}

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use wit_parser::UnresolvedPackageGroup;
+use wit_parser::{Resolve, UnresolvedPackageGroup};
 
 mod generator;
 mod parse;
@@ -22,7 +22,10 @@ fn main() {
     let path = Path::new(&args.wit);
     let group = UnresolvedPackageGroup::parse(path, &content).unwrap();
 
-    let parser = Parser::new(group.main);
+    let mut resolve = Resolve::new();
+    resolve.push_group(group.clone()).unwrap();
+
+    let parser = Parser::new(resolve);
     let worlds = parser.parse_wit();
 
     let mut output = String::new();

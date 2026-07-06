@@ -4,6 +4,7 @@ pub use wasmi;
 mod helpers;
 mod structs;
 mod traits;
+mod wasi_p2;
 
 pub use helpers::*;
 pub use structs::*;
