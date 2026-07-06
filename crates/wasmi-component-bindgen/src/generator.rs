@@ -28,6 +28,7 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
     let imports_name = format!("{}Imports", world.world_name.to_upper_camel_case());
     let exports_name = format!("{}Exports", world.world_name.to_upper_camel_case());
 
+    writeln!(output, "#[allow(unused)]").unwrap();
     writeln!(output, "pub trait {imports_name} {{").unwrap();
     world.imports.iter().for_each(|func| {
         writeln!(

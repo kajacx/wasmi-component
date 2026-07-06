@@ -1,0 +1,11 @@
+package wasmi-component:wasi-examples@0.1.0;
+
+interface exported-funcs {
+    print-stdout: func(text: string);
+    
+    print-stderr: func(text: string);
+}
+
+world test-example {
+    export exported-funcs;
+}

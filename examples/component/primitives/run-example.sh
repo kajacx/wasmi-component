@@ -17,7 +17,7 @@ chmod +777 modules
 wasm-tools.exe component unbundle --module-dir modules --output modules "guest/target/$wasm_path.wasm" 2> /dev/null || true
 
 cd modules
-wasm-tools print unbundled-module0.wasm > unbundled-module0.wat
+wasm-tools print unbundled-module0.wasm > unbundled-module0.wat 2> /dev/null || rm unbundled-module1.wat
 wasm-tools print unbundled-module1.wasm > unbundled-module1.wat 2> /dev/null || rm unbundled-module1.wat
 wasm-tools print unbundled-module2.wasm > unbundled-module2.wat 2> /dev/null || rm unbundled-module2.wat
 cd ..

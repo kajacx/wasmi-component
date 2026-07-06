@@ -3,11 +3,11 @@ set -e
 
 # Run from this directory
 
-wasm_path=wasm32-unknown-unknown/debug/wasmi_component_example_guest
+wasm_path=wasm32-wasip2/debug/wasmi_component_example_guest
 
 cd guest
 cargo expand > src/expanded.rs
-cargo component build --target wasm32-unknown-unknown
+cargo component build --target wasm32-wasip2
 wasm-tools print "target/$wasm_path.wasm" > "target/$wasm_path.wat"
 cd ..
 

@@ -6,6 +6,8 @@
     "examples/component/lists/host/Cargo.toml",
     "examples/component/primitives/guest/Cargo.toml",
     "examples/component/primitives/host/Cargo.toml",
+    "examples/wasi/stdio/guest/Cargo.toml",
+    "examples/wasi/stdio/host/Cargo.toml",
   ],
   "cSpell.words": [
     "wasmparser"
