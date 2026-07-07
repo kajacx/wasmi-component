@@ -1,6 +1,6 @@
 use wasmi_component::anyhow::{Context, Result};
 #[allow(unused)]
-use wasmi_component::wasi_p2::resources::*;
+use wasmi_component::wasi_p2::{add_wasi_p2_to_linker, resources::*};
 #[allow(unused)]
 use wasmi_component::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
@@ -58,7 +58,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -70,7 +70,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().roundtrip_s32(args.0)?;
+            let res = store_data.data_mut().roundtrip_s32(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -99,7 +99,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -111,7 +111,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(String,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().roundtrip_string(args.0)?;
+            let res = store_data.data_mut().roundtrip_string(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -140,7 +140,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -152,7 +152,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(String, i32)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().roundtrip_multiple(args.0, args.1)?;
+            let res = store_data.data_mut().roundtrip_multiple(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -181,7 +181,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -193,7 +193,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().no_arguments()?;
+            let res = store_data.data_mut().no_arguments()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -222,7 +222,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -234,7 +234,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(u32, u32)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().inline_add(args.0, args.1)?;
+            let res = store_data.data_mut().inline_add(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -263,7 +263,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -275,7 +275,7 @@ pub fn add_test_example_to_linker<D: TestExampleImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(u32, u32)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().add_import(args.0, args.1)?;
+            let res = store_data.data_mut().add_import(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -301,6 +301,10 @@ pub fn instantiate_test_example_world<D: TestExampleImports>(
     #[allow(unused_mut)]
     let mut linker = Linker::<StoreData<D>>::new(ctx.as_context().engine());
     let memory_index = ctx.as_context_mut().data_mut().next_memory_index();
+
+    if component.is_wasi_p2() {
+        add_wasi_p2_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;
+    }
 
     add_test_example_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;
 

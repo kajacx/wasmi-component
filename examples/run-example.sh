@@ -3,18 +3,29 @@ set -e
 
 # Run from this directory
 
-wasm_path=wasm32-wasip2/debug/wasmi_component_example_guest
+path="$1"
+if [[ "$path" == wasi* ]]; then
+    target=wasm32-wasip2
+    wasi=true
+else
+    target=wasm32-unknown-unknown
+    wasi=false
+fi
+wasm_path="$target/debug/wasmi_component_example_guest"
+
+cd "$path"
 
 cd guest
 cargo expand > src/expanded.rs
-# cargo component build --target wasm32-wasip2
-cargo build --target wasm32-wasip2
+cargo component build --target "$target"
 wasm-tools print "target/$wasm_path.wasm" > "target/$wasm_path.wat"
 cd ..
 
-echo "// This is a PARTIAL wasip2 wit file generated from the component example!" > example-wasi-p2-partial.wit
-echo >> example-wasi-p2-partial.wit
-wasm-tools component wit "guest/target/$wasm_path.wasm" >> example-wasi-p2-partial.wit
+if $wasi; then
+    echo "// This is a PARTIAL wasip2 wit file generated from the component example!" > example-wasi-p2-partial.wit
+    echo >> example-wasi-p2-partial.wit
+    wasm-tools component wit "guest/target/$wasm_path.wasm" >> example-wasi-p2-partial.wit
+fi
 
 rm -rf modules component.wit
 mkdir modules
@@ -28,9 +39,11 @@ cd ..
 
 cargo run --manifest-path ../../../Cargo.toml -p wasmi-component-bindgen -- example.wit > host/src/bindings.rs
 
-cd ../../..
-./build.sh
-cd examples/wasi/stdio
+if [[ "$2" != "--skip-build" ]]; then
+    cd ../../..
+    ./build.sh
+    cd "examples/$path"
+fi
 
 cd host
 cargo fmt
