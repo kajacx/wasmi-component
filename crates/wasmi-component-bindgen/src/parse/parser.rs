@@ -111,7 +111,6 @@ impl Parser {
                             span: Span::default(),
                         };
                         result.push(self.parse_function(&drop, key, Some(interface)));
-                        eprintln!("Resource {name} found in iface {:?}", interface.name)
                     }
                 });
 
@@ -140,9 +139,7 @@ impl Parser {
 
                 let namespace = &pkg.name.namespace;
                 let name = &pkg.name.name;
-
-                let version = pkg.name.version.as_ref();
-                let version = version.map(|v| format!("@{v}")).unwrap_or_default();
+                let version = self.interface_version(iface);
 
                 Some(format!("{namespace}:{name}/{interface_name}{version}"))
             }
@@ -159,6 +156,19 @@ impl Parser {
         let result = func.result.map(|ty| self.get_type_name(ty));
 
         Func::new(module_name, func.name.clone(), params, result)
+    }
+
+    fn interface_version(&self, interface: &Interface) -> String {
+        let package = &self.resolve.packages[interface.package.unwrap()];
+        let version = package.name.version.as_ref().map(|v| v.to_string());
+
+        if version == Some("0.2.6".to_string()) {
+            "@0.2.0".to_string() // TODO: sem ver hack
+        } else if let Some(ver) = version {
+            format!("@{ver}")
+        } else {
+            "".to_string()
+        }
     }
 
     fn parse_function_param(&self, param: &wit_parser::Param) -> Param {

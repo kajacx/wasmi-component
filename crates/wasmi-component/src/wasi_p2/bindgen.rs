@@ -1,6 +1,6 @@
 use crate::anyhow::{Context, Result};
 #[allow(unused)]
-use crate::wasi_p2::resources::*;
+use crate::wasi_p2::{add_wasi_p2_to_linker, resources::*};
 #[allow(unused)]
 use crate::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
@@ -87,7 +87,7 @@ pub trait RootImports {
 pub struct RootExports {}
 
 #[allow(unused)]
-pub fn add_root_to_linker<D: RootImports>(
+pub fn add_root_to_linker<D>(
     mut ctx: impl AsContextMut<Data = StoreData<D>>,
     linker: &mut Linker<StoreData<D>>,
     memory_index: usize,
@@ -100,13 +100,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/poll@0.2.0#[method]pollable.block");
     linker.func_new(
-        "wasi:io/poll@0.2.6",
+        "wasi:io/poll@0.2.0",
         "[method]pollable.block",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -121,7 +122,7 @@ pub fn add_root_to_linker<D: RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data.data_mut().method_pollable_block(args.0)?;
+            let res = store_data.method_pollable_block(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -144,13 +145,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/poll@0.2.0#[resource-drop]pollable");
     linker.func_new(
-        "wasi:io/poll@0.2.6",
+        "wasi:io/poll@0.2.0",
         "[resource-drop]pollable",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -162,7 +164,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().resource_drop_pollable(args.0)?;
+            let res = store_data.resource_drop_pollable(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -185,13 +187,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/error@0.2.0#[resource-drop]error");
     linker.func_new(
-        "wasi:io/error@0.2.6",
+        "wasi:io/error@0.2.0",
         "[resource-drop]error",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -203,7 +206,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().resource_drop_error(args.0)?;
+            let res = store_data.resource_drop_error(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -226,13 +229,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/streams@0.2.0#[method]input-stream.blocking-read");
     linker.func_new(
-        "wasi:io/streams@0.2.6",
+        "wasi:io/streams@0.2.0",
         "[method]input-stream.blocking-read",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -247,9 +251,7 @@ pub fn add_root_to_linker<D: RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data
-                .data_mut()
-                .method_input_stream_blocking_read(args.0, args.1)?;
+            let res = store_data.method_input_stream_blocking_read(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -272,13 +274,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/streams@0.2.0#[method]input-stream.subscribe");
     linker.func_new(
-        "wasi:io/streams@0.2.6",
+        "wasi:io/streams@0.2.0",
         "[method]input-stream.subscribe",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -293,7 +296,7 @@ pub fn add_root_to_linker<D: RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data.data_mut().method_input_stream_subscribe(args.0)?;
+            let res = store_data.method_input_stream_subscribe(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -316,13 +319,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/streams@0.2.0#[method]output-stream.check-write");
     linker.func_new(
-        "wasi:io/streams@0.2.6",
+        "wasi:io/streams@0.2.0",
         "[method]output-stream.check-write",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -337,9 +341,7 @@ pub fn add_root_to_linker<D: RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data
-                .data_mut()
-                .method_output_stream_check_write(args.0)?;
+            let res = store_data.method_output_stream_check_write(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -362,13 +364,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/streams@0.2.0#[method]output-stream.write");
     linker.func_new(
-        "wasi:io/streams@0.2.6",
+        "wasi:io/streams@0.2.0",
         "[method]output-stream.write",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -382,9 +385,7 @@ pub fn add_root_to_linker<D: RootImports>(
             let args = anyhow_result_to_wasmi(
                 <(Borrow<OutputStreamResource>, Vec<u8>)>::lift_args(params_slice, bytes),
             )?;
-            let res = user_data
-                .data_mut()
-                .method_output_stream_write(args.0, args.1)?;
+            let res = store_data.method_output_stream_write(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -407,13 +408,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/streams@0.2.0#[method]output-stream.blocking-flush");
     linker.func_new(
-        "wasi:io/streams@0.2.6",
+        "wasi:io/streams@0.2.0",
         "[method]output-stream.blocking-flush",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -428,9 +430,7 @@ pub fn add_root_to_linker<D: RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data
-                .data_mut()
-                .method_output_stream_blocking_flush(args.0)?;
+            let res = store_data.method_output_stream_blocking_flush(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -453,13 +453,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/streams@0.2.0#[method]output-stream.subscribe");
     linker.func_new(
-        "wasi:io/streams@0.2.6",
+        "wasi:io/streams@0.2.0",
         "[method]output-stream.subscribe",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -474,9 +475,7 @@ pub fn add_root_to_linker<D: RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data
-                .data_mut()
-                .method_output_stream_subscribe(args.0)?;
+            let res = store_data.method_output_stream_subscribe(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -499,13 +498,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/streams@0.2.0#[resource-drop]input-stream");
     linker.func_new(
-        "wasi:io/streams@0.2.6",
+        "wasi:io/streams@0.2.0",
         "[resource-drop]input-stream",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -517,7 +517,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().resource_drop_input_stream(args.0)?;
+            let res = store_data.resource_drop_input_stream(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -540,13 +540,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:io/streams@0.2.0#[resource-drop]output-stream");
     linker.func_new(
-        "wasi:io/streams@0.2.6",
+        "wasi:io/streams@0.2.0",
         "[resource-drop]output-stream",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -558,7 +559,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().resource_drop_output_stream(args.0)?;
+            let res = store_data.resource_drop_output_stream(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -581,13 +582,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:cli/environment@0.2.0#get-environment");
     linker.func_new(
-        "wasi:cli/environment@0.2.6",
+        "wasi:cli/environment@0.2.0",
         "get-environment",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -599,7 +601,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().get_environment()?;
+            let res = store_data.get_environment()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -622,13 +624,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:cli/exit@0.2.0#exit");
     linker.func_new(
-        "wasi:cli/exit@0.2.6",
+        "wasi:cli/exit@0.2.0",
         "exit",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -640,7 +643,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(Result<(), ()>,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().exit(args.0)?;
+            let res = store_data.exit(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -663,13 +666,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:cli/stdin@0.2.0#get-stdin");
     linker.func_new(
-        "wasi:cli/stdin@0.2.6",
+        "wasi:cli/stdin@0.2.0",
         "get-stdin",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -681,7 +685,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().get_stdin()?;
+            let res = store_data.get_stdin()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -704,13 +708,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:cli/stdout@0.2.0#get-stdout");
     linker.func_new(
-        "wasi:cli/stdout@0.2.6",
+        "wasi:cli/stdout@0.2.0",
         "get-stdout",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -722,7 +727,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().get_stdout()?;
+            let res = store_data.get_stdout()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -745,13 +750,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:cli/stderr@0.2.0#get-stderr");
     linker.func_new(
-        "wasi:cli/stderr@0.2.6",
+        "wasi:cli/stderr@0.2.0",
         "get-stderr",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -763,7 +769,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().get_stderr()?;
+            let res = store_data.get_stderr()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -786,13 +792,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:cli/terminal-input@0.2.0#[resource-drop]terminal-input");
     linker.func_new(
-        "wasi:cli/terminal-input@0.2.6",
+        "wasi:cli/terminal-input@0.2.0",
         "[resource-drop]terminal-input",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -804,7 +811,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().resource_drop_terminal_input(args.0)?;
+            let res = store_data.resource_drop_terminal_input(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -827,13 +834,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:cli/terminal-output@0.2.0#[resource-drop]terminal-output");
     linker.func_new(
-        "wasi:cli/terminal-output@0.2.6",
+        "wasi:cli/terminal-output@0.2.0",
         "[resource-drop]terminal-output",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -845,7 +853,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().resource_drop_terminal_output(args.0)?;
+            let res = store_data.resource_drop_terminal_output(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -868,13 +876,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:cli/terminal-stdin@0.2.0#get-terminal-stdin");
     linker.func_new(
-        "wasi:cli/terminal-stdin@0.2.6",
+        "wasi:cli/terminal-stdin@0.2.0",
         "get-terminal-stdin",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -886,7 +895,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().get_terminal_stdin()?;
+            let res = store_data.get_terminal_stdin()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -909,13 +918,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:cli/terminal-stdout@0.2.0#get-terminal-stdout");
     linker.func_new(
-        "wasi:cli/terminal-stdout@0.2.6",
+        "wasi:cli/terminal-stdout@0.2.0",
         "get-terminal-stdout",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -927,7 +937,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().get_terminal_stdout()?;
+            let res = store_data.get_terminal_stdout()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -950,13 +960,14 @@ pub fn add_root_to_linker<D: RootImports>(
         result_ty.clear();
     }
 
+    println!("adding: wasi:cli/terminal-stderr@0.2.0#get-terminal-stderr");
     linker.func_new(
-        "wasi:cli/terminal-stderr@0.2.6",
+        "wasi:cli/terminal-stderr@0.2.0",
         "get-terminal-stderr",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
             let memory_pre = *caller.data().get_memory(memory_index);
-            let (bytes, user_data) = memory_pre
+            let (bytes, store_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
 
@@ -968,7 +979,7 @@ pub fn add_root_to_linker<D: RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.data_mut().get_terminal_stderr()?;
+            let res = store_data.get_terminal_stderr()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -987,13 +998,17 @@ pub fn add_root_to_linker<D: RootImports>(
 }
 
 #[allow(unused)]
-pub fn instantiate_root_world<D: RootImports>(
+pub fn instantiate_root_world<D>(
     mut ctx: impl AsContextMut<Data = StoreData<D>>,
     component: &Component,
 ) -> Result<RootExports> {
     #[allow(unused_mut)]
     let mut linker = Linker::<StoreData<D>>::new(ctx.as_context().engine());
     let memory_index = ctx.as_context_mut().data_mut().next_memory_index();
+
+    if component.is_wasi_p2() {
+        add_wasi_p2_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;
+    }
 
     add_root_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;
 

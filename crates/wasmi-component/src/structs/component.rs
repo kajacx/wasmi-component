@@ -6,6 +6,7 @@ use crate::*;
 #[derive(Debug)]
 pub struct Component {
     pub core_module: wasmi::Module,
+    pub is_wasi_p2: bool,
 }
 
 impl Component {
@@ -34,6 +35,11 @@ impl Component {
 
         Ok(Self {
             core_module: modules.remove(0),
+            is_wasi_p2: true, // TODO: detect a wasi component
         })
+    }
+
+    pub fn is_wasi_p2(&self) -> bool {
+        self.is_wasi_p2
     }
 }

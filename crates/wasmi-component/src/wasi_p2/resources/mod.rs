@@ -17,7 +17,7 @@ pub use terminal_output::*;
 use anyhow::Result;
 use wasmi::ValType;
 
-use crate::{CompValue, Own};
+use crate::{CompValue, LowerVal, Own};
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -57,5 +57,24 @@ impl CompValue for StreamError {
 
     fn into_owned(val: Self::Borrowed<'_>) -> Self {
         val
+    }
+}
+
+#[allow(unused)]
+impl LowerVal<StreamError> for StreamError {
+    fn lower_args(
+        &self,
+        args: &mut [wasmi::Val],
+        memory: &mut impl crate::MemoryAccess,
+    ) -> Result<()> {
+        todo!()
+    }
+
+    fn lower_bytes(
+        &self,
+        range: std::ops::Range<usize>,
+        memory: &mut impl crate::MemoryAccess,
+    ) -> Result<()> {
+        todo!()
     }
 }

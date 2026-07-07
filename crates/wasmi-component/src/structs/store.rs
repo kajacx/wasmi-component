@@ -9,6 +9,7 @@ pub struct Store<T> {
 pub struct StoreData<T> {
     data: T,
     memory_table: Vec<MemoryAccessPre>,
+    #[allow(unused)]
     resource_table: ResourceTable,
 }
 

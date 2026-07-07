@@ -1,5 +1,4 @@
 use slotmap::{Key, KeyData, SlotMap};
-use wasmi::StoreId;
 
 use crate::Resource;
 
@@ -60,9 +59,4 @@ impl CompressedKey {
             data: KeyData::from_ffi(bytes),
         }
     }
-}
-
-pub struct ResourceKey {
-    store_id: StoreId,
-    key: CompressedKey,
 }

@@ -1,2 +1,4 @@
 modules/
 expanded.rs
+component.wit
+error.log

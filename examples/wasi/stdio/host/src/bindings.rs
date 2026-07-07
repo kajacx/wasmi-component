@@ -1,6 +1,6 @@
 use wasmi_component::anyhow::{Context, Result};
 #[allow(unused)]
-use wasmi_component::wasi_p2::resources::*;
+use wasmi_component::wasi_p2::{add_wasi_p2_to_linker, resources::*};
 #[allow(unused)]
 use wasmi_component::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
@@ -35,6 +35,10 @@ pub fn instantiate_test_example_world<D>(
     #[allow(unused_mut)]
     let mut linker = Linker::<StoreData<D>>::new(ctx.as_context().engine());
     let memory_index = ctx.as_context_mut().data_mut().next_memory_index();
+
+    if component.is_wasi_p2() {
+        add_wasi_p2_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;
+    }
 
     add_test_example_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;
 

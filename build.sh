@@ -4,7 +4,9 @@ set -e
 # Run from this directory
 
 cd crates/wasmi-component/src/wasi_p2
-./generate.sh
+
+cargo run --manifest-path ../../../../Cargo.toml -p wasmi-component-bindgen -- --internal ./wasi-p2-partial.wit > ./bindgen.rs
+
 cd ../../../..
 
 cargo fmt
