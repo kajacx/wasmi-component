@@ -5,8 +5,8 @@ use wasmi_component::wasi_p2::{add_wasi_p2_to_linker, resources::*};
 use wasmi_component::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
 use wasmi_component::{
-    Borrow, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, Own, StoreData, TypedFunc,
-    anyhow_result_to_wasmi,
+    Borrow, CompValue, Component, HostResult, ListAccessor, LowerVal, MemoryAccessPre, Own,
+    StoreData, TypedFunc, anyhow_result_to_wasmi,
 };
 
 #[allow(unused)]

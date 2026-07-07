@@ -5,20 +5,20 @@ use wasmi_component::wasi_p2::{add_wasi_p2_to_linker, resources::*};
 use wasmi_component::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
 use wasmi_component::{
-    Borrow, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, Own, StoreData, TypedFunc,
-    anyhow_result_to_wasmi,
+    Borrow, CompValue, Component, HostResult, ListAccessor, LowerVal, MemoryAccessPre, Own,
+    StoreData, TypedFunc, anyhow_result_to_wasmi,
 };
 
 #[allow(unused)]
 pub trait TestExampleImports {
     fn list_i32(
         &mut self,
-        value: <Vec<i32> as CompValue>::Borrowed<'_>,
+        value: ListAccessor<i32>,
     ) -> HostResult<impl LowerVal<Vec<i32>> + 'static>;
 
     fn list_string(
         &mut self,
-        value: <Vec<String> as CompValue>::Borrowed<'_>,
+        value: ListAccessor<String>,
     ) -> HostResult<impl LowerVal<Vec<String>> + 'static>;
 
     fn log(&mut self, message: &str) -> HostResult<()>;

@@ -5,16 +5,13 @@ use crate::wasi_p2::{add_wasi_p2_to_linker, resources::*};
 use crate::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
 use crate::{
-    Borrow, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, Own, StoreData, TypedFunc,
-    anyhow_result_to_wasmi,
+    Borrow, CompValue, Component, HostResult, ListAccessor, LowerVal, MemoryAccessPre, Own,
+    StoreData, TypedFunc, anyhow_result_to_wasmi,
 };
 
 #[allow(unused)]
 pub trait RootImports {
-    fn method_pollable_block(
-        &mut self,
-        self_: <Borrow<PollableResource> as CompValue>::Borrowed<'_>,
-    ) -> HostResult<()>;
+    fn method_pollable_block(&mut self, self_: Borrow<PollableResource>) -> HostResult<()>;
 
     fn resource_drop_pollable(&mut self, index: i32) -> HostResult<()>;
 
@@ -22,35 +19,35 @@ pub trait RootImports {
 
     fn method_input_stream_blocking_read(
         &mut self,
-        self_: <Borrow<InputStreamResource> as CompValue>::Borrowed<'_>,
+        self_: Borrow<InputStreamResource>,
         len: u64,
     ) -> HostResult<impl LowerVal<Result<Vec<u8>, StreamError>> + 'static>;
 
     fn method_input_stream_subscribe(
         &mut self,
-        self_: <Borrow<InputStreamResource> as CompValue>::Borrowed<'_>,
-    ) -> HostResult<impl LowerVal<Own<PollableResource>> + 'static>;
+        self_: Borrow<InputStreamResource>,
+    ) -> HostResult<Own<PollableResource>>;
 
     fn method_output_stream_check_write(
         &mut self,
-        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
-    ) -> HostResult<impl LowerVal<Result<u64, StreamError>> + 'static>;
+        self_: Borrow<OutputStreamResource>,
+    ) -> HostResult<Result<u64, StreamError>>;
 
     fn method_output_stream_write(
         &mut self,
-        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
-        contents: <Vec<u8> as CompValue>::Borrowed<'_>,
-    ) -> HostResult<impl LowerVal<Result<(), StreamError>> + 'static>;
+        self_: Borrow<OutputStreamResource>,
+        contents: ListAccessor<u8>,
+    ) -> HostResult<Result<(), StreamError>>;
 
     fn method_output_stream_blocking_flush(
         &mut self,
-        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
-    ) -> HostResult<impl LowerVal<Result<(), StreamError>> + 'static>;
+        self_: Borrow<OutputStreamResource>,
+    ) -> HostResult<Result<(), StreamError>>;
 
     fn method_output_stream_subscribe(
         &mut self,
-        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
-    ) -> HostResult<impl LowerVal<Own<PollableResource>> + 'static>;
+        self_: Borrow<OutputStreamResource>,
+    ) -> HostResult<Own<PollableResource>>;
 
     fn resource_drop_input_stream(&mut self, index: i32) -> HostResult<()>;
 
@@ -58,29 +55,23 @@ pub trait RootImports {
 
     fn get_environment(&mut self) -> HostResult<impl LowerVal<Vec<(String, String)>> + 'static>;
 
-    fn exit(&mut self, status: <Result<(), ()> as CompValue>::Borrowed<'_>) -> HostResult<()>;
+    fn exit(&mut self, status: Result<(), ()>) -> HostResult<()>;
 
-    fn get_stdin(&mut self) -> HostResult<impl LowerVal<Own<InputStreamResource>> + 'static>;
+    fn get_stdin(&mut self) -> HostResult<Own<InputStreamResource>>;
 
-    fn get_stdout(&mut self) -> HostResult<impl LowerVal<Own<OutputStreamResource>> + 'static>;
+    fn get_stdout(&mut self) -> HostResult<Own<OutputStreamResource>>;
 
-    fn get_stderr(&mut self) -> HostResult<impl LowerVal<Own<OutputStreamResource>> + 'static>;
+    fn get_stderr(&mut self) -> HostResult<Own<OutputStreamResource>>;
 
     fn resource_drop_terminal_input(&mut self, index: i32) -> HostResult<()>;
 
     fn resource_drop_terminal_output(&mut self, index: i32) -> HostResult<()>;
 
-    fn get_terminal_stdin(
-        &mut self,
-    ) -> HostResult<impl LowerVal<Option<Own<TerminalInputResource>>> + 'static>;
+    fn get_terminal_stdin(&mut self) -> HostResult<Option<Own<TerminalInputResource>>>;
 
-    fn get_terminal_stdout(
-        &mut self,
-    ) -> HostResult<impl LowerVal<Option<Own<TerminalOutputResource>>> + 'static>;
+    fn get_terminal_stdout(&mut self) -> HostResult<Option<Own<TerminalOutputResource>>>;
 
-    fn get_terminal_stderr(
-        &mut self,
-    ) -> HostResult<impl LowerVal<Option<Own<TerminalOutputResource>>> + 'static>;
+    fn get_terminal_stderr(&mut self) -> HostResult<Option<Own<TerminalOutputResource>>>;
 }
 
 #[allow(unused)]

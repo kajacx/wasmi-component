@@ -35,6 +35,7 @@ impl<T: CompValue> CompValue for Vec<T> {
     }
 }
 
+/// T is the canonical type
 #[derive(Debug, Clone, Copy)]
 pub struct ListAccessor<'a, T> {
     /// Byte slice containing exactly the data in the list

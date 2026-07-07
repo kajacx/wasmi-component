@@ -47,7 +47,13 @@ fi
 
 cd host
 cargo fmt
-cargo run > output.log 2> error.log || true
+if cargo run > output.log 2> error.log; then
+    status=0
+else
+    status=1
+fi
 cat output.log
 cat error.log
 cd ..
+
+exit $status

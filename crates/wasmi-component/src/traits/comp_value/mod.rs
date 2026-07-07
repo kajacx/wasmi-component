@@ -10,6 +10,8 @@ mod result;
 mod string;
 mod tuple;
 
+pub use list::ListAccessor;
+
 pub trait CompValue: Sized + Debug {
     type Borrowed<'a>: IntoOwned<Self>;
 

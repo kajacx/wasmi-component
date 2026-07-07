@@ -4,7 +4,7 @@ use wit_parser::{
     WorldItem, WorldKey,
 };
 
-use crate::parse::{Func, Param, ParsedWit, ParsedWorld};
+use crate::parse::{Func, LowerArg, Param, ParamType, ParsedWit, ParsedWorld};
 
 pub struct Parser {
     resolve: Resolve,
@@ -35,27 +35,27 @@ impl Parser {
 
     fn parse_type(&self, ty: &TypeDef) -> Vec<String> {
         match &ty.kind {
-            TypeDefKind::Variant(var) => {
-                let mut output = String::from("#[allow(unused)]\n#[derive(Debug)]\n");
+            // TypeDefKind::Variant(var) => {
+            //     let mut output = String::from("#[allow(unused)]\n#[derive(Debug)]\n");
 
-                output.push_str("pub enum ");
-                output.push_str(&ty.name.as_ref().unwrap().to_upper_camel_case());
-                output.push_str(" {\n");
+            //     output.push_str("pub enum ");
+            //     output.push_str(&ty.name.as_ref().unwrap().to_upper_camel_case());
+            //     output.push_str(" {\n");
 
-                var.cases.iter().for_each(|case| {
-                    output.push_str(&case.name.to_upper_camel_case());
-                    if let Some(ty) = case.ty {
-                        output.push('(');
-                        output.push_str(&self.get_type_name(ty));
-                        output.push(')');
-                    }
-                    output.push_str(",\n");
-                });
+            //     var.cases.iter().for_each(|case| {
+            //         output.push_str(&case.name.to_upper_camel_case());
+            //         if let Some(ty) = case.ty {
+            //             output.push('(');
+            //             output.push_str(&self.get_type_name(ty));
+            //             output.push(')');
+            //         }
+            //         output.push_str(",\n");
+            //     });
 
-                output.push_str("}\n");
+            //     output.push_str("}\n");
 
-                vec![output]
-            }
+            //     vec![output]
+            // }
             _ => vec![],
         }
     }
@@ -153,7 +153,7 @@ impl Parser {
             .map(|param| self.parse_function_param(param))
             .collect();
 
-        let result = func.result.map(|ty| self.get_type_name(ty));
+        let result = self.get_param_type_option(func.result);
 
         Func::new(module_name, func.name.clone(), params, result)
     }
@@ -174,61 +174,148 @@ impl Parser {
     fn parse_function_param(&self, param: &wit_parser::Param) -> Param {
         Param {
             name: rust_snake_case(&param.name),
-            ty: self.get_type_name(param.ty),
+            ty: self.get_param_type(param.ty),
         }
     }
 
-    fn get_type_name(&self, ty: Type) -> String {
+    fn get_param_type_option(&self, ty: Option<Type>) -> ParamType {
         match ty {
-            Type::Bool => "bool".to_string(),
-            Type::Char => "char".to_string(),
-            Type::S8 => "i8".to_string(),
-            Type::S16 => "i16".to_string(),
-            Type::S32 => "i32".to_string(),
-            Type::S64 => "i64".to_string(),
-            Type::U8 => "u8".to_string(),
-            Type::U16 => "u16".to_string(),
-            Type::U32 => "u32".to_string(),
-            Type::U64 => "u64".to_string(),
-            Type::F32 => "f32".to_string(),
-            Type::F64 => "f64".to_string(),
-            Type::String => "String".to_string(),
+            Some(ty) => self.get_param_type(ty),
+            None => ParamType {
+                canon: "()".to_string(),
+                lower: LowerArg::Specific("()".to_string()),
+                lift: "()".to_string(),
+            },
+        }
+    }
+
+    fn get_param_type(&self, ty: Type) -> ParamType {
+        return match self.pre_parse_type(ty) {
+            PreParsedType::Primitive(name) => ParamType {
+                canon: name.to_string(),
+                lower: LowerArg::Specific(name.to_string()),
+                lift: name.to_string(),
+            },
+            PreParsedType::String => ParamType {
+                canon: "String".to_string(),
+                lower: LowerArg::LowerVal,
+                lift: "&str".to_string(),
+            },
+            PreParsedType::List(ty) => {
+                let ty = self.get_param_type(ty);
+                ParamType {
+                    canon: format!("Vec<{}>", ty.canon),
+                    lower: LowerArg::LowerVal,
+                    lift: format!("ListAccessor<{}>", ty.canon),
+                }
+            }
+            PreParsedType::Option(ty) => {
+                let ty = self.get_param_type(ty);
+                let lower = if let LowerArg::Specific(specific) = ty.lower {
+                    LowerArg::Specific(format!("Option<{}>", specific))
+                } else {
+                    LowerArg::LowerVal
+                };
+                ParamType {
+                    canon: format!("Option<{}>", ty.canon),
+                    lower,
+                    lift: format!("Option<{}>", ty.lift),
+                }
+            }
+            PreParsedType::Result(ok, err) => {
+                let ok = self.get_param_type_option(ok);
+                let err = self.get_param_type_option(err);
+                let lower = if let (LowerArg::Specific(ok), LowerArg::Specific(err)) =
+                    (ok.lower, err.lower)
+                {
+                    LowerArg::Specific(format!("Result<{}, {}>", ok, err))
+                } else {
+                    LowerArg::LowerVal
+                };
+                ParamType {
+                    canon: format!("Result<{}, {}>", ok.canon, err.canon),
+                    lower,
+                    lift: format!("Result<{}, {}>", ok.lift, err.lift),
+                }
+            }
+            PreParsedType::Tuple(types) => {
+                let types: Vec<_> = types.iter().map(|ty| self.get_param_type(*ty)).collect();
+
+                let canon = format!(
+                    "({})",
+                    types
+                        .iter()
+                        .map(|ty| format!("{}, ", ty.canon))
+                        .collect::<String>()
+                );
+
+                let lower = types
+                    .iter()
+                    .map(|ty| ty.lower.specific())
+                    .try_fold(String::new(), |mut accu, item| {
+                        accu.push_str(item?);
+                        accu.push_str(", ");
+                        Some(accu)
+                    })
+                    .map_or(LowerArg::LowerVal, |types| {
+                        LowerArg::Specific(format!("({types})"))
+                    });
+
+                let lift = format!(
+                    "({})",
+                    types
+                        .iter()
+                        .map(|ty| format!("{}, ", ty.lift))
+                        .collect::<String>()
+                );
+
+                ParamType { canon, lower, lift }
+            }
+            PreParsedType::Own(name) => ParamType {
+                canon: format!("Own<{name}>"),
+                lower: LowerArg::Specific(format!("Own<{name}>")),
+                lift: format!("Own<{name}>"),
+            },
+            PreParsedType::Borrow(name) => ParamType {
+                canon: format!("Borrow<{name}>"),
+                lower: LowerArg::Specific(format!("Borrow<{name}>")),
+                lift: format!("Borrow<{name}>"),
+            },
+        };
+    }
+
+    fn pre_parse_type(&self, ty: Type) -> PreParsedType<'_> {
+        match ty {
+            Type::Bool => PreParsedType::Primitive("bool".to_string()),
+            Type::Char => PreParsedType::Primitive("char".to_string()),
+            Type::S8 => PreParsedType::Primitive("i8".to_string()),
+            Type::S16 => PreParsedType::Primitive("i16".to_string()),
+            Type::S32 => PreParsedType::Primitive("i32".to_string()),
+            Type::S64 => PreParsedType::Primitive("i64".to_string()),
+            Type::U8 => PreParsedType::Primitive("u8".to_string()),
+            Type::U16 => PreParsedType::Primitive("u16".to_string()),
+            Type::U32 => PreParsedType::Primitive("u32".to_string()),
+            Type::U64 => PreParsedType::Primitive("u64".to_string()),
+            Type::F32 => PreParsedType::Primitive("f32".to_string()),
+            Type::F64 => PreParsedType::Primitive("f64".to_string()),
+            Type::String => PreParsedType::String,
             Type::ErrorContext => todo!(),
             Type::Id(id) => {
                 let ty = &self.resolve.types[id];
                 match &ty.kind {
-                    TypeDefKind::List(list_ty) => format!("Vec<{}>", self.get_type_name(*list_ty)),
-                    TypeDefKind::Resource => format!("TODO_Resource"),
+                    TypeDefKind::List(ty) => PreParsedType::List(*ty),
                     TypeDefKind::Handle(Handle::Own(id)) => {
-                        format!("Own<{}>", self.resource_name(*id))
+                        PreParsedType::Own(self.resource_name(*id))
                     }
                     TypeDefKind::Handle(Handle::Borrow(id)) => {
-                        format!("Borrow<{}>", self.resource_name(*id))
+                        PreParsedType::Borrow(self.resource_name(*id))
                     }
-                    TypeDefKind::Result(res) => {
-                        let ok = res
-                            .ok
-                            .map_or_else(|| "()".to_string(), |ok| self.get_type_name(ok));
-
-                        let err = res
-                            .err
-                            .map_or_else(|| "()".to_string(), |err| self.get_type_name(err));
-
-                        format!("Result<{ok}, {err}>")
+                    TypeDefKind::Result(res) => PreParsedType::Result(res.ok, res.err),
+                    TypeDefKind::Variant(_) => {
+                        PreParsedType::Primitive(ty.name.as_ref().unwrap().to_upper_camel_case())
                     }
-                    TypeDefKind::Variant(_) => ty.name.as_ref().unwrap().to_upper_camel_case(),
-                    TypeDefKind::Tuple(tuple) => {
-                        let mut result = String::from("(");
-                        for item in &tuple.types {
-                            result.push_str(&self.get_type_name(*item));
-                            result.push_str(", ");
-                        }
-                        result.push(')');
-                        result
-                    }
-                    TypeDefKind::Option(option) => {
-                        format!("Option<{}>", self.get_type_name(*option))
-                    }
+                    TypeDefKind::Tuple(tuple) => PreParsedType::Tuple(&tuple.types),
+                    TypeDefKind::Option(option) => PreParsedType::Option(*option),
                     _ => todo!(),
                 }
             }
@@ -249,10 +336,20 @@ static KEYWORDS: [&'static str; 38] = [
 ];
 
 fn rust_snake_case(name: impl AsRef<str>) -> String {
-    let name = name.as_ref().to_snake_case();
+    let mut name = name.as_ref().to_snake_case();
     if KEYWORDS.contains(&name.as_str()) {
-        format!("{name}_")
-    } else {
-        name
+        name.push('_');
     }
+    name
+}
+
+enum PreParsedType<'a> {
+    Primitive(String),
+    String,
+    List(Type),
+    Option(Type),
+    Result(Option<Type>, Option<Type>),
+    Tuple(&'a [Type]),
+    Own(String),
+    Borrow(String),
 }

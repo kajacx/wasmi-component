@@ -30,7 +30,7 @@ impl Generator {
                 "use {}::wasmi::{{AsContext, AsContextMut, Caller, ",
                 "FuncType, Linker, ValType}};\n",
                 "#[allow(unused)]\n",
-                "use {}::{{Borrow, Component, CompValue, HostResult, LowerVal, ",
+                "use {}::{{Borrow, Component, CompValue, HostResult, ListAccessor, LowerVal, ",
                 "MemoryAccessPre, Own, StoreData, TypedFunc, anyhow_result_to_wasmi}};\n",
                 "#[allow(unused)]\n",
                 "use {}::wasi_p2::{{add_wasi_p2_to_linker, resources::*}};\n"
@@ -57,8 +57,8 @@ impl Generator {
                 output,
                 "  fn {}(&mut self, {}) -> HostResult<{}>;\n",
                 func.rust_name(),
-                func.host_params_full(),
-                func.host_return_type()
+                func.params_full_lift(),
+                func.host_return_type("'static")
             )
             .unwrap();
         });
@@ -72,8 +72,8 @@ impl Generator {
                 output,
                 "  pub {}: TypedFunc<({}), {}>,",
                 func.rust_name(),
-                func.param_types(),
-                func.result
+                func.param_types_canon(),
+                func.result.canon
             )
             .unwrap();
         });
@@ -209,8 +209,8 @@ impl Generator {
                     "      result_ty.clear();\n",
                     "    }}\n",
                 ),
-                func.param_types(),
-                func.result
+                func.param_types_canon(),
+                func.result.canon
             )
             .unwrap();
 
@@ -259,11 +259,11 @@ impl Generator {
                     "    Ok(())\n",
                     "  }})?;\n"
                 ),
-                func.param_types(),
+                func.param_types_canon(),
                 accessor,
                 func.rust_name(),
                 func.param_args(),
-                func.result
+                func.result.canon
             )
             .unwrap();
         });

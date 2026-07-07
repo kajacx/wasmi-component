@@ -1,13 +1,13 @@
 use heck::ToSnakeCase;
 
-use crate::parse::Param;
+use crate::parse::{LowerArg, Param, ParamType};
 
 pub struct Func {
     pub module_name: Option<String>,
     pub func_name: String,
 
     pub params: Vec<Param>,
-    pub result: String,
+    pub result: ParamType,
 }
 
 impl Func {
@@ -15,13 +15,13 @@ impl Func {
         module_name: Option<String>,
         func_name: String,
         params: Vec<Param>,
-        result: Option<String>,
+        result: ParamType,
     ) -> Self {
         Self {
             module_name,
             func_name,
             params,
-            result: result.unwrap_or_else(|| "()".to_string()),
+            result,
         }
     }
 
@@ -37,17 +37,17 @@ impl Func {
         }
     }
 
-    pub fn host_params_full(&self) -> String {
+    pub fn params_full_lift(&self) -> String {
         self.params
             .iter()
-            .map(|param| format!("{}: {}, ", param.name, param_type(&param.ty)))
+            .map(|param| format!("{}: {}, ", param.name, param.ty.lift))
             .collect()
     }
 
-    pub fn param_types(&self) -> String {
+    pub fn param_types_canon(&self) -> String {
         self.params
             .iter()
-            .map(|param| format!("{}, ", param.ty))
+            .map(|param| format!("{}, ", param.ty.canon))
             .collect()
     }
 
@@ -57,23 +57,11 @@ impl Func {
             .collect()
     }
 
-    pub fn host_return_type(&self) -> String {
-        if PRIMITIVES.contains(&self.result.as_str()) {
-            self.result.clone()
+    pub fn host_return_type(&self, lifetime: &str) -> String {
+        if let LowerArg::Specific(ty) = &self.result.lower {
+            ty.clone()
         } else {
-            format!("impl LowerVal<{}> + 'static", self.result)
+            format!("impl LowerVal<{}> + {}", self.result.canon, lifetime)
         }
-    }
-}
-
-static PRIMITIVES: &[&str] = &["()", "i32", "u32", "u64", "f32"];
-
-fn param_type(ty: &str) -> String {
-    if PRIMITIVES.contains(&ty) {
-        ty.to_string()
-    } else if ty == "String" {
-        "&str".to_string()
-    } else {
-        format!("<{ty} as CompValue>::Borrowed<'_>")
     }
 }
