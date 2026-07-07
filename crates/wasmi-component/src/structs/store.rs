@@ -24,6 +24,14 @@ impl<T> Store<T> {
             inner: wasmi::Store::new(engine, store_data),
         }
     }
+
+    pub fn data(&self) -> &T {
+        &self.inner.data().data
+    }
+
+    pub fn data_mut(&mut self) -> &mut T {
+        &mut self.inner.data_mut().data
+    }
 }
 
 impl<T> StoreData<T> {

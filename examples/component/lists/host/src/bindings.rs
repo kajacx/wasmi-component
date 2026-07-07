@@ -1,12 +1,15 @@
 use wasmi_component::anyhow::{Context, Result};
 #[allow(unused)]
+use wasmi_component::wasi_p2::resources::*;
+#[allow(unused)]
 use wasmi_component::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
 use wasmi_component::{
-    AsHostStorage, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, TypedFunc,
+    Borrow, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, Own, StoreData, TypedFunc,
     anyhow_result_to_wasmi,
 };
 
+#[allow(unused)]
 pub trait TestExampleImports {
     fn list_i32(
         &mut self,
@@ -23,23 +26,17 @@ pub trait TestExampleImports {
 
 #[allow(unused)]
 pub struct TestExampleExports {
+    pub init: TypedFunc<(), ()>,
     pub list_i32: TypedFunc<(Vec<i32>,), Vec<i32>>,
     pub list_string: TypedFunc<(Vec<String>,), Vec<String>>,
-    pub init: TypedFunc<(), ()>,
 }
 
-pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
-    mut ctx: impl AsContextMut<Data = D>,
-    component: &Component,
-) -> Result<TestExampleExports> {
-    #[allow(unused_mut)]
-    let mut linker = Linker::<D>::new(ctx.as_context().engine());
-    let memory_index = ctx
-        .as_context_mut()
-        .data_mut()
-        .as_host_storage_mut()
-        .next_memory_index();
-
+#[allow(unused)]
+pub fn add_test_example_to_linker<D: TestExampleImports>(
+    mut ctx: impl AsContextMut<Data = StoreData<D>>,
+    linker: &mut Linker<StoreData<D>>,
+    memory_index: usize,
+) -> Result<()> {
     let mut params_ty = <(Vec<i32>,)>::arg_types();
     let mut result_ty = <Vec<i32>>::arg_types();
     let has_external_result = result_ty.len() > 1;
@@ -53,7 +50,7 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
         "list-i32",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -66,7 +63,7 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(Vec<i32>,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.list_i32(args.0)?;
+            let res = user_data.data_mut().list_i32(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -94,7 +91,7 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
         "list-string",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -107,7 +104,7 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(Vec<String>,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.list_string(args.0)?;
+            let res = user_data.data_mut().list_string(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -135,7 +132,7 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
         "log",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -148,7 +145,7 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(String,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.log(args.0)?;
+            let res = user_data.data_mut().log(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -163,6 +160,20 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
         },
     )?;
 
+    Ok(())
+}
+
+#[allow(unused)]
+pub fn instantiate_test_example_world<D: TestExampleImports>(
+    mut ctx: impl AsContextMut<Data = StoreData<D>>,
+    component: &Component,
+) -> Result<TestExampleExports> {
+    #[allow(unused_mut)]
+    let mut linker = Linker::<StoreData<D>>::new(ctx.as_context().engine());
+    let memory_index = ctx.as_context_mut().data_mut().next_memory_index();
+
+    add_test_example_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;
+
     let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module)?;
 
     let memory = instance
@@ -174,8 +185,14 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
     let memory_pre = MemoryAccessPre::new(memory, cabi_realloc);
     ctx.as_context_mut()
         .data_mut()
-        .as_host_storage_mut()
         .insert_memory(memory_index, memory_pre);
+
+    let module_func = instance.get_func(ctx.as_context_mut(), "init").unwrap();
+    let cleanup_func = instance
+        .get_typed_func::<i32, ()>(ctx.as_context_mut(), "cabi_post_init")
+        .ok();
+    let init = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+
     let module_func = instance
         .get_func(
             ctx.as_context_mut(),
@@ -204,15 +221,9 @@ pub fn instantiate_test_example_world<D: AsHostStorage + TestExampleImports>(
         .ok();
     let list_string = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
 
-    let module_func = instance.get_func(ctx.as_context_mut(), "init").unwrap();
-    let cleanup_func = instance
-        .get_typed_func::<i32, ()>(ctx.as_context_mut(), "cabi_post_init")
-        .ok();
-    let init = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
-
     Ok(TestExampleExports {
+        init,
         list_i32,
         list_string,
-        init,
     })
 }

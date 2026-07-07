@@ -1,5 +1,5 @@
-use wasmi_component::wasmi::{Engine, Store};
-use wasmi_component::{AsHostStorage, Component, HostStorage};
+use wasmi_component::wasmi::Engine;
+use wasmi_component::{Component, Store};
 
 mod bindings;
 
@@ -7,19 +7,7 @@ const WASM: &[u8] =
     include_bytes!("../../guest/target/wasm32-wasip2/debug/wasmi_component_example_guest.wasm");
 
 #[derive(Default)]
-struct HostData {
-    storage: HostStorage,
-}
-
-impl AsHostStorage for HostData {
-    fn as_host_storage(&self) -> &HostStorage {
-        &self.storage
-    }
-
-    fn as_host_storage_mut(&mut self) -> &mut HostStorage {
-        &mut self.storage
-    }
-}
+struct HostData {}
 
 pub fn main() {
     let engine = Engine::default();

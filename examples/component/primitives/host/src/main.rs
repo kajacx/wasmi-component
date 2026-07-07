@@ -1,5 +1,5 @@
-use wasmi_component::wasmi::{Engine, Store};
-use wasmi_component::{AsHostStorage, Component, HostResult, HostStorage, LowerVal};
+use wasmi_component::wasmi::Engine;
+use wasmi_component::{Component, HostResult, LowerVal, Store};
 
 mod bindings;
 
@@ -8,19 +8,7 @@ const WASM: &[u8] = include_bytes!(
 );
 
 #[derive(Default)]
-struct HostData {
-    storage: HostStorage,
-}
-
-impl AsHostStorage for HostData {
-    fn as_host_storage(&self) -> &HostStorage {
-        &self.storage
-    }
-
-    fn as_host_storage_mut(&mut self) -> &mut HostStorage {
-        &mut self.storage
-    }
-}
+struct HostData {}
 
 impl bindings::TestExampleImports for HostData {
     fn add_import(&mut self, value_a: u32, value_b: u32) -> HostResult<u32> {
