@@ -1,7 +1,7 @@
 use anyhow::Result;
 use wasmi::{Val, ValType};
 
-use crate::{CompValue, FatPtr};
+use crate::{CompValue, FatPtr, IntoOwned};
 
 impl CompValue for String {
     type Borrowed<'a> = &'a str;
@@ -39,8 +39,10 @@ impl CompValue for String {
 
         Ok(str::from_utf8(slice)?)
     }
+}
 
-    fn into_owned(val: Self::Borrowed<'_>) -> Self {
-        val.to_string()
+impl<'a> IntoOwned<String> for &'a str {
+    fn into_owned(self) -> String {
+        self.to_string()
     }
 }

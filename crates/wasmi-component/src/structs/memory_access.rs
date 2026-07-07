@@ -119,7 +119,7 @@ impl FatPtr {
     pub fn try_index<'a>(&self, bytes: &'a [u8]) -> Result<&'a [u8]> {
         bytes.get(self.as_range()).with_context(|| {
             format!(
-                "Tried to index memory or size {} at {} with length {}",
+                "Tried to index memory of size {} at {} with length {}",
                 bytes.len(),
                 self.start,
                 self.count * self.size

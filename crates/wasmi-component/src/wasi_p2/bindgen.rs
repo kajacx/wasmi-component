@@ -100,7 +100,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/poll@0.2.0#[method]pollable.block");
     linker.func_new(
         "wasi:io/poll@0.2.0",
         "[method]pollable.block",
@@ -145,7 +144,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/poll@0.2.0#[resource-drop]pollable");
     linker.func_new(
         "wasi:io/poll@0.2.0",
         "[resource-drop]pollable",
@@ -187,7 +185,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/error@0.2.0#[resource-drop]error");
     linker.func_new(
         "wasi:io/error@0.2.0",
         "[resource-drop]error",
@@ -229,7 +226,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/streams@0.2.0#[method]input-stream.blocking-read");
     linker.func_new(
         "wasi:io/streams@0.2.0",
         "[method]input-stream.blocking-read",
@@ -274,7 +270,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/streams@0.2.0#[method]input-stream.subscribe");
     linker.func_new(
         "wasi:io/streams@0.2.0",
         "[method]input-stream.subscribe",
@@ -319,7 +314,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/streams@0.2.0#[method]output-stream.check-write");
     linker.func_new(
         "wasi:io/streams@0.2.0",
         "[method]output-stream.check-write",
@@ -364,7 +358,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/streams@0.2.0#[method]output-stream.write");
     linker.func_new(
         "wasi:io/streams@0.2.0",
         "[method]output-stream.write",
@@ -408,7 +401,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/streams@0.2.0#[method]output-stream.blocking-flush");
     linker.func_new(
         "wasi:io/streams@0.2.0",
         "[method]output-stream.blocking-flush",
@@ -453,7 +445,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/streams@0.2.0#[method]output-stream.subscribe");
     linker.func_new(
         "wasi:io/streams@0.2.0",
         "[method]output-stream.subscribe",
@@ -498,7 +489,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/streams@0.2.0#[resource-drop]input-stream");
     linker.func_new(
         "wasi:io/streams@0.2.0",
         "[resource-drop]input-stream",
@@ -540,7 +530,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:io/streams@0.2.0#[resource-drop]output-stream");
     linker.func_new(
         "wasi:io/streams@0.2.0",
         "[resource-drop]output-stream",
@@ -582,7 +571,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:cli/environment@0.2.0#get-environment");
     linker.func_new(
         "wasi:cli/environment@0.2.0",
         "get-environment",
@@ -624,7 +612,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:cli/exit@0.2.0#exit");
     linker.func_new(
         "wasi:cli/exit@0.2.0",
         "exit",
@@ -666,7 +653,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:cli/stdin@0.2.0#get-stdin");
     linker.func_new(
         "wasi:cli/stdin@0.2.0",
         "get-stdin",
@@ -708,7 +694,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:cli/stdout@0.2.0#get-stdout");
     linker.func_new(
         "wasi:cli/stdout@0.2.0",
         "get-stdout",
@@ -750,7 +735,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:cli/stderr@0.2.0#get-stderr");
     linker.func_new(
         "wasi:cli/stderr@0.2.0",
         "get-stderr",
@@ -792,7 +776,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:cli/terminal-input@0.2.0#[resource-drop]terminal-input");
     linker.func_new(
         "wasi:cli/terminal-input@0.2.0",
         "[resource-drop]terminal-input",
@@ -834,7 +817,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:cli/terminal-output@0.2.0#[resource-drop]terminal-output");
     linker.func_new(
         "wasi:cli/terminal-output@0.2.0",
         "[resource-drop]terminal-output",
@@ -876,7 +858,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:cli/terminal-stdin@0.2.0#get-terminal-stdin");
     linker.func_new(
         "wasi:cli/terminal-stdin@0.2.0",
         "get-terminal-stdin",
@@ -918,7 +899,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:cli/terminal-stdout@0.2.0#get-terminal-stdout");
     linker.func_new(
         "wasi:cli/terminal-stdout@0.2.0",
         "get-terminal-stdout",
@@ -960,7 +940,6 @@ pub fn add_root_to_linker<D>(
         result_ty.clear();
     }
 
-    println!("adding: wasi:cli/terminal-stderr@0.2.0#get-terminal-stderr");
     linker.func_new(
         "wasi:cli/terminal-stderr@0.2.0",
         "get-terminal-stderr",

@@ -34,6 +34,7 @@ cd examples/wasi/stdio
 
 cd host
 cargo fmt
-cargo run 2> error.log || true
+cargo run > output.log 2> error.log || true
+cat output.log
 cat error.log
 cd ..

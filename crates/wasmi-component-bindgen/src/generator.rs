@@ -217,13 +217,10 @@ impl Generator {
             writeln!(
                 output,
                 concat!(
-                    "println!(\"adding: {}#{}\");\n",
                     "  linker.func_new(\"{}\", \"{}\", ",
                     "FuncType::new(params_ty, result_ty), ",
                     "move |mut caller, params, results| {{",
                 ),
-                func.module_name.as_deref().unwrap_or("$root"),
-                func.func_name,
                 func.module_name.as_deref().unwrap_or("$root"),
                 func.func_name,
             )

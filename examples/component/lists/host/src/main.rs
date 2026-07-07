@@ -1,5 +1,5 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{CompValue, Component, HostResult, LowerVal, Store};
+use wasmi_component::{CompValue, Component, HostResult, IntoOwned, LowerVal, Store};
 
 mod bindings;
 
@@ -15,14 +15,14 @@ impl bindings::TestExampleImports for HostData {
         &mut self,
         value: <Vec<i32> as CompValue>::Borrowed<'_>,
     ) -> HostResult<impl LowerVal<Vec<i32>> + 'static> {
-        Ok(value.to_owned())
+        Ok(value.into_owned())
     }
 
     fn list_string(
         &mut self,
         value: <Vec<String> as CompValue>::Borrowed<'_>,
     ) -> HostResult<impl LowerVal<Vec<String>> + 'static> {
-        Ok(value.to_owned())
+        Ok(value.into_owned())
     }
 
     fn log(&mut self, message: &str) -> HostResult<()> {
@@ -32,6 +32,15 @@ impl bindings::TestExampleImports for HostData {
 }
 
 pub fn main() {
+    std::thread::Builder::new()
+        .stack_size(128 * 1024 * 1024)
+        .spawn(main_)
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+pub fn main_() {
     let engine = Engine::default();
     let mut store = Store::new(&engine, HostData::default());
 

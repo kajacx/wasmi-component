@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crate::{Borrow, CompValue, LowerVal, Own, StoreData, wasi_p2::resources::*};
+use crate::{Borrow, CompValue, IntoOwned, LowerVal, Own, StoreData, wasi_p2::resources::*};
 
 #[allow(unused)]
 impl<D> super::bindgen::RootImports for StoreData<D> {
@@ -52,7 +52,7 @@ impl<D> super::bindgen::RootImports for StoreData<D> {
     ) -> crate::HostResult<impl LowerVal<Result<(), StreamError>> + 'static> {
         println!("Calling method_output_stream_write");
 
-        let bytes = contents.to_owned(); // TODO: would be cool to not need this
+        let bytes = contents.into_owned(); // TODO: would be cool to not need this
         std::io::stdout()
             .write_all(&bytes)
             .expect("write to stdout");
@@ -110,7 +110,7 @@ impl<D> super::bindgen::RootImports for StoreData<D> {
     fn get_stdout(
         &mut self,
     ) -> crate::HostResult<impl LowerVal<Own<OutputStreamResource>> + 'static> {
-        println!("get_stdout called");
+        println!("Calling get_stdout");
 
         Ok(Own::<OutputStreamResource>::new(0))
     }
@@ -118,7 +118,8 @@ impl<D> super::bindgen::RootImports for StoreData<D> {
     fn get_stderr(
         &mut self,
     ) -> crate::HostResult<impl LowerVal<Own<OutputStreamResource>> + 'static> {
-        todo!();
+        println!("Calling get_stderr");
+
         Ok(Own::<OutputStreamResource>::new(0))
     }
 

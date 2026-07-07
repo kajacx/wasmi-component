@@ -17,7 +17,7 @@ pub use terminal_output::*;
 use anyhow::Result;
 use wasmi::ValType;
 
-use crate::{CompValue, LowerVal, Own};
+use crate::{CompValue, IntoOwned, LowerVal, Own};
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -54,9 +54,11 @@ impl CompValue for StreamError {
     fn lift_bytes<'a>(_bytes: &[u8], _memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
         todo!()
     }
+}
 
-    fn into_owned(val: Self::Borrowed<'_>) -> Self {
-        val
+impl IntoOwned<Self> for StreamError {
+    fn into_owned(self) -> Self {
+        self
     }
 }
 

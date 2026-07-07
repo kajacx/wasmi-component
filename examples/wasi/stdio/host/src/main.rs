@@ -10,6 +10,15 @@ const WASM: &[u8] =
 struct HostData {}
 
 pub fn main() {
+    std::thread::Builder::new()
+        .stack_size(128 * 1024 * 1024)
+        .spawn(main_)
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+pub fn main_() {
     let engine = Engine::default();
     let mut store = Store::new(&engine, HostData::default());
 
@@ -21,6 +30,13 @@ pub fn main() {
     exports
         .print_stdout
         .call(&mut store, ("Message to stdout",))
+        .unwrap();
+
+    println!("Host execution returned");
+
+    exports
+        .print_stdout
+        .call(&mut store, ("Message to stdout again",))
         .unwrap();
 
     exports

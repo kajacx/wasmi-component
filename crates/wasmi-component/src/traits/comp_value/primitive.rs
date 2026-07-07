@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use wasmi::{Val, ValType};
 
-use crate::CompValue;
+use crate::{CompValue, IntoOwned};
 
 impl CompValue for i32 {
     type Borrowed<'a> = Self;
@@ -33,9 +33,11 @@ impl CompValue for i32 {
 
         Ok(Self::from_le_bytes(bytes.try_into()?))
     }
+}
 
-    fn into_owned(val: Self::Borrowed<'_>) -> Self {
-        val
+impl IntoOwned<Self> for i32 {
+    fn into_owned(self) -> Self {
+        self
     }
 }
 
@@ -69,9 +71,11 @@ impl CompValue for u8 {
 
         Ok(Self::from_le_bytes(bytes.try_into()?))
     }
+}
 
-    fn into_owned(val: Self::Borrowed<'_>) -> Self {
-        val
+impl IntoOwned<Self> for u8 {
+    fn into_owned(self) -> Self {
+        self
     }
 }
 
@@ -105,9 +109,11 @@ impl CompValue for u32 {
 
         Ok(Self::from_le_bytes(bytes.try_into()?))
     }
+}
 
-    fn into_owned(val: Self::Borrowed<'_>) -> Self {
-        val
+impl IntoOwned<Self> for u32 {
+    fn into_owned(self) -> Self {
+        self
     }
 }
 
@@ -141,9 +147,11 @@ impl CompValue for u64 {
 
         Ok(Self::from_le_bytes(bytes.try_into()?))
     }
+}
 
-    fn into_owned(val: Self::Borrowed<'_>) -> Self {
-        val
+impl IntoOwned<Self> for u64 {
+    fn into_owned(self) -> Self {
+        self
     }
 }
 
@@ -180,8 +188,10 @@ impl CompValue for f32 {
 
         Ok(Self::from_le_bytes(bytes.try_into()?))
     }
+}
 
-    fn into_owned(val: Self::Borrowed<'_>) -> Self {
-        val
+impl IntoOwned<Self> for f32 {
+    fn into_owned(self) -> Self {
+        self
     }
 }

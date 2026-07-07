@@ -3,7 +3,7 @@ use std::cmp::max;
 use anyhow::{Result, bail};
 use wasmi::{Val, ValType};
 
-use crate::CompValue;
+use crate::{CompValue, IntoOwned};
 
 impl<T: CompValue, E: CompValue> CompValue for Result<T, E> {
     type Borrowed<'a> = Result<T::Borrowed<'a>, E::Borrowed<'a>>;
@@ -60,9 +60,14 @@ impl<T: CompValue, E: CompValue> CompValue for Result<T, E> {
             other => bail!("Invalid determinant in Result::lift_bytes: {other}"),
         }
     }
+}
 
-    fn into_owned(val: Self::Borrowed<'_>) -> Self {
-        val.map(T::into_owned).map_err(E::into_owned)
+impl<'a, T: CompValue, E: CompValue> IntoOwned<Result<T, E>>
+    for Result<T::Borrowed<'a>, E::Borrowed<'a>>
+{
+    fn into_owned(self) -> Result<T, E> {
+        self.map(T::Borrowed::into_owned)
+            .map_err(E::Borrowed::into_owned)
     }
 }
 
@@ -111,8 +116,10 @@ impl<T: CompValue> CompValue for Option<T> {
             other => bail!("Invalid determinant in Option::lift_bytes: {other}"),
         }
     }
+}
 
-    fn into_owned(val: Self::Borrowed<'_>) -> Self {
-        val.map(T::into_owned)
+impl<'a, T: CompValue> IntoOwned<Option<T>> for Option<T::Borrowed<'a>> {
+    fn into_owned(self) -> Option<T> {
+        self.map(T::Borrowed::into_owned)
     }
 }

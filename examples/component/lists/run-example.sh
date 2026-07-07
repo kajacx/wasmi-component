@@ -26,5 +26,7 @@ cargo run --manifest-path ../../../Cargo.toml -p wasmi-component-bindgen -- exam
 
 cd host
 cargo fmt
-cargo run || true
+cargo run > output.log 2> error.log || true
+cat output.log
+cat error.log
 cd ..
