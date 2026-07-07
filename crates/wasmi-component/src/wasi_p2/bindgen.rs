@@ -5,15 +5,9 @@ use crate::wasi_p2::resources::*;
 use crate::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
 #[allow(unused)]
 use crate::{
-    AsHostStorage, Borrow, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, Own,
-    TypedFunc, anyhow_result_to_wasmi,
+    Borrow, CompValue, Component, HostResult, LowerVal, MemoryAccessPre, Own, StoreData, TypedFunc,
+    anyhow_result_to_wasmi,
 };
-
-#[derive(Debug)]
-pub enum StreamError {
-    LastOperationFailed(Own<ErrorResource>),
-    Closed,
-}
 
 #[allow(unused)]
 pub trait RootImports {
@@ -21,6 +15,10 @@ pub trait RootImports {
         &mut self,
         self_: <Borrow<PollableResource> as CompValue>::Borrowed<'_>,
     ) -> HostResult<()>;
+
+    fn resource_drop_pollable(&mut self, index: i32) -> HostResult<()>;
+
+    fn resource_drop_error(&mut self, index: i32) -> HostResult<()>;
 
     fn method_input_stream_blocking_read(
         &mut self,
@@ -54,6 +52,10 @@ pub trait RootImports {
         self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
     ) -> HostResult<impl LowerVal<Own<PollableResource>> + 'static>;
 
+    fn resource_drop_input_stream(&mut self, index: i32) -> HostResult<()>;
+
+    fn resource_drop_output_stream(&mut self, index: i32) -> HostResult<()>;
+
     fn get_environment(&mut self) -> HostResult<impl LowerVal<Vec<(String, String)>> + 'static>;
 
     fn exit(&mut self, status: <Result<(), ()> as CompValue>::Borrowed<'_>) -> HostResult<()>;
@@ -63,6 +65,10 @@ pub trait RootImports {
     fn get_stdout(&mut self) -> HostResult<impl LowerVal<Own<OutputStreamResource>> + 'static>;
 
     fn get_stderr(&mut self) -> HostResult<impl LowerVal<Own<OutputStreamResource>> + 'static>;
+
+    fn resource_drop_terminal_input(&mut self, index: i32) -> HostResult<()>;
+
+    fn resource_drop_terminal_output(&mut self, index: i32) -> HostResult<()>;
 
     fn get_terminal_stdin(
         &mut self,
@@ -80,18 +86,12 @@ pub trait RootImports {
 #[allow(unused)]
 pub struct RootExports {}
 
-pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
-    mut ctx: impl AsContextMut<Data = D>,
-    component: &Component,
-) -> Result<RootExports> {
-    #[allow(unused_mut)]
-    let mut linker = Linker::<D>::new(ctx.as_context().engine());
-    let memory_index = ctx
-        .as_context_mut()
-        .data_mut()
-        .as_host_storage_mut()
-        .next_memory_index();
-
+#[allow(unused)]
+pub fn add_root_to_linker<D: RootImports>(
+    mut ctx: impl AsContextMut<Data = StoreData<D>>,
+    linker: &mut Linker<StoreData<D>>,
+    memory_index: usize,
+) -> Result<()> {
     let mut params_ty = <(Borrow<PollableResource>,)>::arg_types();
     let mut result_ty = <()>::arg_types();
     let has_external_result = result_ty.len() > 1;
@@ -105,7 +105,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "[method]pollable.block",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -121,7 +121,89 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data.method_pollable_block(args.0)?;
+            let res = user_data.data_mut().method_pollable_block(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <()>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(i32,)>::arg_types();
+    let mut result_ty = <()>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/poll@0.2.6",
+        "[resource-drop]pollable",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.data_mut().resource_drop_pollable(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <()>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(i32,)>::arg_types();
+    let mut result_ty = <()>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/error@0.2.6",
+        "[resource-drop]error",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.data_mut().resource_drop_error(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -149,7 +231,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "[method]input-stream.blocking-read",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -165,7 +247,9 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data.method_input_stream_blocking_read(args.0, args.1)?;
+            let res = user_data
+                .data_mut()
+                .method_input_stream_blocking_read(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -193,7 +277,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "[method]input-stream.subscribe",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -209,7 +293,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data.method_input_stream_subscribe(args.0)?;
+            let res = user_data.data_mut().method_input_stream_subscribe(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -237,7 +321,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "[method]output-stream.check-write",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -253,7 +337,9 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data.method_output_stream_check_write(args.0)?;
+            let res = user_data
+                .data_mut()
+                .method_output_stream_check_write(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -281,7 +367,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "[method]output-stream.write",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -296,7 +382,9 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
             let args = anyhow_result_to_wasmi(
                 <(Borrow<OutputStreamResource>, Vec<u8>)>::lift_args(params_slice, bytes),
             )?;
-            let res = user_data.method_output_stream_write(args.0, args.1)?;
+            let res = user_data
+                .data_mut()
+                .method_output_stream_write(args.0, args.1)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -324,7 +412,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "[method]output-stream.blocking-flush",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -340,7 +428,9 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data.method_output_stream_blocking_flush(args.0)?;
+            let res = user_data
+                .data_mut()
+                .method_output_stream_blocking_flush(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -368,7 +458,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "[method]output-stream.subscribe",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -384,12 +474,96 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
                 params_slice,
                 bytes,
             ))?;
-            let res = user_data.method_output_stream_subscribe(args.0)?;
+            let res = user_data
+                .data_mut()
+                .method_output_stream_subscribe(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
                 let address = params[params.len() - 1].i32().unwrap() as usize;
                 let range = address..(address + <Own<PollableResource>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(i32,)>::arg_types();
+    let mut result_ty = <()>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/streams@0.2.6",
+        "[resource-drop]input-stream",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.data_mut().resource_drop_input_stream(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <()>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(i32,)>::arg_types();
+    let mut result_ty = <()>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:io/streams@0.2.6",
+        "[resource-drop]output-stream",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.data_mut().resource_drop_output_stream(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <()>::byte_size());
                 anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
             } else {
                 anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
@@ -412,7 +586,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "get-environment",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -425,7 +599,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.get_environment()?;
+            let res = user_data.data_mut().get_environment()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -453,7 +627,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "exit",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -466,7 +640,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(Result<(), ()>,)>::lift_args(params_slice, bytes))?;
-            let res = user_data.exit(args.0)?;
+            let res = user_data.data_mut().exit(args.0)?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -494,7 +668,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "get-stdin",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -507,7 +681,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.get_stdin()?;
+            let res = user_data.data_mut().get_stdin()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -535,7 +709,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "get-stdout",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -548,7 +722,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.get_stdout()?;
+            let res = user_data.data_mut().get_stdout()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -576,7 +750,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "get-stderr",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -589,12 +763,94 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.get_stderr()?;
+            let res = user_data.data_mut().get_stderr()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
                 let address = params[params.len() - 1].i32().unwrap() as usize;
                 let range = address..(address + <Own<OutputStreamResource>>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(i32,)>::arg_types();
+    let mut result_ty = <()>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:cli/terminal-input@0.2.6",
+        "[resource-drop]terminal-input",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.data_mut().resource_drop_terminal_input(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <()>::byte_size());
+                anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+            } else {
+                anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+            }
+
+            Ok(())
+        },
+    )?;
+
+    let mut params_ty = <(i32,)>::arg_types();
+    let mut result_ty = <()>::arg_types();
+    let has_external_result = result_ty.len() > 1;
+    if has_external_result {
+        params_ty.push(ValType::I32);
+        result_ty.clear();
+    }
+
+    linker.func_new(
+        "wasi:cli/terminal-output@0.2.6",
+        "[resource-drop]terminal-output",
+        FuncType::new(params_ty, result_ty),
+        move |mut caller, params, results| {
+            let memory_pre = *caller.data().get_memory(memory_index);
+            let (bytes, user_data) = memory_pre
+                .memory
+                .data_and_store_mut(caller.as_context_mut());
+
+            let params_slice = if has_external_result {
+                &params[0..(params.len() - 1)]
+            } else {
+                params
+            };
+
+            #[allow(unused)]
+            let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
+            let res = user_data.data_mut().resource_drop_terminal_output(args.0)?;
+            let mut memory_filled = memory_pre.fill(caller);
+
+            if has_external_result {
+                let address = params[params.len() - 1].i32().unwrap() as usize;
+                let range = address..(address + <()>::byte_size());
                 anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
             } else {
                 anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
@@ -617,7 +873,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "get-terminal-stdin",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -630,7 +886,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.get_terminal_stdin()?;
+            let res = user_data.data_mut().get_terminal_stdin()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -658,7 +914,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "get-terminal-stdout",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -671,7 +927,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.get_terminal_stdout()?;
+            let res = user_data.data_mut().get_terminal_stdout()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -699,7 +955,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         "get-terminal-stderr",
         FuncType::new(params_ty, result_ty),
         move |mut caller, params, results| {
-            let memory_pre = *caller.data().as_host_storage().get_memory(memory_index);
+            let memory_pre = *caller.data().get_memory(memory_index);
             let (bytes, user_data) = memory_pre
                 .memory
                 .data_and_store_mut(caller.as_context_mut());
@@ -712,7 +968,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = user_data.get_terminal_stderr()?;
+            let res = user_data.data_mut().get_terminal_stderr()?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -727,6 +983,20 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
         },
     )?;
 
+    Ok(())
+}
+
+#[allow(unused)]
+pub fn instantiate_root_world<D: RootImports>(
+    mut ctx: impl AsContextMut<Data = StoreData<D>>,
+    component: &Component,
+) -> Result<RootExports> {
+    #[allow(unused_mut)]
+    let mut linker = Linker::<StoreData<D>>::new(ctx.as_context().engine());
+    let memory_index = ctx.as_context_mut().data_mut().next_memory_index();
+
+    add_root_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;
+
     let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module)?;
 
     let memory = instance
@@ -738,7 +1008,7 @@ pub fn instantiate_root_world<D: AsHostStorage + RootImports>(
     let memory_pre = MemoryAccessPre::new(memory, cabi_realloc);
     ctx.as_context_mut()
         .data_mut()
-        .as_host_storage_mut()
         .insert_memory(memory_index, memory_pre);
+
     Ok(RootExports {})
 }

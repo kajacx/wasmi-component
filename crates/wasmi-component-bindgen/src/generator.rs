@@ -13,17 +13,17 @@ pub fn generate_wit(wit: ParsedWit, output: &mut String) {
             "use wasmi_component::wasmi::{{AsContext, AsContextMut, Caller, ",
             "FuncType, Linker, ValType}};\n",
             "#[allow(unused)]\n",
-            "use wasmi_component::{{AsHostStorage, Borrow, Component, CompValue, HostResult, ",
-            "LowerVal, MemoryAccessPre, Own, TypedFunc, anyhow_result_to_wasmi}};\n",
+            "use wasmi_component::{{Borrow, Component, CompValue, HostResult, ",
+            "LowerVal, MemoryAccessPre, Own, StoreData, TypedFunc, anyhow_result_to_wasmi}};\n",
             "#[allow(unused)]\n",
-            "use crate::wasi_p2::resources::*;\n"
+            "use wasmi_component::wasi_p2::resources::*;\n"
         )
     )
     .unwrap();
 
-    wit.types
-        .iter()
-        .for_each(|ty| writeln!(output, "{ty}").unwrap());
+    // wit.types
+    //     .iter()
+    //     .for_each(|ty| writeln!(output, "{ty}").unwrap());
 
     wit.worlds
         .iter()
@@ -64,34 +64,23 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
     writeln!(output, "}}").unwrap();
     writeln!(output).unwrap();
 
-    writeln!(
-        output,
-        concat!(
-            "pub fn instantiate_{}_world<D: AsHostStorage{}>",
-            "(mut ctx: impl AsContextMut<Data = D>, component: &Component)",
-            " -> Result<{}> {{",
-        ),
-        world.world_name.to_snake_case(),
-        if !world.imports.is_empty() {
-            format!(" + {imports_name}")
-        } else {
-            "".to_string()
-        },
-        exports_name
-    )
-    .unwrap();
+    let imports_bound = if !world.imports.is_empty() {
+        format!(": {imports_name}")
+    } else {
+        "".to_string()
+    };
 
     writeln!(
         output,
         concat!(
-            "  #[allow(unused_mut)]\n",
-            "  let mut linker = Linker::<D>::new(ctx.as_context().engine());\n",
-            "  let memory_index = ctx",
-            ".as_context_mut()",
-            ".data_mut()",
-            ".as_host_storage_mut()",
-            ".next_memory_index();\n",
-        )
+            "#[allow(unused)]\n",
+            "pub fn add_{}_to_linker<D{}>",
+            "(mut ctx: impl AsContextMut<Data = StoreData<D>>,",
+            " linker: &mut Linker<StoreData<D>>, memory_index: usize)",
+            " -> Result<()> {{"
+        ),
+        world.world_name.to_snake_case(),
+        imports_bound
     )
     .unwrap();
 
@@ -127,8 +116,7 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
         writeln!(
             output,
             concat!(
-                "    let memory_pre = *caller.data().",
-                "as_host_storage().get_memory(memory_index);\n",
+                "    let memory_pre = *caller.data().get_memory(memory_index);\n",
                 "    let (bytes, user_data) = memory_pre.memory.",
                 "data_and_store_mut(caller.as_context_mut());\n",
                 "\n",
@@ -140,7 +128,7 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
                 "\n",
                 "    #[allow(unused)]\n",
                 "    let args = anyhow_result_to_wasmi(<({})>::lift_args(params_slice, bytes))?;\n",
-                "    let res = user_data.{}({})?;",
+                "    let res = user_data.data_mut().{}({})?;",
                 "\n",
                 "    let mut memory_filled = memory_pre.fill(caller);\n",
                 "\n",
@@ -163,6 +151,42 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
         .unwrap();
     });
 
+    writeln!(output, "  Ok(())\n}}\n").unwrap();
+
+    writeln!(
+        output,
+        concat!(
+            "#[allow(unused)]\n",
+            "pub fn instantiate_{}_world<D{}>",
+            "(mut ctx: impl AsContextMut<Data = StoreData<D>>, component: &Component)",
+            " -> Result<{}> {{",
+        ),
+        world.world_name.to_snake_case(),
+        imports_bound,
+        exports_name
+    )
+    .unwrap();
+
+    writeln!(
+        output,
+        concat!(
+            "  #[allow(unused_mut)]\n",
+            "  let mut linker = Linker::<StoreData<D>>::new(ctx.as_context().engine());\n",
+            "  let memory_index = ctx",
+            ".as_context_mut()",
+            ".data_mut()",
+            ".next_memory_index();\n",
+        )
+    )
+    .unwrap();
+
+    writeln!(
+        output,
+        "add_{}_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;\n",
+        world.world_name.to_snake_case()
+    )
+    .unwrap();
+
     writeln!(
         output,
         concat!(
@@ -174,8 +198,7 @@ fn generate_world(world: &ParsedWorld, output: &mut String) {
             "(ctx.as_context_mut(), \"cabi_realloc\")?;\n",
             "\n",
             "  let memory_pre = MemoryAccessPre::new(memory, cabi_realloc);\n",
-            "  ctx.as_context_mut().data_mut().as_host_storage_mut()",
-            ".insert_memory(memory_index, memory_pre);"
+            "  ctx.as_context_mut().data_mut().insert_memory(memory_index, memory_pre);\n"
         )
     )
     .unwrap();

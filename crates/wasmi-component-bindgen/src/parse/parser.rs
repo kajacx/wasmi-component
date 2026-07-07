@@ -1,7 +1,7 @@
 use heck::{ToSnakeCase, ToUpperCamelCase};
 use wit_parser::{
-    Function, Handle, Interface, Resolve, Type, TypeDef, TypeDefKind, TypeId, World, WorldItem,
-    WorldKey,
+    Docs, Function, Handle, Interface, Resolve, Span, Type, TypeDef, TypeDefKind, TypeId, World,
+    WorldItem, WorldKey,
 };
 
 use crate::parse::{Func, Param, ParsedWit, ParsedWorld};
@@ -36,7 +36,7 @@ impl Parser {
     fn parse_type(&self, ty: &TypeDef) -> Vec<String> {
         match &ty.kind {
             TypeDefKind::Variant(var) => {
-                let mut output = String::from("#[derive(Debug)]\n");
+                let mut output = String::from("#[allow(unused)]\n#[derive(Debug)]\n");
 
                 output.push_str("pub enum ");
                 output.push_str(&ty.name.as_ref().unwrap().to_upper_camel_case());
@@ -88,13 +88,40 @@ impl Parser {
             WorldItem::Interface { id, .. } => {
                 let interface = &self.resolve.interfaces[*id];
 
-                interface
+                let mut result: Vec<_> = interface
                     .functions
                     .iter()
                     .map(|(_name, func)| self.parse_function(func, key, Some(interface)))
-                    .collect()
+                    .collect();
+
+                interface.types.iter().for_each(|(name, id)| {
+                    let ty = &self.resolve.types[*id].kind;
+                    if matches!(ty, TypeDefKind::Resource) {
+                        let drop = Function {
+                            docs: Docs::default(),
+                            kind: wit_parser::FunctionKind::Freestanding,
+                            name: format!("[resource-drop]{name}"),
+                            params: vec![wit_parser::Param {
+                                name: "index".to_string(),
+                                ty: Type::S32,
+                                span: Span::default(),
+                            }],
+                            result: None,
+                            stability: wit_parser::Stability::Unknown,
+                            span: Span::default(),
+                        };
+                        result.push(self.parse_function(&drop, key, Some(interface)));
+                        eprintln!("Resource {name} found in iface {:?}", interface.name)
+                    }
+                });
+
+                result
             }
             WorldItem::Type { .. } => {
+                // let ty = &self.resolve.types[*id].kind;
+                // if matches!(ty, TypeDefKind::Resource) {
+                //     eprintln!("Resource ? found in ?");
+                // }
                 vec![]
             }
         }

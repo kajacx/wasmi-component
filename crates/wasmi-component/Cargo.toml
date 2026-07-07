@@ -8,5 +8,7 @@ license.workspace = true
 [dependencies]
 # wasmi = { version = "1.0" }
 wasmi = { path = "../../../wasmi/crates/wasmi" }
-wasmparser = { version = "0.252.0" }
+wasmparser = { version = "0.253.0" }
 anyhow = { version = "1.0" }
+slotmap = { version = "1.0" }
+as-any = { version = "0.3.0" }
