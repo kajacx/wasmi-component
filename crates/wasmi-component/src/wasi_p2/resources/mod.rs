@@ -17,10 +17,10 @@ pub use terminal_output::*;
 use anyhow::Result;
 use wasmi::ValType;
 
-use crate::{CompValue, IntoOwned, LowerVal, Own};
+use crate::{CompValue, LowerVal, Own, View};
 
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StreamError {
     LastOperationFailed(Own<ErrorResource>),
     Closed,
@@ -56,9 +56,14 @@ impl CompValue for StreamError {
     }
 }
 
-impl IntoOwned<Self> for StreamError {
-    fn into_owned(self) -> Self {
-        self
+impl View<Self> for StreamError {
+    fn lift_owned(&self) -> Result<Self> {
+        Ok(self.clone())
+    }
+
+    fn lift_to(&self, target: &mut Self) -> Result<()> {
+        *target = self.clone();
+        Ok(())
     }
 }
 

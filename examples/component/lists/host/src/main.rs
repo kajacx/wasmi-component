@@ -1,5 +1,5 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{Component, HostResult, IntoOwned, ListAccessor, LowerVal, Store};
+use wasmi_component::{Component, HostResult, ListAccessor, LowerVal, Store, View};
 
 mod bindings;
 
@@ -15,14 +15,14 @@ impl bindings::TestExampleImports for HostData {
         &mut self,
         value: ListAccessor<i32>,
     ) -> HostResult<impl LowerVal<Vec<i32>> + 'static> {
-        Ok(value.into_owned())
+        Ok(value.lift_owned()?)
     }
 
     fn list_string(
         &mut self,
         value: ListAccessor<String>,
     ) -> HostResult<impl LowerVal<Vec<String>> + 'static> {
-        Ok(value.into_owned())
+        Ok(value.lift_owned()?)
     }
 
     fn log(&mut self, message: &str) -> HostResult<()> {

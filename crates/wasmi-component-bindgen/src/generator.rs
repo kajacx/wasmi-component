@@ -244,7 +244,7 @@ impl Generator {
                     "    #[allow(unused)]\n",
                     "    let args = anyhow_result_to_wasmi",
                     "(<({})>::lift_args(params_slice, bytes))?;\n",
-                    "    let res = store_data{}.{}({})?;",
+                    "    let res = anyhow_result_to_wasmi(store_data{}.{}({}))?;",
                     "\n",
                     "    let mut memory_filled = memory_pre.fill(caller);\n",
                     "\n",

@@ -10,4 +10,4 @@ pub use helpers::*;
 pub use structs::*;
 pub use traits::*;
 
-pub type HostResult<T> = Result<T, wasmi::Error>;
+pub type HostResult<T> = anyhow::Result<T>;

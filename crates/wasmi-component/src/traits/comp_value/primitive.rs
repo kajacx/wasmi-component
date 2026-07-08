@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use wasmi::{Val, ValType};
 
-use crate::{CompValue, IntoOwned};
+use crate::CompValue;
 
 impl CompValue for i32 {
     type Borrowed<'a> = Self;
@@ -32,12 +32,6 @@ impl CompValue for i32 {
         debug_assert_eq!(bytes.len(), Self::byte_size());
 
         Ok(Self::from_le_bytes(bytes.try_into()?))
-    }
-}
-
-impl IntoOwned<Self> for i32 {
-    fn into_owned(self) -> Self {
-        self
     }
 }
 
@@ -73,12 +67,6 @@ impl CompValue for u8 {
     }
 }
 
-impl IntoOwned<Self> for u8 {
-    fn into_owned(self) -> Self {
-        self
-    }
-}
-
 impl CompValue for u32 {
     type Borrowed<'a> = Self;
 
@@ -108,12 +96,6 @@ impl CompValue for u32 {
         debug_assert_eq!(bytes.len(), Self::byte_size());
 
         Ok(Self::from_le_bytes(bytes.try_into()?))
-    }
-}
-
-impl IntoOwned<Self> for u32 {
-    fn into_owned(self) -> Self {
-        self
     }
 }
 
@@ -149,12 +131,6 @@ impl CompValue for u64 {
     }
 }
 
-impl IntoOwned<Self> for u64 {
-    fn into_owned(self) -> Self {
-        self
-    }
-}
-
 impl CompValue for f32 {
     type Borrowed<'a> = Self;
 
@@ -187,11 +163,5 @@ impl CompValue for f32 {
         debug_assert_eq!(bytes.len(), Self::byte_size());
 
         Ok(Self::from_le_bytes(bytes.try_into()?))
-    }
-}
-
-impl IntoOwned<Self> for f32 {
-    fn into_owned(self) -> Self {
-        self
     }
 }

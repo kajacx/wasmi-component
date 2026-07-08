@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 pub struct Borrow<T> {
     #[allow(unused)] // TODO: unused
     pub(crate) index: usize,
+
     _data: PhantomData<T>,
 }
 
@@ -16,10 +17,19 @@ impl<T> Borrow<T> {
     }
 }
 
+impl<T> Clone for Borrow<T> {
+    fn clone(&self) -> Self {
+        Self::new(self.index)
+    }
+}
+
+impl<T> Copy for Borrow<T> {}
+
 #[derive(Debug)]
 pub struct Own<T> {
     #[allow(unused)] // TODO: unused
     pub(crate) index: usize,
+
     _data: PhantomData<T>,
 }
 
@@ -31,3 +41,11 @@ impl<T> Own<T> {
         }
     }
 }
+
+impl<T> Clone for Own<T> {
+    fn clone(&self) -> Self {
+        Self::new(self.index)
+    }
+}
+
+impl<T> Copy for Own<T> {}

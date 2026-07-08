@@ -112,7 +112,7 @@ pub fn add_root_to_linker<D>(
                 params_slice,
                 bytes,
             ))?;
-            let res = store_data.method_pollable_block(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.method_pollable_block(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -153,7 +153,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = store_data.resource_drop_pollable(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.resource_drop_pollable(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -194,7 +194,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = store_data.resource_drop_error(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.resource_drop_error(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -238,7 +238,9 @@ pub fn add_root_to_linker<D>(
                 params_slice,
                 bytes,
             ))?;
-            let res = store_data.method_input_stream_blocking_read(args.0, args.1)?;
+            let res = anyhow_result_to_wasmi(
+                store_data.method_input_stream_blocking_read(args.0, args.1),
+            )?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -282,7 +284,7 @@ pub fn add_root_to_linker<D>(
                 params_slice,
                 bytes,
             ))?;
-            let res = store_data.method_input_stream_subscribe(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.method_input_stream_subscribe(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -326,7 +328,7 @@ pub fn add_root_to_linker<D>(
                 params_slice,
                 bytes,
             ))?;
-            let res = store_data.method_output_stream_check_write(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.method_output_stream_check_write(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -369,7 +371,8 @@ pub fn add_root_to_linker<D>(
             let args = anyhow_result_to_wasmi(
                 <(Borrow<OutputStreamResource>, Vec<u8>)>::lift_args(params_slice, bytes),
             )?;
-            let res = store_data.method_output_stream_write(args.0, args.1)?;
+            let res =
+                anyhow_result_to_wasmi(store_data.method_output_stream_write(args.0, args.1))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -413,7 +416,8 @@ pub fn add_root_to_linker<D>(
                 params_slice,
                 bytes,
             ))?;
-            let res = store_data.method_output_stream_blocking_flush(args.0)?;
+            let res =
+                anyhow_result_to_wasmi(store_data.method_output_stream_blocking_flush(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -457,7 +461,7 @@ pub fn add_root_to_linker<D>(
                 params_slice,
                 bytes,
             ))?;
-            let res = store_data.method_output_stream_subscribe(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.method_output_stream_subscribe(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -498,7 +502,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = store_data.resource_drop_input_stream(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.resource_drop_input_stream(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -539,7 +543,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = store_data.resource_drop_output_stream(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.resource_drop_output_stream(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -580,7 +584,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = store_data.get_environment()?;
+            let res = anyhow_result_to_wasmi(store_data.get_environment())?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -621,7 +625,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(Result<(), ()>,)>::lift_args(params_slice, bytes))?;
-            let res = store_data.exit(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.exit(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -662,7 +666,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = store_data.get_stdin()?;
+            let res = anyhow_result_to_wasmi(store_data.get_stdin())?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -703,7 +707,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = store_data.get_stdout()?;
+            let res = anyhow_result_to_wasmi(store_data.get_stdout())?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -744,7 +748,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = store_data.get_stderr()?;
+            let res = anyhow_result_to_wasmi(store_data.get_stderr())?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -785,7 +789,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = store_data.resource_drop_terminal_input(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.resource_drop_terminal_input(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -826,7 +830,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<(i32,)>::lift_args(params_slice, bytes))?;
-            let res = store_data.resource_drop_terminal_output(args.0)?;
+            let res = anyhow_result_to_wasmi(store_data.resource_drop_terminal_output(args.0))?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -867,7 +871,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = store_data.get_terminal_stdin()?;
+            let res = anyhow_result_to_wasmi(store_data.get_terminal_stdin())?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -908,7 +912,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = store_data.get_terminal_stdout()?;
+            let res = anyhow_result_to_wasmi(store_data.get_terminal_stdout())?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {
@@ -949,7 +953,7 @@ pub fn add_root_to_linker<D>(
 
             #[allow(unused)]
             let args = anyhow_result_to_wasmi(<()>::lift_args(params_slice, bytes))?;
-            let res = store_data.get_terminal_stderr()?;
+            let res = anyhow_result_to_wasmi(store_data.get_terminal_stderr())?;
             let mut memory_filled = memory_pre.fill(caller);
 
             if has_external_result {

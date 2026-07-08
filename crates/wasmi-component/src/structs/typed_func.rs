@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use anyhow::{Context, Result};
 use wasmi::{AsContextMut, Val};
 
-use crate::{CompValue, FatPtr, IntoOwned, LowerVal, MemoryAccessFilled, MemoryAccessPre};
+use crate::{CompValue, FatPtr, LowerVal, MemoryAccessFilled, MemoryAccessPre, View};
 
 pub struct TypedFunc<Params, Results> {
     memory: MemoryAccessPre,
@@ -27,7 +27,7 @@ impl<Params: CompValue, Results: CompValue> TypedFunc<Params, Results> {
     }
 
     pub fn call(&self, ctx: impl AsContextMut, params: impl LowerVal<Params>) -> Result<Results> {
-        self.call_with_results(ctx, params, |res| res.into_owned())
+        self.call_with_results(ctx, params, |res| res.lift_owned())?
     }
 
     pub fn call_with_results<T, P: LowerVal<Params>>(

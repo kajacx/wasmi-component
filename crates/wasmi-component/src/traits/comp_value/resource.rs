@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use wasmi::{Val, ValType};
 
-use crate::{Borrow, CompValue, IntoOwned, Own, Resource};
+use crate::{Borrow, CompValue, Own, Resource};
 
 impl<T: Resource> CompValue for Borrow<T> {
     type Borrowed<'a> = Self;
@@ -39,12 +39,6 @@ impl<T: Resource> CompValue for Borrow<T> {
     }
 }
 
-impl<T: Resource> IntoOwned<Self> for Borrow<T> {
-    fn into_owned(self) -> Self {
-        self
-    }
-}
-
 impl<T: Resource> CompValue for Own<T> {
     type Borrowed<'a> = Self;
 
@@ -78,11 +72,5 @@ impl<T: Resource> CompValue for Own<T> {
         let index = i32::from_le_bytes(bytes.try_into()?) as usize;
 
         Ok(Own::new(index))
-    }
-}
-
-impl<T: Resource> IntoOwned<Self> for Own<T> {
-    fn into_owned(self) -> Self {
-        self
     }
 }

@@ -3,7 +3,7 @@ use std::cmp::max;
 use anyhow::Result;
 use wasmi::{Val, ValType};
 
-use crate::{CompValue, IntoOwned, round_up};
+use crate::{CompValue, round_up};
 
 impl CompValue for () {
     type Borrowed<'a> = Self;
@@ -37,12 +37,6 @@ impl CompValue for () {
     }
 }
 
-impl IntoOwned<()> for () {
-    fn into_owned(self) -> () {
-        self
-    }
-}
-
 impl<T: CompValue> CompValue for (T,) {
     type Borrowed<'a> = (T::Borrowed<'a>,);
 
@@ -72,12 +66,6 @@ impl<T: CompValue> CompValue for (T,) {
         debug_assert_eq!(bytes.len(), Self::byte_size());
 
         Ok((T::lift_bytes(bytes, memory)?,))
-    }
-}
-
-impl<'a, T: CompValue> IntoOwned<(T,)> for (T::Borrowed<'a>,) {
-    fn into_owned(self) -> (T,) {
-        (T::Borrowed::into_owned(self.0),)
     }
 }
 
@@ -135,16 +123,5 @@ impl<T0: CompValue, T1: CompValue> CompValue for (T0, T1) {
         debug_assert_eq!(index, Self::byte_size());
 
         Ok((val0, val1))
-    }
-}
-
-impl<'a, T0: CompValue, T1: CompValue> IntoOwned<(T0, T1)>
-    for (T0::Borrowed<'a>, T1::Borrowed<'a>)
-{
-    fn into_owned(self) -> (T0, T1) {
-        (
-            T0::Borrowed::into_owned(self.0),
-            T1::Borrowed::into_owned(self.1),
-        )
     }
 }

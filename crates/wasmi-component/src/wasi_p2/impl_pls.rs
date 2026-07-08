@@ -1,15 +1,12 @@
 use std::io::Write;
 
 use crate::{
-    Borrow, CompValue, HostResult, IntoOwned, LowerVal, Own, StoreData, wasi_p2::resources::*,
+    Borrow, CompValue, HostResult, ListAccessor, LowerVal, Own, StoreData, wasi_p2::resources::*,
 };
 
 #[allow(unused)]
 impl<D> super::bindgen::RootImports for StoreData<D> {
-    fn method_pollable_block(
-        &mut self,
-        self_: <Borrow<PollableResource> as CompValue>::Borrowed<'_>,
-    ) -> HostResult<()> {
+    fn method_pollable_block(&mut self, self_: Borrow<PollableResource>) -> HostResult<()> {
         todo!()
     }
 
@@ -49,14 +46,13 @@ impl<D> super::bindgen::RootImports for StoreData<D> {
 
     fn method_output_stream_write(
         &mut self,
-        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
-        contents: <Vec<u8> as CompValue>::Borrowed<'_>,
+        self_: Borrow<OutputStreamResource>,
+        contents: ListAccessor<u8>,
     ) -> HostResult<Result<(), StreamError>> {
         println!("Calling method_output_stream_write");
 
-        let bytes = contents.into_owned(); // TODO: would be cool to not need this
         std::io::stdout()
-            .write_all(&bytes)
+            .write_all(contents.as_u8_slice())
             .expect("write to stdout");
 
         Ok(Ok(()))
@@ -64,7 +60,7 @@ impl<D> super::bindgen::RootImports for StoreData<D> {
 
     fn method_output_stream_blocking_flush(
         &mut self,
-        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
+        self_: Borrow<OutputStreamResource>,
     ) -> HostResult<Result<(), StreamError>> {
         println!("Calling method_output_stream_blocking_flush");
 
@@ -73,7 +69,7 @@ impl<D> super::bindgen::RootImports for StoreData<D> {
 
     fn method_output_stream_subscribe(
         &mut self,
-        self_: <Borrow<OutputStreamResource> as CompValue>::Borrowed<'_>,
+        self_: Borrow<OutputStreamResource>,
     ) -> HostResult<Own<PollableResource>> {
         println!("Calling method_output_stream_subscribe");
 
