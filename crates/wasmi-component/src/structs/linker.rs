@@ -22,37 +22,18 @@ impl<T> Linker<T> {
         Ok(self)
     }
 
-    pub fn func_new<
-        Params: ComponentValue,
-        Results: ComponentValue,
-        ResultsLower: LowerVal<Results> + 'static,
-    >(
+    pub fn func_new<Params: ComponentValue, Results: ComponentValue, Res: LowerVal<Results>>(
         &mut self,
         module: &str,
         name: &str,
-        callback: impl for<'a> Fn(&'a mut T, Params::Borrowed<'_>) -> HostResult<ResultsLower>
+        callback: impl for<'a> Fn(&'a mut T, Params::Borrowed<'_>) -> HostResult<Res::Value<'a>>
         + Send
         + Sync
         + 'static,
-    ) -> Result<&mut Self> {
-        self.func_direct::<Params, Results, ResultsLower>(module, name, move |data, params| {
-            callback(&mut *data.data_mut(), params)
-        })
-    }
-
-    pub fn func_direct<
-        Params: ComponentValue,
-        Results: ComponentValue,
-        ResultsLower: LowerVal<Results> + 'static,
-    >(
-        &mut self,
-        module: &str,
-        name: &str,
-        callback: impl Fn(&mut StoreData<T>, Params::Borrowed<'_>) -> HostResult<ResultsLower>
-        + Send
-        + Sync
-        + 'static,
-    ) -> Result<&mut Self> {
+    ) -> Result<&mut Self>
+    where
+        T: 'static,
+    {
         let mut params_ty = Params::arg_types();
         let mut result_ty = Results::arg_types();
         let has_external_result = result_ty.len() > 1;
@@ -84,17 +65,20 @@ impl<T> Linker<T> {
                     params
                 };
 
+                let clone = store_data.data.clone();
+                let mut user_data = clone.borrow_mut();
+
                 let args = anyhow_result_to_wasmi(Params::lift_args(params_slice, bytes))?;
-                let res = anyhow_result_to_wasmi(callback(store_data, args))?;
+                let res = anyhow_result_to_wasmi(callback(&mut *user_data, args))?;
                 let mut memory_filled = memory_pre.fill(caller);
 
                 if has_external_result {
                     // TODO: unwrap, is it safe?
                     let address = params[params.len() - 1].i32().unwrap() as usize;
                     let range = address..(address + Results::byte_size());
-                    anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+                    anyhow_result_to_wasmi(Res::lower_bytes(res, range, &mut memory_filled))?;
                 } else {
-                    anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+                    anyhow_result_to_wasmi(Res::lower_args(res, results, &mut memory_filled))?;
                 }
 
                 Ok(())

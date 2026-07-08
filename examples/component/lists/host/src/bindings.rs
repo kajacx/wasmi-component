@@ -11,12 +11,13 @@ use wasmi_component::{
 
 #[allow(unused)]
 pub trait TestExampleImports {
-    type ListI32Return: LowerVal<Vec<i32>> + 'static;
+    type ListI32Return<'a>: LowerVal<Vec<i32>> + 'a
+    where
+        Self: 'a;
 
-    fn list_i32(&mut self, value: ListAccessor<i32>) -> HostResult<Self::ListI32Return>;
+    fn list_i32<'a>(&'a mut self, value: ListAccessor<i32>) -> HostResult<Self::ListI32Return<'a>>;
 
     type ListStringReturn: LowerVal<Vec<String>> + 'static;
-
     fn list_string(&mut self, value: ListAccessor<String>) -> HostResult<Self::ListStringReturn>;
 
     fn log(&mut self, message: &str) -> HostResult<()>;
@@ -31,7 +32,7 @@ pub struct TestExampleExports {
 
 #[allow(unused)]
 pub fn add_test_example_to_linker<T: TestExampleImports>(linker: &mut Linker<T>) -> Result<()> {
-    linker.func_new::<(Vec<i32>,), Vec<i32>, _>(
+    linker.func_new::<(Vec<i32>,), Vec<i32>, T::ListI32Return>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-i32",
         |host_data, params| host_data.list_i32(params.0),

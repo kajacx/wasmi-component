@@ -44,7 +44,7 @@ impl Generator {
             if matches!(func.result.lower, LowerArg::LowerVal) {
                 writeln!(
                     output,
-                    "  type {}Return: LowerVal<{}> + 'static;\n",
+                    "  type {}Return<'a>: LowerVal<{}> + 'a;\n",
                     func.func_name.to_upper_camel_case(),
                     func.result.canon
                 )

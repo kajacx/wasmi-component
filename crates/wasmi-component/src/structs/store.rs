@@ -14,7 +14,7 @@ pub struct Store<T> {
 }
 
 pub struct StoreData<T> {
-    data: Rc<RefCell<T>>,
+    pub(crate) data: Rc<RefCell<T>>,
 
     memory_table: Vec<MemoryAccessPre>,
 

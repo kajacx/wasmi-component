@@ -3,9 +3,7 @@ use std::marker::PhantomData;
 use anyhow::{Context, Result};
 use wasmi::{AsContextMut, Val};
 
-use crate::{
-    ComponentValue, FatPtr, LowerVal, MemoryAccessFilled, MemoryAccessPre, StoreData, View,
-};
+use crate::{ComponentValue, FatPtr, LowerVal, MemoryAccessPre, StoreData, View};
 
 pub struct TypedFunc<Params, Results> {
     memory: MemoryAccessPre,
@@ -28,25 +26,25 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         }
     }
 
-    pub fn call<T>(
+    pub fn call<T, P: LowerVal<Params>>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        params: impl LowerVal<Params>,
+        params: P::Value<'_>,
     ) -> Result<Results> {
-        self.call_with_results(ctx, params, |res| res.lift_owned())?
+        self.call_with_results::<T, P, _>(ctx, params, |res| res.lift_owned())?
     }
 
     pub fn call_with_results<T, P: LowerVal<Params>, R>(
         &self,
         mut ctx: impl AsContextMut<Data = StoreData<T>>,
-        params: P,
+        params: P::Value<'_>,
         callback: impl FnOnce(Results::Borrowed<'_>) -> R,
     ) -> Result<R> {
         let mut args: [Val; 16] = std::array::from_fn(|_| Val::I32(0));
         let args_len = Params::arg_count();
 
-        let mut memory_access = MemoryAccessFilled::new(&self.memory, ctx.as_context_mut());
-        params.lower_args(&mut args[0..args_len], &mut memory_access)?;
+        let mut memory_access = self.memory.fill(ctx.as_context_mut());
+        P::lower_args(params, &mut args[0..args_len], &mut memory_access)?;
         drop(memory_access);
 
         let mut results = [Val::I32(0)];

@@ -9,20 +9,30 @@ impl<T: ComponentValue, S: AsSlice> LowerVal<Vec<T>> for S
 where
     S::Target: LowerVal<T>,
 {
-    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+    type Value<'a> = S;
+
+    fn lower_args(
+        value: &Self::Value<'_>,
+        args: &mut [Val],
+        memory: &mut impl MemoryAccess,
+    ) -> Result<()> {
         debug_assert_eq!(args.len(), Vec::<T>::arg_count());
 
-        let contents = self.as_slice();
+        let contents = value.as_slice();
         let ptr = write_contents(contents, memory)?;
         ptr.write_to_args(args);
 
         Ok(())
     }
 
-    fn lower_bytes(&self, range: Range<usize>, memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower_bytes(
+        value: &Self::Value<'_>,
+        range: Range<usize>,
+        memory: &mut impl MemoryAccess,
+    ) -> Result<()> {
         debug_assert_eq!(range.len(), Vec::<T>::byte_size());
 
-        let contents = self.as_slice();
+        let contents = value.as_slice();
         let ptr = write_contents(contents, memory)?;
         ptr.write_to_bytes(memory.slice(range)?);
 
@@ -30,8 +40,8 @@ where
     }
 }
 
-fn write_contents<T: ComponentValue>(
-    contents: &[impl LowerVal<T>],
+fn write_contents<T: ComponentValue, L: LowerVal<T>>(
+    contents: &[L::Value<'_>],
     memory: &mut impl MemoryAccess,
 ) -> Result<FatPtr> {
     let len = T::byte_size() * contents.len();
@@ -39,7 +49,7 @@ fn write_contents<T: ComponentValue>(
     let mut index = start;
 
     for item in contents {
-        item.lower_bytes(index..(index + T::byte_size()), memory)?;
+        L::lower_bytes(item, index..(index + T::byte_size()), memory)?;
         index += T::byte_size();
     }
 
