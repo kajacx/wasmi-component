@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 use wasmi::{Val, ValType};
 
-use crate::CompValue;
+use crate::ComponentValue;
 
-impl CompValue for i32 {
+impl ComponentValue for i32 {
     type Borrowed<'a> = Self;
 
     fn arg_count() -> usize {
@@ -35,7 +35,7 @@ impl CompValue for i32 {
     }
 }
 
-impl CompValue for u8 {
+impl ComponentValue for u8 {
     type Borrowed<'a> = Self;
 
     fn arg_count() -> usize {
@@ -67,7 +67,7 @@ impl CompValue for u8 {
     }
 }
 
-impl CompValue for u32 {
+impl ComponentValue for u32 {
     type Borrowed<'a> = Self;
 
     fn arg_count() -> usize {
@@ -99,7 +99,7 @@ impl CompValue for u32 {
     }
 }
 
-impl CompValue for u64 {
+impl ComponentValue for u64 {
     type Borrowed<'a> = Self;
 
     fn arg_count() -> usize {
@@ -131,7 +131,7 @@ impl CompValue for u64 {
     }
 }
 
-impl CompValue for f32 {
+impl ComponentValue for f32 {
     type Borrowed<'a> = Self;
 
     fn arg_count() -> usize {

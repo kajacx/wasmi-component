@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::{CompValue, View};
+use crate::{ComponentValue, View};
 
 impl View<Self> for () {
     fn lift_owned(&self) -> Result<Self> {
@@ -12,7 +12,7 @@ impl View<Self> for () {
     }
 }
 
-impl<'a, T: CompValue> View<(T,)> for (T::Borrowed<'a>,) {
+impl<'a, T: ComponentValue> View<(T,)> for (T::Borrowed<'a>,) {
     fn lift_owned(&self) -> Result<(T,)> {
         Ok((self.0.lift_owned()?,))
     }
@@ -22,7 +22,9 @@ impl<'a, T: CompValue> View<(T,)> for (T::Borrowed<'a>,) {
     }
 }
 
-impl<'a, T0: CompValue, T1: CompValue> View<(T0, T1)> for (T0::Borrowed<'a>, T1::Borrowed<'a>) {
+impl<'a, T0: ComponentValue, T1: ComponentValue> View<(T0, T1)>
+    for (T0::Borrowed<'a>, T1::Borrowed<'a>)
+{
     fn lift_owned(&self) -> Result<(T0, T1)> {
         Ok((self.0.lift_owned()?, self.1.lift_owned()?))
     }

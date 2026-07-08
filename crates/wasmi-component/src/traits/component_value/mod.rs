@@ -12,7 +12,7 @@ mod result;
 mod string;
 mod tuple;
 
-pub trait CompValue: Sized + Debug {
+pub trait ComponentValue: Sized + Debug {
     type Borrowed<'a>: View<Self>;
 
     fn arg_count() -> usize;

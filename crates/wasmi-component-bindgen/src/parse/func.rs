@@ -1,4 +1,4 @@
-use heck::ToSnakeCase;
+use heck::{ToSnakeCase, ToUpperCamelCase};
 
 use crate::parse::{LowerArg, Param, ParamType};
 
@@ -36,6 +36,11 @@ impl Func {
             self.func_name.clone()
         }
     }
+    pub fn param_arg_indexes(&self) -> String {
+        (0..self.params.len())
+            .map(|index| format!("params.{index}, "))
+            .collect()
+    }
 
     pub fn params_full_lift(&self) -> String {
         self.params
@@ -51,17 +56,12 @@ impl Func {
             .collect()
     }
 
-    pub fn param_args(&self) -> String {
-        (0..self.params.len())
-            .map(|index| format!("args.{index}, "))
-            .collect()
-    }
-
-    pub fn host_return_type(&self, lifetime: &str) -> String {
+    pub fn host_return_type(&self) -> String {
         if let LowerArg::Specific(ty) = &self.result.lower {
             ty.clone()
         } else {
-            format!("impl LowerVal<{}> + {}", self.result.canon, lifetime)
+            // format!("impl LowerVal<{}> + {}", self.result.canon, lifetime)
+            format!("Self::{}Return", self.func_name.to_upper_camel_case())
         }
     }
 }

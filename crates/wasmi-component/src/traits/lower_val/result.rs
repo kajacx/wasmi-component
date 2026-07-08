@@ -3,10 +3,10 @@ use std::ops::Range;
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{CompValue, LowerVal, MemoryAccess, Slice};
+use crate::{ComponentValue, LowerVal, MemoryAccess, Slice};
 
-impl<T: CompValue, E: CompValue, TVal: LowerVal<T>, EVal: LowerVal<E>> LowerVal<Result<T, E>>
-    for Result<TVal, EVal>
+impl<T: ComponentValue, E: ComponentValue, TVal: LowerVal<T>, EVal: LowerVal<E>>
+    LowerVal<Result<T, E>> for Result<TVal, EVal>
 {
     fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
         debug_assert_eq!(args.len(), Result::<T, E>::arg_count());
@@ -47,7 +47,7 @@ impl<T: CompValue, E: CompValue, TVal: LowerVal<T>, EVal: LowerVal<E>> LowerVal<
     }
 }
 
-impl<T: CompValue, TVal: LowerVal<T>> LowerVal<Option<T>> for Option<TVal> {
+impl<T: ComponentValue, TVal: LowerVal<T>> LowerVal<Option<T>> for Option<TVal> {
     fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
         debug_assert_eq!(args.len(), Option::<T>::arg_count());
 

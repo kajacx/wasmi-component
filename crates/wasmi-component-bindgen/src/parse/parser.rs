@@ -75,11 +75,7 @@ impl Parser {
             .flat_map(|(key, item)| self.parse_world_item(key, item))
             .collect();
 
-        ParsedWorld {
-            world_name,
-            imports,
-            exports,
-        }
+        ParsedWorld::new(world_name, imports, exports)
     }
 
     fn parse_world_item(&self, key: &WorldKey, item: &WorldItem) -> Vec<Func> {

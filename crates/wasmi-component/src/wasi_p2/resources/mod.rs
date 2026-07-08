@@ -17,7 +17,7 @@ pub use terminal_output::*;
 use anyhow::Result;
 use wasmi::ValType;
 
-use crate::{CompValue, LowerVal, Own, View};
+use crate::{ComponentValue, LowerVal, Own, View};
 
 #[allow(unused)]
 #[derive(Debug, Clone)]
@@ -26,7 +26,7 @@ pub enum StreamError {
     Closed,
 }
 
-impl CompValue for StreamError {
+impl ComponentValue for StreamError {
     type Borrowed<'a> = Self;
 
     fn arg_count() -> usize {

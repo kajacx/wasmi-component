@@ -3,7 +3,7 @@ use std::ops::Range;
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{Borrow, CompValue, LowerVal, MemoryAccess, Own, Resource};
+use crate::{Borrow, ComponentValue, LowerVal, MemoryAccess, Own, Resource};
 
 impl<T: Resource> LowerVal<Borrow<T>> for Borrow<T> {
     fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {

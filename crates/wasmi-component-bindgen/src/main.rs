@@ -13,10 +13,6 @@ use parse::*;
 struct Args {
     /// Path to the input WIT file.
     wit: PathBuf,
-
-    /// Bind imported function directly to store data. Do not use.
-    #[arg(long, default_value_t = false)]
-    internal: bool,
 }
 
 fn main() {
@@ -32,7 +28,7 @@ fn main() {
     let parser = Parser::new(resolve);
     let wit = parser.parse_wit();
 
-    let generator = Generator::new(args.internal);
+    let generator = Generator::new();
     let output = generator.generate_wit(wit);
 
     print!("{output}");

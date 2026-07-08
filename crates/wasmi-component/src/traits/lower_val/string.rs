@@ -3,7 +3,7 @@ use std::{borrow::Cow, ops::Range};
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{CompValue, FatPtr, LowerVal, MemoryAccess};
+use crate::{ComponentValue, FatPtr, LowerVal, MemoryAccess};
 
 impl<T: AsStr> LowerVal<String> for T {
     fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {

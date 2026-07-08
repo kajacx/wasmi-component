@@ -3,7 +3,7 @@ use std::ops::Range;
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{CompValue, LowerVal, MemoryAccess};
+use crate::{ComponentValue, LowerVal, MemoryAccess};
 
 impl LowerVal<Self> for i32 {
     fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {

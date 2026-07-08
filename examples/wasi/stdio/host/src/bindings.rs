@@ -1,12 +1,12 @@
-use wasmi_component::anyhow::{Context, Result};
+use wasmi_component::anyhow::Result;
 #[allow(unused)]
 use wasmi_component::wasi_p2::{add_wasi_p2_to_linker, resources::*};
 #[allow(unused)]
-use wasmi_component::wasmi::{AsContext, AsContextMut, Caller, FuncType, Linker, ValType};
+use wasmi_component::wasmi::{AsContext, AsContextMut};
 #[allow(unused)]
 use wasmi_component::{
-    Borrow, CompValue, Component, HostResult, ListAccessor, LowerVal, MemoryAccessPre, Own,
-    StoreData, TypedFunc, anyhow_result_to_wasmi,
+    Borrow, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerVal, Own, StoreData,
+    TypedFunc,
 };
 
 #[allow(unused)]
@@ -19,69 +19,27 @@ pub struct TestExampleExports {
 }
 
 #[allow(unused)]
-pub fn add_test_example_to_linker<D>(
-    mut ctx: impl AsContextMut<Data = StoreData<D>>,
-    linker: &mut Linker<StoreData<D>>,
-    memory_index: usize,
-) -> Result<()> {
+pub fn add_test_example_to_linker<T>(linker: &mut Linker<T>) -> Result<()> {
     Ok(())
 }
 
 #[allow(unused)]
-pub fn instantiate_test_example_world<D>(
-    mut ctx: impl AsContextMut<Data = StoreData<D>>,
+pub fn instantiate_test_example_world<T>(
+    mut ctx: impl AsContextMut<Data = StoreData<T>>,
+    linker: &Linker<T>,
     component: &Component,
 ) -> Result<TestExampleExports> {
-    #[allow(unused_mut)]
-    let mut linker = Linker::<StoreData<D>>::new(ctx.as_context().engine());
-    let memory_index = ctx.as_context_mut().data_mut().next_memory_index();
+    let instance = linker.instantiate(ctx.as_context_mut(), &component)?;
 
-    if component.is_wasi_p2() {
-        add_wasi_p2_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;
-    }
+    let print_stdout = instance.get_typed_func(
+        ctx.as_context(),
+        "wasmi-component:wasi-examples/exported-funcs@0.1.0#print-stdout",
+    )?;
 
-    add_test_example_to_linker(ctx.as_context_mut(), &mut linker, memory_index)?;
-
-    let instance = linker.instantiate_and_start(ctx.as_context_mut(), &component.core_module)?;
-
-    let memory = instance
-        .get_memory(ctx.as_context(), "memory")
-        .context("get memory")?;
-    let cabi_realloc = instance
-        .get_typed_func::<(i32, i32, i32, i32), i32>(ctx.as_context_mut(), "cabi_realloc")?;
-
-    let memory_pre = MemoryAccessPre::new(memory, cabi_realloc);
-    ctx.as_context_mut()
-        .data_mut()
-        .insert_memory(memory_index, memory_pre);
-
-    let module_func = instance
-        .get_func(
-            ctx.as_context_mut(),
-            "wasmi-component:wasi-examples/exported-funcs@0.1.0#print-stdout",
-        )
-        .unwrap();
-    let cleanup_func = instance
-        .get_typed_func::<i32, ()>(
-            ctx.as_context_mut(),
-            "cabi_post_wasmi-component:wasi-examples/exported-funcs@0.1.0#print-stdout",
-        )
-        .ok();
-    let print_stdout = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
-
-    let module_func = instance
-        .get_func(
-            ctx.as_context_mut(),
-            "wasmi-component:wasi-examples/exported-funcs@0.1.0#print-stderr",
-        )
-        .unwrap();
-    let cleanup_func = instance
-        .get_typed_func::<i32, ()>(
-            ctx.as_context_mut(),
-            "cabi_post_wasmi-component:wasi-examples/exported-funcs@0.1.0#print-stderr",
-        )
-        .ok();
-    let print_stderr = TypedFunc::new(memory_pre.clone(), module_func, cleanup_func);
+    let print_stderr = instance.get_typed_func(
+        ctx.as_context(),
+        "wasmi-component:wasi-examples/exported-funcs@0.1.0#print-stderr",
+    )?;
 
     Ok(TestExampleExports {
         print_stdout,

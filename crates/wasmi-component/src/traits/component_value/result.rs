@@ -3,9 +3,9 @@ use std::cmp::max;
 use anyhow::{Result, bail};
 use wasmi::{Val, ValType};
 
-use crate::CompValue;
+use crate::ComponentValue;
 
-impl<T: CompValue, E: CompValue> CompValue for Result<T, E> {
+impl<T: ComponentValue, E: ComponentValue> ComponentValue for Result<T, E> {
     type Borrowed<'a> = Result<T::Borrowed<'a>, E::Borrowed<'a>>;
 
     fn arg_count() -> usize {
@@ -62,7 +62,7 @@ impl<T: CompValue, E: CompValue> CompValue for Result<T, E> {
     }
 }
 
-impl<T: CompValue> CompValue for Option<T> {
+impl<T: ComponentValue> ComponentValue for Option<T> {
     type Borrowed<'a> = Option<T::Borrowed<'a>>;
 
     fn arg_count() -> usize {

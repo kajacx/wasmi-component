@@ -3,9 +3,9 @@ use std::cmp::max;
 use anyhow::Result;
 use wasmi::{Val, ValType};
 
-use crate::{CompValue, round_up};
+use crate::{ComponentValue, round_up};
 
-impl CompValue for () {
+impl ComponentValue for () {
     type Borrowed<'a> = Self;
 
     fn arg_count() -> usize {
@@ -37,7 +37,7 @@ impl CompValue for () {
     }
 }
 
-impl<T: CompValue> CompValue for (T,) {
+impl<T: ComponentValue> ComponentValue for (T,) {
     type Borrowed<'a> = (T::Borrowed<'a>,);
 
     fn arg_count() -> usize {
@@ -69,7 +69,7 @@ impl<T: CompValue> CompValue for (T,) {
     }
 }
 
-impl<T0: CompValue, T1: CompValue> CompValue for (T0, T1) {
+impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
     type Borrowed<'a> = (T0::Borrowed<'a>, T1::Borrowed<'a>);
 
     fn arg_count() -> usize {

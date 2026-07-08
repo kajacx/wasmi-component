@@ -3,7 +3,9 @@ use std::marker::PhantomData;
 use anyhow::{Context, Result};
 use wasmi::{AsContextMut, Val};
 
-use crate::{CompValue, FatPtr, LowerVal, MemoryAccessFilled, MemoryAccessPre, View};
+use crate::{
+    ComponentValue, FatPtr, LowerVal, MemoryAccessFilled, MemoryAccessPre, StoreData, View,
+};
 
 pub struct TypedFunc<Params, Results> {
     memory: MemoryAccessPre,
@@ -12,7 +14,7 @@ pub struct TypedFunc<Params, Results> {
     _signature: PhantomData<fn(Params) -> Results>,
 }
 
-impl<Params: CompValue, Results: CompValue> TypedFunc<Params, Results> {
+impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results> {
     pub fn new(
         memory: MemoryAccessPre,
         inner: wasmi::Func,
@@ -26,16 +28,20 @@ impl<Params: CompValue, Results: CompValue> TypedFunc<Params, Results> {
         }
     }
 
-    pub fn call(&self, ctx: impl AsContextMut, params: impl LowerVal<Params>) -> Result<Results> {
+    pub fn call<T>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        params: impl LowerVal<Params>,
+    ) -> Result<Results> {
         self.call_with_results(ctx, params, |res| res.lift_owned())?
     }
 
-    pub fn call_with_results<T, P: LowerVal<Params>>(
+    pub fn call_with_results<T, P: LowerVal<Params>, R>(
         &self,
-        mut ctx: impl AsContextMut,
+        mut ctx: impl AsContextMut<Data = StoreData<T>>,
         params: P,
-        callback: impl FnOnce(Results::Borrowed<'_>) -> T,
-    ) -> Result<T> {
+        callback: impl FnOnce(Results::Borrowed<'_>) -> R,
+    ) -> Result<R> {
         let mut args: [Val; 16] = std::array::from_fn(|_| Val::I32(0));
         let args_len = Params::arg_count();
 
@@ -52,8 +58,18 @@ impl<Params: CompValue, Results: CompValue> TypedFunc<Params, Results> {
             &mut results[0..Results::arg_count()]
         };
 
+        let instance_id = self.memory.instance_id;
+        let depth = ctx
+            .as_context_mut()
+            .data_mut()
+            .push_call_instance(instance_id);
+
         self.inner
             .call(ctx.as_context_mut(), &args[0..args_len], results_slice)?;
+
+        ctx.as_context_mut()
+            .data_mut()
+            .pop_call_instance(instance_id, depth)?;
 
         let bytes = self.memory.memory.data(ctx.as_context());
         let lifted = if results_indirect {

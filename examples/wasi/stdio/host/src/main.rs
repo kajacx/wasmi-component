@@ -1,5 +1,7 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{Component, Store};
+use wasmi_component::{Component, Linker, Store};
+
+use crate::bindings::add_test_example_to_linker;
 
 mod bindings;
 
@@ -22,8 +24,13 @@ pub fn main_() {
     let engine = Engine::default();
     let mut store = Store::new(&engine, HostData::default());
 
+    let mut linker = Linker::new(store.engine());
+    linker.add_wasi_p2().unwrap();
+    add_test_example_to_linker(&mut linker).unwrap();
+
     let component = Component::new(&engine, WASM).unwrap();
-    let exports = bindings::instantiate_test_example_world(&mut store, &component).unwrap();
+    let exports =
+        bindings::instantiate_test_example_world(&mut store, &linker, &component).unwrap();
 
     println!("Starting host execution");
 

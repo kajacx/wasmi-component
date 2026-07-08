@@ -11,12 +11,14 @@ struct GuestComponent;
 
 impl bindings::exports::wasmi_component::component_examples::round_trip::Guest for GuestComponent {
     fn list_i32(value: Vec<i32>) -> Vec<i32> {
-        bindings::log("[GUEST]: calling list_i32");
+        bindings::log("[GUEST]: Calling list_i32");
+
         bindings::wasmi_component::component_examples::round_trip::list_i32(&value)
     }
 
     fn list_string(value: Vec<String>) -> Vec<String> {
-        bindings::log("[GUEST]: calling list_string");
+        bindings::log("[GUEST]: Calling list_string");
+
         bindings::wasmi_component::component_examples::round_trip::list_string(&value)
     }
 }

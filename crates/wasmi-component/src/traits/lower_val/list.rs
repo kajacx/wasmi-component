@@ -3,9 +3,9 @@ use std::ops::Range;
 use anyhow::Result;
 use wasmi::Val;
 
-use crate::{CompValue, FatPtr, LowerVal, MemoryAccess};
+use crate::{ComponentValue, FatPtr, LowerVal, MemoryAccess};
 
-impl<T: CompValue, S: AsSlice> LowerVal<Vec<T>> for S
+impl<T: ComponentValue, S: AsSlice> LowerVal<Vec<T>> for S
 where
     S::Target: LowerVal<T>,
 {
@@ -30,7 +30,7 @@ where
     }
 }
 
-fn write_contents<T: CompValue>(
+fn write_contents<T: ComponentValue>(
     contents: &[impl LowerVal<T>],
     memory: &mut impl MemoryAccess,
 ) -> Result<FatPtr> {

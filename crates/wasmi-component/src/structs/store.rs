@@ -1,47 +1,63 @@
+use std::{
+    cell::RefCell,
+    ops::{Deref, DerefMut},
+    rc::Rc,
+};
+
+use anyhow::{Context, Result, ensure};
 use wasmi::{AsContext, AsContextMut, Engine};
 
 use crate::{MemoryAccessPre, ResourceTable};
 
 pub struct Store<T> {
-    inner: wasmi::Store<StoreData<T>>,
+    store: wasmi::Store<StoreData<T>>,
 }
 
 pub struct StoreData<T> {
-    data: T,
+    data: Rc<RefCell<T>>,
+
     memory_table: Vec<MemoryAccessPre>,
+
     #[allow(unused)]
     resource_table: ResourceTable,
+
+    instance_call_stack: Vec<usize>,
 }
 
 impl<T> Store<T> {
     pub fn new(engine: &Engine, data: T) -> Self {
         let store_data = StoreData {
-            data,
+            data: Rc::new(RefCell::new(data)),
             memory_table: Vec::new(),
             resource_table: ResourceTable::new(),
+            instance_call_stack: Vec::new(),
         };
 
         Self {
-            inner: wasmi::Store::new(engine, store_data),
+            store: wasmi::Store::new(engine, store_data),
         }
     }
 
-    pub fn data(&self) -> &T {
-        &self.inner.data().data
+    pub fn engine(&self) -> &Engine {
+        self.store.engine()
     }
 
-    pub fn data_mut(&mut self) -> &mut T {
-        &mut self.inner.data_mut().data
+    pub fn data(&self) -> impl Deref<Target = T> + '_ {
+        self.store.data().data.borrow()
+    }
+
+    pub fn data_mut(&mut self) -> impl DerefMut<Target = T> + '_ {
+        self.store.data().data.borrow_mut()
     }
 }
 
 impl<T> StoreData<T> {
-    pub fn data(&self) -> &T {
-        &self.data
+    pub fn data(&self) -> impl Deref<Target = T> + '_ {
+        self.data.borrow()
     }
 
-    pub fn data_mut(&mut self) -> &mut T {
-        &mut self.data
+    pub fn data_mut(&mut self) -> impl DerefMut<Target = T> + '_ {
+        self.data.borrow_mut()
     }
 
     pub fn next_memory_index(&self) -> usize {
@@ -56,18 +72,48 @@ impl<T> StoreData<T> {
     pub fn get_memory(&self, index: usize) -> &MemoryAccessPre {
         &self.memory_table[index]
     }
+
+    pub fn current_call_instance(&self) -> Option<usize> {
+        self.instance_call_stack.last().copied()
+    }
+
+    pub(crate) fn push_call_instance(&mut self, id: usize) -> usize {
+        self.instance_call_stack.push(id);
+        self.instance_call_stack.len()
+    }
+
+    pub(crate) fn pop_call_instance(&mut self, id: usize, depth: usize) -> Result<()> {
+        ensure!(
+            self.instance_call_stack.len() == depth,
+            "Call stack depth {} does not equal expected depth of {}",
+            self.instance_call_stack.len(),
+            depth
+        );
+
+        let popped = self
+            .instance_call_stack
+            .pop()
+            .context("call stack is empty")?;
+
+        ensure!(
+            popped == id,
+            "Tried to pop instance id {id}, but found {popped} instead."
+        );
+
+        Ok(())
+    }
 }
 
 impl<T> AsContext for Store<T> {
     type Data = StoreData<T>;
 
     fn as_context(&self) -> wasmi::StoreContext<'_, Self::Data> {
-        self.inner.as_context()
+        self.store.as_context()
     }
 }
 
 impl<T> AsContextMut for Store<T> {
     fn as_context_mut(&mut self) -> wasmi::StoreContextMut<'_, Self::Data> {
-        self.inner.as_context_mut()
+        self.store.as_context_mut()
     }
 }

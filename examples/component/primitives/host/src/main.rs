@@ -1,5 +1,7 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{Component, HostResult, LowerVal, Store};
+use wasmi_component::{Component, HostResult, Linker, LowerVal, Store};
+
+use crate::bindings::add_test_example_to_linker;
 
 mod bindings;
 
@@ -20,11 +22,12 @@ impl bindings::TestExampleImports for HostData {
         Ok(())
     }
 
+    type RoundtripStringReturn = String;
     fn roundtrip_multiple(
         &mut self,
         value_a: &str,
         value_b: i32,
-    ) -> HostResult<impl LowerVal<String> + 'static> {
+    ) -> HostResult<Self::RoundtripStringReturn> {
         Ok(format!("Hello {value_a} and {value_b}!"))
     }
 
@@ -32,7 +35,8 @@ impl bindings::TestExampleImports for HostData {
         Ok(value_a)
     }
 
-    fn roundtrip_string(&mut self, value_a: &str) -> HostResult<impl LowerVal<String> + 'static> {
+    type RoundtripMultipleReturn = String;
+    fn roundtrip_string(&mut self, value_a: &str) -> HostResult<Self::RoundtripMultipleReturn> {
         Ok(value_a.to_string())
     }
 
@@ -45,8 +49,13 @@ pub fn main() {
     let engine = Engine::default();
     let mut store = Store::new(&engine, HostData::default());
 
+    let mut linker = Linker::new(store.engine());
+    add_test_example_to_linker(&mut linker).unwrap();
+
     let component = Component::new(&engine, WASM).unwrap();
-    let exports = bindings::instantiate_test_example_world(&mut store, &component).unwrap();
+
+    let exports =
+        bindings::instantiate_test_example_world(&mut store, &linker, &component).unwrap();
 
     println!("Starting host execution");
 

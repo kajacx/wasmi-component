@@ -1,9 +1,9 @@
 use anyhow::Result;
 use wasmi::{Val, ValType};
 
-use crate::{CompValue, FatPtr};
+use crate::{ComponentValue, FatPtr};
 
-impl CompValue for String {
+impl ComponentValue for String {
     type Borrowed<'a> = &'a str;
 
     fn arg_count() -> usize {

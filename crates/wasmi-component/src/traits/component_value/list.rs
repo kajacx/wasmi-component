@@ -1,9 +1,9 @@
 use anyhow::Result;
 use wasmi::{Val, ValType};
 
-use crate::{CompValue, FatPtr, ListAccessor};
+use crate::{ComponentValue, FatPtr, ListAccessor};
 
-impl<T: CompValue> CompValue for Vec<T> {
+impl<T: ComponentValue> ComponentValue for Vec<T> {
     type Borrowed<'a> = ListAccessor<'a, T>;
 
     fn arg_count() -> usize {

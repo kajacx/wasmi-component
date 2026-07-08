@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 use wasmi::{Val, ValType};
 
-use crate::{Borrow, CompValue, Own, Resource};
+use crate::{Borrow, ComponentValue, Own, Resource};
 
-impl<T: Resource> CompValue for Borrow<T> {
+impl<T: Resource> ComponentValue for Borrow<T> {
     type Borrowed<'a> = Self;
 
     fn arg_count() -> usize {
@@ -39,7 +39,7 @@ impl<T: Resource> CompValue for Borrow<T> {
     }
 }
 
-impl<T: Resource> CompValue for Own<T> {
+impl<T: Resource> ComponentValue for Own<T> {
     type Borrowed<'a> = Self;
 
     fn arg_count() -> usize {

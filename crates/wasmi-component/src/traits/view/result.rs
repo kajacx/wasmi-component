@@ -1,8 +1,8 @@
 use anyhow::Result;
 
-use crate::{CompValue, View};
+use crate::{ComponentValue, View};
 
-impl<'a, T: CompValue, E: CompValue> View<Result<T, E>>
+impl<'a, T: ComponentValue, E: ComponentValue> View<Result<T, E>>
     for Result<T::Borrowed<'a>, E::Borrowed<'a>>
 {
     fn lift_owned(&self) -> Result<Result<T, E>> {
@@ -36,7 +36,7 @@ impl<'a, T: CompValue, E: CompValue> View<Result<T, E>>
     }
 }
 
-impl<'a, T: CompValue> View<Option<T>> for Option<T::Borrowed<'a>> {
+impl<'a, T: ComponentValue> View<Option<T>> for Option<T::Borrowed<'a>> {
     fn lift_owned(&self) -> Result<Option<T>> {
         let owned = match self {
             None => None,

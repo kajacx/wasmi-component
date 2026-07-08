@@ -1,11 +1,15 @@
 use std::io::Write;
 
 use crate::{
-    Borrow, CompValue, HostResult, ListAccessor, LowerVal, Own, StoreData, wasi_p2::resources::*,
+    Borrow, ComponentValue, HostResult, ListAccessor, Own, StoreData, wasi_p2::resources::*,
 };
 
 #[allow(unused)]
 impl<D> super::bindgen::RootImports for StoreData<D> {
+    type MethodInputStreamBlockingReadReturn = Result<Vec<u8>, StreamError>;
+
+    type GetEnvironmentReturn = Vec<(String, String)>;
+
     fn method_pollable_block(&mut self, self_: Borrow<PollableResource>) -> HostResult<()> {
         todo!()
     }
@@ -22,9 +26,8 @@ impl<D> super::bindgen::RootImports for StoreData<D> {
         &mut self,
         self_: Borrow<InputStreamResource>,
         len: u64,
-    ) -> HostResult<impl LowerVal<Result<Vec<u8>, StreamError>> + 'static> {
+    ) -> HostResult<Self::MethodInputStreamBlockingReadReturn> {
         todo!();
-        Ok(Result::<Vec<u8>, StreamError>::Ok(vec![]))
     }
 
     fn method_input_stream_subscribe(
@@ -84,12 +87,11 @@ impl<D> super::bindgen::RootImports for StoreData<D> {
         todo!()
     }
 
-    fn get_environment(&mut self) -> HostResult<impl LowerVal<Vec<(String, String)>> + 'static> {
+    fn get_environment(&mut self) -> HostResult<Self::GetEnvironmentReturn> {
         todo!();
-        Ok(Vec::<(String, String)>::new())
     }
 
-    fn exit(&mut self, status: <Result<(), ()> as CompValue>::Borrowed<'_>) -> HostResult<()> {
+    fn exit(&mut self, status: <Result<(), ()> as ComponentValue>::Borrowed<'_>) -> HostResult<()> {
         todo!()
     }
 

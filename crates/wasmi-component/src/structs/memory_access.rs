@@ -5,13 +5,19 @@ use wasmi::{AsContextMut, Memory, Val};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MemoryAccessPre {
+    pub instance_id: usize,
     pub memory: Memory,
     pub cabi_realloc: wasmi::TypedFunc<(i32, i32, i32, i32), i32>,
 }
 
 impl MemoryAccessPre {
-    pub fn new(memory: Memory, cabi_realloc: wasmi::TypedFunc<(i32, i32, i32, i32), i32>) -> Self {
+    pub fn new(
+        instance_id: usize,
+        memory: Memory,
+        cabi_realloc: wasmi::TypedFunc<(i32, i32, i32, i32), i32>,
+    ) -> Self {
         Self {
+            instance_id,
             memory,
             cabi_realloc,
         }
