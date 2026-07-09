@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ops::Range, rc::Rc, sync::Arc};
+use std::ops::Range;
 
 use anyhow::Result;
 use wasmi::Val;
@@ -47,26 +47,11 @@ fn write_contents<T: ComponentValue>(
 }
 
 // Cannot use AsRef<[T]> directly because a type *might* have conflicting implementations.
+#[blanket::blanket(derive(Ref, Mut, Box, Rc, Arc, Cow))]
 pub trait AsSlice {
     type Target;
 
     fn as_slice(&self) -> &[Self::Target];
-}
-
-impl<S: AsSlice + ?Sized> AsSlice for &S {
-    type Target = S::Target;
-
-    fn as_slice(&self) -> &[S::Target] {
-        S::as_slice(*self)
-    }
-}
-
-impl<S: AsSlice + ?Sized> AsSlice for &mut S {
-    type Target = S::Target;
-
-    fn as_slice(&self) -> &[S::Target] {
-        S::as_slice(*self)
-    }
 }
 
 impl<T, const N: usize> AsSlice for [T; N] {
@@ -86,33 +71,6 @@ impl<T> AsSlice for [T] {
 }
 
 impl<T> AsSlice for Vec<T> {
-    type Target = T;
-
-    fn as_slice(&self) -> &[T] {
-        self.as_ref()
-    }
-}
-
-impl<T> AsSlice for Rc<[T]> {
-    type Target = T;
-
-    fn as_slice(&self) -> &[T] {
-        self.as_ref()
-    }
-}
-
-impl<T> AsSlice for Arc<[T]> {
-    type Target = T;
-
-    fn as_slice(&self) -> &[T] {
-        self.as_ref()
-    }
-}
-
-impl<T> AsSlice for Cow<'_, [T]>
-where
-    [T]: ToOwned,
-{
     type Target = T;
 
     fn as_slice(&self) -> &[T] {

@@ -12,3 +12,4 @@ wasmparser = { version = "0.253.0" }
 anyhow = { version = "1.0" }
 slotmap = { version = "1.0" }
 as-any = { version = "0.3.0" }
+blanket = { version = "0.4.0" }
