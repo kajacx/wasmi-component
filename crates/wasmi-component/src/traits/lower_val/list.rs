@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{borrow::Cow, ops::Range, rc::Rc, sync::Arc};
 
 use anyhow::Result;
 use wasmi::Val;
@@ -46,7 +46,7 @@ fn write_contents<T: ComponentValue>(
     Ok(FatPtr::new(start, contents.len(), T::byte_size()))
 }
 
-// Unfortunately cannot use AsRef<[T]> directly
+// Cannot use AsRef<[T]> directly because a type *might* have conflicting implementations.
 pub trait AsSlice {
     type Target;
 
@@ -89,6 +89,33 @@ impl<T> AsSlice for Vec<T> {
     type Target = T;
 
     fn as_slice(&self) -> &[T] {
-        self.as_slice()
+        self.as_ref()
+    }
+}
+
+impl<T> AsSlice for Rc<[T]> {
+    type Target = T;
+
+    fn as_slice(&self) -> &[T] {
+        self.as_ref()
+    }
+}
+
+impl<T> AsSlice for Arc<[T]> {
+    type Target = T;
+
+    fn as_slice(&self) -> &[T] {
+        self.as_ref()
+    }
+}
+
+impl<T> AsSlice for Cow<'_, [T]>
+where
+    [T]: ToOwned,
+{
+    type Target = T;
+
+    fn as_slice(&self) -> &[T] {
+        self.as_ref()
     }
 }

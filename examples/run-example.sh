@@ -56,4 +56,8 @@ cat output.log
 cat error.log
 cd ..
 
+if status; then
+    echo "Example $path" has failed"
+end
+
 exit $status
