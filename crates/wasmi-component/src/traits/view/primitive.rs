@@ -2,57 +2,33 @@ use anyhow::Result;
 
 use crate::View;
 
-impl View<Self> for i32 {
-    fn lift_owned(&self) -> Result<Self> {
-        Ok(*self)
-    }
+macro_rules! impl_view_primitive {
+    ($ty: ty) => {
+        impl View<Self> for $ty {
+            fn lift_owned(&self) -> Result<Self> {
+                Ok(*self)
+            }
 
-    fn lift_to(&self, target: &mut Self) -> Result<()> {
-        *target = *self;
-        Ok(())
-    }
+            fn lift_to(&self, target: &mut Self) -> Result<()> {
+                *target = *self;
+                Ok(())
+            }
+        }
+    };
 }
 
-impl View<Self> for u8 {
-    fn lift_owned(&self) -> Result<Self> {
-        Ok(*self)
-    }
+impl_view_primitive!(i8);
+impl_view_primitive!(i16);
+impl_view_primitive!(i32);
+impl_view_primitive!(i64);
 
-    fn lift_to(&self, target: &mut Self) -> Result<()> {
-        *target = *self;
-        Ok(())
-    }
-}
+impl_view_primitive!(u8);
+impl_view_primitive!(u16);
+impl_view_primitive!(u32);
+impl_view_primitive!(u64);
 
-impl View<Self> for u32 {
-    fn lift_owned(&self) -> Result<Self> {
-        Ok(*self)
-    }
+impl_view_primitive!(f32);
+impl_view_primitive!(f64);
 
-    fn lift_to(&self, target: &mut Self) -> Result<()> {
-        *target = *self;
-        Ok(())
-    }
-}
-
-impl View<Self> for u64 {
-    fn lift_owned(&self) -> Result<Self> {
-        Ok(*self)
-    }
-
-    fn lift_to(&self, target: &mut Self) -> Result<()> {
-        *target = *self;
-        Ok(())
-    }
-}
-
-impl View<Self> for f32 {
-    fn lift_owned(&self) -> Result<Self> {
-        Ok(*self)
-    }
-
-    fn lift_to(&self, target: &mut Self) -> Result<()> {
-        *target = *self;
-        Ok(())
-    }
-}
+impl_view_primitive!(bool);
+impl_view_primitive!(char);
