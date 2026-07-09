@@ -8,28 +8,19 @@ const WASM: &[u8] = include_bytes!(
 );
 
 #[derive(Default)]
-struct HostData {
-    holder_list_i32: Vec<i32>,
-    holder_list_string: Vec<String>,
-}
+struct HostData {}
 
 impl bindings::TestExampleImports for HostData {
-    type ListI32Return<'a> = &'a [i32];
-    fn list_i32<'a>(&'a mut self, value: ListAccessor<i32>) -> HostResult<Self::ListI32Return<'a>> {
+    fn list_i32<'a>(&'a mut self, value: ListAccessor<i32>) -> HostResult<Vec<i32>> {
         println!("[HOST]: Calling list_i32");
 
-        value.lift_to(&mut self.holder_list_i32);
-
-        Ok(&self.holder_list_i32)
+        value.lift_owned()
     }
 
-    type ListStringReturn<'a> = &'a [&'a String];
-    fn list_string(&mut self, value: ListAccessor<String>) -> HostResult<Self::ListStringReturn> {
+    fn list_string(&mut self, value: ListAccessor<String>) -> HostResult<Vec<String>> {
         println!("[HOST]: Calling list_string");
 
-        value.lift_to(&mut self.holder_list_string);
-
-        Ok(&self.holder_list_string)
+        value.lift_owned()
     }
 
     fn log(&mut self, message: &str) -> HostResult<()> {

@@ -1,5 +1,5 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{Component, HostResult, Linker, LowerVal, Store};
+use wasmi_component::{Component, HostResult, Linker, Store};
 
 use crate::bindings::add_test_example_to_linker;
 
@@ -22,12 +22,7 @@ impl bindings::TestExampleImports for HostData {
         Ok(())
     }
 
-    type RoundtripStringReturn = String;
-    fn roundtrip_multiple(
-        &mut self,
-        value_a: &str,
-        value_b: i32,
-    ) -> HostResult<Self::RoundtripStringReturn> {
+    fn roundtrip_multiple(&mut self, value_a: &str, value_b: i32) -> HostResult<String> {
         Ok(format!("Hello {value_a} and {value_b}!"))
     }
 
@@ -35,8 +30,7 @@ impl bindings::TestExampleImports for HostData {
         Ok(value_a)
     }
 
-    type RoundtripMultipleReturn = String;
-    fn roundtrip_string(&mut self, value_a: &str) -> HostResult<Self::RoundtripMultipleReturn> {
+    fn roundtrip_string(&mut self, value_a: &str) -> HostResult<String> {
         Ok(value_a.to_string())
     }
 

@@ -17,13 +17,11 @@ pub trait RootImports {
 
     fn resource_drop_error(&mut self, index: i32) -> HostResult<()>;
 
-    type MethodInputStreamBlockingReadReturn: LowerVal<Result<Vec<u8>, StreamError>> + 'static;
-
     fn method_input_stream_blocking_read(
         &mut self,
         self_: Borrow<InputStreamResource>,
         len: u64,
-    ) -> HostResult<Self::MethodInputStreamBlockingReadReturn>;
+    ) -> HostResult<Result<Vec<u8>, StreamError>>;
 
     fn method_input_stream_subscribe(
         &mut self,
@@ -55,9 +53,7 @@ pub trait RootImports {
 
     fn resource_drop_output_stream(&mut self, index: i32) -> HostResult<()>;
 
-    type GetEnvironmentReturn: LowerVal<Vec<(String, String)>> + 'static;
-
-    fn get_environment(&mut self) -> HostResult<Self::GetEnvironmentReturn>;
+    fn get_environment(&mut self) -> HostResult<Vec<(String, String)>>;
 
     fn exit(&mut self, status: Result<(), ()>) -> HostResult<()>;
 
@@ -82,128 +78,128 @@ pub trait RootImports {
 pub struct RootExports {}
 
 #[allow(unused)]
-pub fn add_root_to_linker<T>(linker: &mut Linker<T>) -> Result<()> {
-    linker.func_direct::<(Borrow<PollableResource>,), (), _>(
+pub fn add_root_to_linker<T: RootImports>(linker: &mut Linker<T>) -> Result<()> {
+    linker.func_new::<(Borrow<PollableResource>,), ()>(
         "wasi:io/poll@0.2.0",
         "[method]pollable.block",
         |host_data, params| host_data.method_pollable_block(params.0),
     )?;
 
-    linker.func_direct::<(i32,), (), _>(
+    linker.func_new::<(i32,), ()>(
         "wasi:io/poll@0.2.0",
         "[resource-drop]pollable",
         |host_data, params| host_data.resource_drop_pollable(params.0),
     )?;
 
-    linker.func_direct::<(i32,), (), _>(
+    linker.func_new::<(i32,), ()>(
         "wasi:io/error@0.2.0",
         "[resource-drop]error",
         |host_data, params| host_data.resource_drop_error(params.0),
     )?;
 
-    linker.func_direct::<(Borrow<InputStreamResource>, u64), Result<Vec<u8>, StreamError>, _>(
+    linker.func_new::<(Borrow<InputStreamResource>, u64), Result<Vec<u8>, StreamError>>(
         "wasi:io/streams@0.2.0",
         "[method]input-stream.blocking-read",
         |host_data, params| host_data.method_input_stream_blocking_read(params.0, params.1),
     )?;
 
-    linker.func_direct::<(Borrow<InputStreamResource>,), Own<PollableResource>, _>(
+    linker.func_new::<(Borrow<InputStreamResource>,), Own<PollableResource>>(
         "wasi:io/streams@0.2.0",
         "[method]input-stream.subscribe",
         |host_data, params| host_data.method_input_stream_subscribe(params.0),
     )?;
 
-    linker.func_direct::<(Borrow<OutputStreamResource>,), Result<u64, StreamError>, _>(
+    linker.func_new::<(Borrow<OutputStreamResource>,), Result<u64, StreamError>>(
         "wasi:io/streams@0.2.0",
         "[method]output-stream.check-write",
         |host_data, params| host_data.method_output_stream_check_write(params.0),
     )?;
 
-    linker.func_direct::<(Borrow<OutputStreamResource>, Vec<u8>), Result<(), StreamError>, _>(
+    linker.func_new::<(Borrow<OutputStreamResource>, Vec<u8>), Result<(), StreamError>>(
         "wasi:io/streams@0.2.0",
         "[method]output-stream.write",
         |host_data, params| host_data.method_output_stream_write(params.0, params.1),
     )?;
 
-    linker.func_direct::<(Borrow<OutputStreamResource>,), Result<(), StreamError>, _>(
+    linker.func_new::<(Borrow<OutputStreamResource>,), Result<(), StreamError>>(
         "wasi:io/streams@0.2.0",
         "[method]output-stream.blocking-flush",
         |host_data, params| host_data.method_output_stream_blocking_flush(params.0),
     )?;
 
-    linker.func_direct::<(Borrow<OutputStreamResource>,), Own<PollableResource>, _>(
+    linker.func_new::<(Borrow<OutputStreamResource>,), Own<PollableResource>>(
         "wasi:io/streams@0.2.0",
         "[method]output-stream.subscribe",
         |host_data, params| host_data.method_output_stream_subscribe(params.0),
     )?;
 
-    linker.func_direct::<(i32,), (), _>(
+    linker.func_new::<(i32,), ()>(
         "wasi:io/streams@0.2.0",
         "[resource-drop]input-stream",
         |host_data, params| host_data.resource_drop_input_stream(params.0),
     )?;
 
-    linker.func_direct::<(i32,), (), _>(
+    linker.func_new::<(i32,), ()>(
         "wasi:io/streams@0.2.0",
         "[resource-drop]output-stream",
         |host_data, params| host_data.resource_drop_output_stream(params.0),
     )?;
 
-    linker.func_direct::<(), Vec<(String, String)>, _>(
+    linker.func_new::<(), Vec<(String, String)>>(
         "wasi:cli/environment@0.2.0",
         "get-environment",
         |host_data, params| host_data.get_environment(),
     )?;
 
-    linker.func_direct::<(Result<(), ()>,), (), _>(
+    linker.func_new::<(Result<(), ()>,), ()>(
         "wasi:cli/exit@0.2.0",
         "exit",
         |host_data, params| host_data.exit(params.0),
     )?;
 
-    linker.func_direct::<(), Own<InputStreamResource>, _>(
+    linker.func_new::<(), Own<InputStreamResource>>(
         "wasi:cli/stdin@0.2.0",
         "get-stdin",
         |host_data, params| host_data.get_stdin(),
     )?;
 
-    linker.func_direct::<(), Own<OutputStreamResource>, _>(
+    linker.func_new::<(), Own<OutputStreamResource>>(
         "wasi:cli/stdout@0.2.0",
         "get-stdout",
         |host_data, params| host_data.get_stdout(),
     )?;
 
-    linker.func_direct::<(), Own<OutputStreamResource>, _>(
+    linker.func_new::<(), Own<OutputStreamResource>>(
         "wasi:cli/stderr@0.2.0",
         "get-stderr",
         |host_data, params| host_data.get_stderr(),
     )?;
 
-    linker.func_direct::<(i32,), (), _>(
+    linker.func_new::<(i32,), ()>(
         "wasi:cli/terminal-input@0.2.0",
         "[resource-drop]terminal-input",
         |host_data, params| host_data.resource_drop_terminal_input(params.0),
     )?;
 
-    linker.func_direct::<(i32,), (), _>(
+    linker.func_new::<(i32,), ()>(
         "wasi:cli/terminal-output@0.2.0",
         "[resource-drop]terminal-output",
         |host_data, params| host_data.resource_drop_terminal_output(params.0),
     )?;
 
-    linker.func_direct::<(), Option<Own<TerminalInputResource>>, _>(
+    linker.func_new::<(), Option<Own<TerminalInputResource>>>(
         "wasi:cli/terminal-stdin@0.2.0",
         "get-terminal-stdin",
         |host_data, params| host_data.get_terminal_stdin(),
     )?;
 
-    linker.func_direct::<(), Option<Own<TerminalOutputResource>>, _>(
+    linker.func_new::<(), Option<Own<TerminalOutputResource>>>(
         "wasi:cli/terminal-stdout@0.2.0",
         "get-terminal-stdout",
         |host_data, params| host_data.get_terminal_stdout(),
     )?;
 
-    linker.func_direct::<(), Option<Own<TerminalOutputResource>>, _>(
+    linker.func_new::<(), Option<Own<TerminalOutputResource>>>(
         "wasi:cli/terminal-stderr@0.2.0",
         "get-terminal-stderr",
         |host_data, params| host_data.get_terminal_stderr(),

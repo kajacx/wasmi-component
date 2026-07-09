@@ -1,15 +1,9 @@
 use std::io::Write;
 
-use crate::{
-    Borrow, ComponentValue, HostResult, ListAccessor, Own, StoreData, wasi_p2::resources::*,
-};
+use crate::{Borrow, ComponentValue, HostResult, ListAccessor, Own, wasi_p2::resources::*};
 
 #[allow(unused)]
-impl<D> super::bindgen::RootImports for StoreData<D> {
-    type MethodInputStreamBlockingReadReturn = Result<Vec<u8>, StreamError>;
-
-    type GetEnvironmentReturn = Vec<(String, String)>;
-
+impl<T> super::bindgen::RootImports for T {
     fn method_pollable_block(&mut self, self_: Borrow<PollableResource>) -> HostResult<()> {
         todo!()
     }
@@ -26,7 +20,7 @@ impl<D> super::bindgen::RootImports for StoreData<D> {
         &mut self,
         self_: Borrow<InputStreamResource>,
         len: u64,
-    ) -> HostResult<Self::MethodInputStreamBlockingReadReturn> {
+    ) -> HostResult<Result<Vec<u8>, StreamError>> {
         todo!();
     }
 
@@ -87,7 +81,7 @@ impl<D> super::bindgen::RootImports for StoreData<D> {
         todo!()
     }
 
-    fn get_environment(&mut self) -> HostResult<Self::GetEnvironmentReturn> {
+    fn get_environment(&mut self) -> HostResult<Vec<(String, String)>> {
         todo!();
     }
 

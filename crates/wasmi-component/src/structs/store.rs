@@ -1,9 +1,3 @@
-use std::{
-    cell::RefCell,
-    ops::{Deref, DerefMut},
-    rc::Rc,
-};
-
 use anyhow::{Context, Result, ensure};
 use wasmi::{AsContext, AsContextMut, Engine};
 
@@ -14,7 +8,7 @@ pub struct Store<T> {
 }
 
 pub struct StoreData<T> {
-    pub(crate) data: Rc<RefCell<T>>,
+    data: T,
 
     memory_table: Vec<MemoryAccessPre>,
 
@@ -27,7 +21,7 @@ pub struct StoreData<T> {
 impl<T> Store<T> {
     pub fn new(engine: &Engine, data: T) -> Self {
         let store_data = StoreData {
-            data: Rc::new(RefCell::new(data)),
+            data,
             memory_table: Vec::new(),
             resource_table: ResourceTable::new(),
             instance_call_stack: Vec::new(),
@@ -42,22 +36,22 @@ impl<T> Store<T> {
         self.store.engine()
     }
 
-    pub fn data(&self) -> impl Deref<Target = T> + '_ {
-        self.store.data().data.borrow()
+    pub fn data(&self) -> &T {
+        &self.store.data().data
     }
 
-    pub fn data_mut(&mut self) -> impl DerefMut<Target = T> + '_ {
-        self.store.data().data.borrow_mut()
+    pub fn data_mut(&mut self) -> &mut T {
+        &mut self.store.data_mut().data
     }
 }
 
 impl<T> StoreData<T> {
-    pub fn data(&self) -> impl Deref<Target = T> + '_ {
-        self.data.borrow()
+    pub fn data(&self) -> &T {
+        &self.data
     }
 
-    pub fn data_mut(&mut self) -> impl DerefMut<Target = T> + '_ {
-        self.data.borrow_mut()
+    pub fn data_mut(&mut self) -> &mut T {
+        &mut self.data
     }
 
     pub fn next_memory_index(&self) -> usize {

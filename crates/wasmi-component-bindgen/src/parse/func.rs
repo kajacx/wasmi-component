@@ -1,6 +1,6 @@
-use heck::{ToSnakeCase, ToUpperCamelCase};
+use heck::ToSnakeCase;
 
-use crate::parse::{LowerArg, Param, ParamType};
+use crate::parse::{Param, ParamType};
 
 pub struct Func {
     pub module_name: Option<String>,
@@ -54,14 +54,5 @@ impl Func {
             .iter()
             .map(|param| format!("{}, ", param.ty.canon))
             .collect()
-    }
-
-    pub fn host_return_type(&self) -> String {
-        if let LowerArg::Specific(ty) = &self.result.lower {
-            ty.clone()
-        } else {
-            // format!("impl LowerVal<{}> + {}", self.result.canon, lifetime)
-            format!("Self::{}Return", self.func_name.to_upper_camel_case())
-        }
     }
 }

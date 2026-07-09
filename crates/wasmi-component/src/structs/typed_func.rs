@@ -26,25 +26,25 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         }
     }
 
-    pub fn call<T, P: LowerVal<Params>>(
+    pub fn call<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        params: P::Value<'_>,
+        params: impl LowerVal<Params>,
     ) -> Result<Results> {
-        self.call_with_results::<T, P, _>(ctx, params, |res| res.lift_owned())?
+        self.call_with_results(ctx, params, |res| res.lift_owned())?
     }
 
-    pub fn call_with_results<T, P: LowerVal<Params>, R>(
+    pub fn call_with_results<T, R>(
         &self,
         mut ctx: impl AsContextMut<Data = StoreData<T>>,
-        params: P::Value<'_>,
+        params: impl LowerVal<Params>,
         callback: impl FnOnce(Results::Borrowed<'_>) -> R,
     ) -> Result<R> {
         let mut args: [Val; 16] = std::array::from_fn(|_| Val::I32(0));
         let args_len = Params::arg_count();
 
         let mut memory_access = self.memory.fill(ctx.as_context_mut());
-        P::lower_args(params, &mut args[0..args_len], &mut memory_access)?;
+        params.lower_args(&mut args[0..args_len], &mut memory_access)?;
         drop(memory_access);
 
         let mut results = [Val::I32(0)];
@@ -62,12 +62,15 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
             .data_mut()
             .push_call_instance(instance_id);
 
-        self.inner
-            .call(ctx.as_context_mut(), &args[0..args_len], results_slice)?;
+        let call_result = self
+            .inner
+            .call(ctx.as_context_mut(), &args[0..args_len], results_slice);
 
         ctx.as_context_mut()
             .data_mut()
             .pop_call_instance(instance_id, depth)?;
+
+        call_result?;
 
         let bytes = self.memory.memory.data(ctx.as_context());
         let lifted = if results_indirect {

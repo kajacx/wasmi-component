@@ -1,8 +1,8 @@
 use std::fmt::Write;
 
-use heck::{ToSnakeCase, ToUpperCamelCase};
+use heck::ToSnakeCase;
 
-use crate::parse::{LowerArg, ParsedWit, ParsedWorld};
+use crate::parse::{ParsedWit, ParsedWorld};
 
 pub struct Generator {}
 
@@ -41,22 +41,12 @@ impl Generator {
         writeln!(output, "pub trait {} {{", world.imports_name).unwrap();
 
         world.imports.iter().for_each(|func| {
-            if matches!(func.result.lower, LowerArg::LowerVal) {
-                writeln!(
-                    output,
-                    "  type {}Return<'a>: LowerVal<{}> + 'a;\n",
-                    func.func_name.to_upper_camel_case(),
-                    func.result.canon
-                )
-                .unwrap();
-            }
-
             writeln!(
                 output,
                 "  fn {}(&mut self, {}) -> HostResult<{}>;\n",
                 func.rust_name(),
                 func.params_full_lift(),
-                func.host_return_type()
+                func.result.canon
             )
             .unwrap();
         });
@@ -100,7 +90,7 @@ impl Generator {
             writeln!(
                 output,
                 concat!(
-                    "  linker.func_new::<({}), {}, _>",
+                    "  linker.func_new::<({}), {}>",
                     "(\"{}\", \"{}\", |host_data, params| host_data.{}({}))?;\n"
                 ),
                 func.param_types_canon(),

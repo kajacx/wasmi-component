@@ -13,17 +13,9 @@ use wasmi_component::{
 pub trait TestExampleImports {
     fn roundtrip_s32(&mut self, value_a: i32) -> HostResult<i32>;
 
-    type RoundtripStringReturn: LowerVal<String> + 'static;
+    fn roundtrip_string(&mut self, value_a: &str) -> HostResult<String>;
 
-    fn roundtrip_string(&mut self, value_a: &str) -> HostResult<Self::RoundtripStringReturn>;
-
-    type RoundtripMultipleReturn: LowerVal<String> + 'static;
-
-    fn roundtrip_multiple(
-        &mut self,
-        value_a: &str,
-        value_b: i32,
-    ) -> HostResult<Self::RoundtripMultipleReturn>;
+    fn roundtrip_multiple(&mut self, value_a: &str, value_b: i32) -> HostResult<String>;
 
     fn no_arguments(&mut self) -> HostResult<()>;
 
@@ -44,37 +36,35 @@ pub struct TestExampleExports {
 
 #[allow(unused)]
 pub fn add_test_example_to_linker<T: TestExampleImports>(linker: &mut Linker<T>) -> Result<()> {
-    linker.func_new::<(i32,), i32, _>(
+    linker.func_new::<(i32,), i32>(
         "wasmi-component:component-examples/common-funcs@0.1.0",
         "roundtrip-s32",
         |host_data, params| host_data.roundtrip_s32(params.0),
     )?;
 
-    linker.func_new::<(String,), String, _>(
+    linker.func_new::<(String,), String>(
         "wasmi-component:component-examples/common-funcs@0.1.0",
         "roundtrip-string",
         |host_data, params| host_data.roundtrip_string(params.0),
     )?;
 
-    linker.func_new::<(String, i32), String, _>(
+    linker.func_new::<(String, i32), String>(
         "wasmi-component:component-examples/common-funcs@0.1.0",
         "roundtrip-multiple",
         |host_data, params| host_data.roundtrip_multiple(params.0, params.1),
     )?;
 
-    linker.func_new::<(), (), _>(
+    linker.func_new::<(), ()>(
         "wasmi-component:component-examples/common-funcs@0.1.0",
         "no-arguments",
         |host_data, params| host_data.no_arguments(),
     )?;
 
-    linker.func_new::<(u32, u32), u32, _>(
-        "inline-imports",
-        "inline-add",
-        |host_data, params| host_data.inline_add(params.0, params.1),
-    )?;
+    linker.func_new::<(u32, u32), u32>("inline-imports", "inline-add", |host_data, params| {
+        host_data.inline_add(params.0, params.1)
+    })?;
 
-    linker.func_new::<(u32, u32), u32, _>("$root", "add-import", |host_data, params| {
+    linker.func_new::<(u32, u32), u32>("$root", "add-import", |host_data, params| {
         host_data.add_import(params.0, params.1)
     })?;
 
