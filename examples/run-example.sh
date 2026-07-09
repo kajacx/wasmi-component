@@ -52,8 +52,8 @@ if cargo run > output.log 2> error.log; then
 else
     status=1
 fi
-cat output.log
 cat error.log
+cat output.log
 cd ..
 
 if [[ $status -ne 0 ]]; then

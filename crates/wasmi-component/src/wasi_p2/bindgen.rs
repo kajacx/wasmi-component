@@ -78,6 +78,9 @@ pub trait RootImports {
 pub struct RootExports {}
 
 #[allow(unused)]
+impl RootExports {}
+
+#[allow(unused)]
 pub fn add_root_to_linker<T: RootImports>(linker: &mut Linker<T>) -> Result<()> {
     linker.func_new::<(Borrow<PollableResource>,), ()>(
         "wasi:io/poll@0.2.0",

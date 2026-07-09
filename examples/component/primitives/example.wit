@@ -1,29 +1,29 @@
 package wasmi-component:component-examples@0.1.0;
 
-interface common-funcs {
-    roundtrip-s32: func(value-a: s32) -> s32;
+interface round-trip {
+    trip-s8: func(value: s8) -> s8;
+    trip-s16: func(value: s16) -> s16;
+    trip-s32: func(value: s32) -> s32;
+    trip-s64: func(value: s64) -> s64;
+
+    trip-u8: func(value: u8) -> u8;
+    trip-u16: func(value: u16) -> u16;
+    trip-u32: func(value: u32) -> u32;
+    trip-u64: func(value: u64) -> u64;
+
+    trip-f32: func(value: f32) -> f32;
+    trip-f64: func(value: f64) -> f64;
+
+    trip-bool: func(value: bool) -> bool;
+    trip-char: func(value: char) -> char;
     
-    roundtrip-string: func(value-a: string) -> string;
-
-    roundtrip-multiple: func(value-a: string, value-b: s32) -> string;
-
-    no-arguments: func();
+    trip-string: func(value: string) -> string;
 }
 
 world test-example {
-    export common-funcs;
+    import round-trip;
 
-    import common-funcs;
+    export round-trip;
 
-    export add-export: func(value-a: u32, value-b: u32) -> u32;
-
-    import add-import: func(value-a: u32, value-b: u32) -> u32;
-
-    export inline-exports: interface {
-        inline-add: func(value-a: u32, value-b: u32) -> u32;
-    }
-
-    import inline-imports: interface {
-        inline-add: func(value-a: u32, value-b: u32) -> u32;
-    }
+    import log: func(message: string);
 }

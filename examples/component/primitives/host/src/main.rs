@@ -13,33 +13,87 @@ const WASM: &[u8] = include_bytes!(
 struct HostData {}
 
 impl bindings::TestExampleImports for HostData {
-    fn add_import(&mut self, value_a: u32, value_b: u32) -> HostResult<u32> {
-        Ok(value_a + value_b)
+    fn trip_s8(&mut self, value: i8) -> HostResult<i8> {
+        println!("[HOST]: Receiving i8 value {value}");
+        Ok(value)
     }
 
-    fn no_arguments(&mut self) -> HostResult<()> {
-        println!("No args called");
+    fn trip_s16(&mut self, value: i16) -> HostResult<i16> {
+        println!("[HOST]: Receiving i16 value {value}");
+        Ok(value)
+    }
+
+    fn trip_s32(&mut self, value: i32) -> HostResult<i32> {
+        println!("[HOST]: Receiving i32 value {value}");
+        Ok(value)
+    }
+
+    fn trip_s64(&mut self, value: i64) -> HostResult<i64> {
+        println!("[HOST]: Receiving i64 value {value}");
+        Ok(value)
+    }
+
+    fn trip_u8(&mut self, value: u8) -> HostResult<u8> {
+        println!("[HOST]: Receiving u8 value {value}");
+        Ok(value)
+    }
+
+    fn trip_u16(&mut self, value: u16) -> HostResult<u16> {
+        println!("[HOST]: Receiving u16 value {value}");
+        Ok(value)
+    }
+
+    fn trip_u32(&mut self, value: u32) -> HostResult<u32> {
+        println!("[HOST]: Receiving u32 value {value}");
+        Ok(value)
+    }
+
+    fn trip_u64(&mut self, value: u64) -> HostResult<u64> {
+        println!("[HOST]: Receiving u64 value {value}");
+        Ok(value)
+    }
+
+    fn trip_f32(&mut self, value: f32) -> HostResult<f32> {
+        println!("[HOST]: Receiving f32 value {value}");
+        Ok(value)
+    }
+
+    fn trip_f64(&mut self, value: f64) -> HostResult<f64> {
+        println!("[HOST]: Receiving f64 value {value}");
+        Ok(value)
+    }
+
+    fn trip_bool(&mut self, value: bool) -> HostResult<bool> {
+        println!("[HOST]: Receiving bool value {value}");
+        Ok(value)
+    }
+
+    fn trip_char(&mut self, value: char) -> HostResult<char> {
+        println!("[HOST]: Receiving char value {value}");
+        Ok(value)
+    }
+
+    fn trip_string(&mut self, value: &str) -> HostResult<String> {
+        println!("[HOST]: Receiving string value {value}");
+        Ok(value.to_string())
+    }
+
+    fn log(&mut self, message: &str) -> HostResult<()> {
+        println!("{message}");
         Ok(())
-    }
-
-    fn roundtrip_multiple(&mut self, value_a: &str, value_b: i32) -> HostResult<String> {
-        Ok(format!("Hello {value_a} and {value_b}!"))
-    }
-
-    fn roundtrip_s32(&mut self, value_a: i32) -> HostResult<i32> {
-        Ok(value_a)
-    }
-
-    fn roundtrip_string(&mut self, value_a: &str) -> HostResult<String> {
-        Ok(value_a.to_string())
-    }
-
-    fn inline_add(&mut self, value_a: u32, value_b: u32) -> HostResult<u32> {
-        Ok(value_a + value_b)
     }
 }
 
 pub fn main() {
+    std::thread::Builder::new()
+        .stack_size(128 * 1024 * 1024)
+        .spawn(main_)
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+pub fn main_() {
     let engine = Engine::default();
     let mut store = Store::new(&engine, HostData::default());
 
@@ -51,41 +105,66 @@ pub fn main() {
     let exports =
         bindings::instantiate_test_example_world(&mut store, &linker, &component).unwrap();
 
-    println!("Starting host execution");
+    println!("Starting host execution\n");
 
-    let result = exports.add_export.call(&mut store, (8u32, 12u32)).unwrap();
-    println!("Result is: {result}");
+    let result = exports.call_trip_s8(&mut store, 42).unwrap();
+    assert_eq!(result, 42);
+    println!("Result is: {result}\n");
 
-    let result = exports
-        .roundtrip_multiple
-        .call(&mut store, ("Hello", 42))
-        .unwrap();
-    println!("Result is: {result}");
+    let result = exports.call_trip_s16(&mut store, 42).unwrap();
+    assert_eq!(result, 42);
+    println!("Result is: {result}\n");
 
-    let result = exports
-        .roundtrip_s32
-        .call(&mut store, (67,)) // TODO: calling like this is awkward
-        .unwrap();
-    println!("Result is: {result}");
+    let result = exports.call_trip_s32(&mut store, 42).unwrap();
+    assert_eq!(result, 42);
+    println!("Result is: {result}\n");
 
-    let result = exports.roundtrip_s32.call(&mut store, (69,)).unwrap();
-    println!("Result is: {result}");
+    let result = exports.call_trip_s64(&mut store, 42).unwrap();
+    assert_eq!(result, 42);
+    println!("Result is: {result}\n");
 
-    let result = exports.roundtrip_string.call(&mut store, ("",)).unwrap();
-    println!("Result is: {result}");
+    let result = exports.call_trip_u8(&mut store, 42).unwrap();
+    assert_eq!(result, 42);
+    println!("Result is: {result}\n");
 
-    let result = exports
-        .inline_add
-        .call(&mut store, (420u32, 666u32))
-        .unwrap();
-    println!("Result is: {result}");
+    let result = exports.call_trip_u16(&mut store, 42).unwrap();
+    assert_eq!(result, 42);
+    println!("Result is: {result}\n");
 
-    exports
-        .roundtrip_string
-        .call_with_results(&mut store, ("world!",), |name| {
-            println!("Hello {name}");
+    let result = exports.call_trip_u32(&mut store, 42).unwrap();
+    assert_eq!(result, 42);
+    println!("Result is: {result}\n");
+
+    let result = exports.call_trip_u64(&mut store, 42).unwrap();
+    assert_eq!(result, 42);
+    println!("Result is: {result}\n");
+
+    let result = exports.call_trip_f32(&mut store, 42.0).unwrap();
+    assert_eq!(result, 42.0);
+    println!("Result is: {result}\n");
+
+    let result = exports.call_trip_f64(&mut store, 42.0).unwrap();
+    assert_eq!(result, 42.0);
+    println!("Result is: {result}\n");
+
+    let result = exports.call_trip_bool(&mut store, true).unwrap();
+    assert_eq!(result, true);
+    println!("Result is: {result}\n");
+
+    let result = exports.call_trip_char(&mut store, '#').unwrap();
+    assert_eq!(result, '#');
+    println!("Result is: {result}\n");
+
+    let result = exports.call_trip_string(&mut store, "Hello world").unwrap();
+    assert_eq!(result, "Hello world");
+    println!("Result is: {result}\n");
+
+    let len = exports
+        .call_trip_string_with_results(&mut store, "Zero copy", |result| {
+            assert_eq!(result, "Zero copy");
+            println!("Result is: {result}\n");
+            result.len()
         })
         .unwrap();
-
-    exports.no_arguments.call(&mut store, ()).unwrap();
+    assert_eq!(len, "Zero copy".len())
 }

@@ -55,4 +55,11 @@ impl Func {
             .map(|param| format!("{}, ", param.ty.canon))
             .collect()
     }
+
+    pub fn param_names(&self) -> String {
+        self.params
+            .iter()
+            .map(|param| format!("{}, ", param.name))
+            .collect()
+    }
 }

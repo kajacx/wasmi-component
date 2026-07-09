@@ -37,6 +37,16 @@ impl Generator {
     }
 
     fn generate_world(&self, world: &ParsedWorld, output: &mut String) {
+        self.generate_imports_trait(world, output);
+
+        self.generate_exports_struct(world, output);
+
+        self.generate_linker(world, output);
+
+        self.generate_instantiate(world, output);
+    }
+
+    fn generate_imports_trait(&self, world: &ParsedWorld, output: &mut String) {
         writeln!(output, "#[allow(unused)]").unwrap();
         writeln!(output, "pub trait {} {{", world.imports_name).unwrap();
 
@@ -51,11 +61,13 @@ impl Generator {
             .unwrap();
         });
 
-        writeln!(output, "}}").unwrap();
-        writeln!(output).unwrap();
+        writeln!(output, "}}\n").unwrap();
+    }
 
+    fn generate_exports_struct(&self, world: &ParsedWorld, output: &mut String) {
         writeln!(output, "#[allow(unused)]").unwrap();
         writeln!(output, "pub struct {} {{", world.exports_name).unwrap();
+
         world.exports.iter().for_each(|func| {
             writeln!(
                 output,
@@ -66,12 +78,48 @@ impl Generator {
             )
             .unwrap();
         });
-        writeln!(output, "}}").unwrap();
-        writeln!(output).unwrap();
 
-        self.generate_linker(world, output);
+        writeln!(output, "}}\n").unwrap();
 
-        self.generate_instantiate(world, output);
+        writeln!(output, "#[allow(unused)]").unwrap();
+        writeln!(output, "impl {} {{", world.exports_name).unwrap();
+
+        world.exports.iter().for_each(|func| {
+            writeln!(
+                output,
+                concat!(
+                    "  pub fn call_{}<T>(&self, ctx: impl AsContextMut<Data = StoreData<T>>, {}) ",
+                    "-> Result<{}> {{\n",
+                    "    self.{}.call(ctx, ({}))\n",
+                    "  }}\n"
+                ),
+                func.rust_name(),
+                func.params_full_lift(),
+                func.result.canon,
+                func.rust_name(),
+                func.param_names(),
+            )
+            .unwrap();
+
+            writeln!(
+                output,
+                concat!(
+                    "  pub fn call_{}_with_results<T, R>(&self, ",
+                    "ctx: impl AsContextMut<Data = StoreData<T>>, {}",
+                    "callback: impl FnOnce({}) -> R)-> Result<R> {{\n",
+                    "    self.{}.call_with_results(ctx, ({}), callback)\n",
+                    "  }}\n"
+                ),
+                func.rust_name(),
+                func.params_full_lift(),
+                func.result.lift,
+                func.rust_name(),
+                func.param_names(),
+            )
+            .unwrap();
+        });
+
+        writeln!(output, "}}\n").unwrap();
     }
 
     fn generate_linker(&self, world: &ParsedWorld, output: &mut String) {
