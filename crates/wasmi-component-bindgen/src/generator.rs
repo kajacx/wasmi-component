@@ -94,7 +94,7 @@ impl Generator {
                     "  }}\n"
                 ),
                 func.rust_name(),
-                func.params_full_lift(),
+                func.params_full_lower(),
                 func.result.canon,
                 func.rust_name(),
                 func.param_names(),
@@ -111,7 +111,7 @@ impl Generator {
                     "  }}\n"
                 ),
                 func.rust_name(),
-                func.params_full_lift(),
+                func.params_full_lower(),
                 func.result.lift,
                 func.rust_name(),
                 func.param_names(),

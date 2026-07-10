@@ -1,6 +1,6 @@
 use heck::ToSnakeCase;
 
-use crate::parse::{Param, ParamType};
+use crate::parse::{LowerArg, Param, ParamType};
 
 pub struct Func {
     pub module_name: Option<String>,
@@ -46,6 +46,22 @@ impl Func {
         self.params
             .iter()
             .map(|param| format!("{}: {}, ", param.name, param.ty.lift))
+            .collect()
+    }
+
+    pub fn params_full_lower(&self) -> String {
+        self.params
+            .iter()
+            .map(|param| {
+                format!(
+                    "{}: {}, ",
+                    param.name,
+                    match &param.ty.lower {
+                        LowerArg::LowerVal => format!("impl LowerVal<{}>", param.ty.canon),
+                        LowerArg::Specific(specific) => specific.to_string(),
+                    }
+                )
+            })
             .collect()
     }
 

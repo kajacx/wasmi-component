@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use anyhow::{Result, bail};
@@ -5,7 +6,7 @@ use anyhow::{Result, bail};
 use crate::{ComponentValue, LeBytesU8, View};
 
 /// T is the canonical type
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct ListAccessor<'a, T> {
     /// Byte slice containing exactly the data in the list
     slice: &'a [u8],
@@ -25,7 +26,10 @@ impl<'a, T> ListAccessor<'a, T> {
         T: ComponentValue,
     {
         debug_assert_eq!(count * T::byte_size(), slice.len());
-        // TODO: check that slice is in range of memory
+
+        // Re-check that slice is in range of memory
+        debug_assert!(ptr_start(slice) >= ptr_start(memory));
+        debug_assert!(ptr_start(slice) + slice.len() <= ptr_start(memory) + memory.len());
 
         Self {
             slice,
@@ -93,5 +97,55 @@ impl<T: ComponentValue> View<Vec<T>> for ListAccessor<'_, T> {
         target.truncate(self.len());
 
         Ok(())
+    }
+}
+
+impl<T> Debug for ListAccessor<'_, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ListAccessor")
+            .field("type", &std::any::type_name::<T>())
+            .field("count", &self.count)
+            .field(
+                "guest_slice",
+                &PtrView::new(self.slice, ptr_start(self.memory)),
+            )
+            .field("host_memory", &PtrView::new(self.memory, 0))
+            .finish()
+    }
+}
+
+fn ptr_start<T>(pointer: &[T]) -> usize {
+    pointer.as_ptr() as usize
+}
+
+struct PtrView<'a> {
+    start: usize,
+    data: &'a [u8],
+}
+
+impl<'a> PtrView<'a> {
+    pub fn new(ptr: &'a [u8], offset: usize) -> Self {
+        Self {
+            start: ptr_start(ptr) - offset,
+            data: ptr,
+        }
+    }
+}
+
+impl Debug for PtrView<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Ptr {{ start: 0x{:x}, len: {}",
+            self.start,
+            self.data.len()
+        )?;
+        if self.data.len() <= 32 {
+            write!(f, ", data: 0x")?;
+            for byte in self.data {
+                write!(f, "{:02x}", byte)?;
+            }
+        }
+        write!(f, " }}")
     }
 }

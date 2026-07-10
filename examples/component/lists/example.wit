@@ -1,17 +1,29 @@
 package wasmi-component:component-examples@0.1.0;
 
 interface round-trip {
-    list-i32: func(value: list<s32>) -> list<s32>;
+    list-s8: func(value: list<s8>) -> list<s8>;
+    list-s16: func(value: list<s16>) -> list<s16>;
+    list-s32: func(value: list<s32>) -> list<s32>;
+    list-s64: func(value: list<s64>) -> list<s64>;
 
+    list-u8: func(value: list<u8>) -> list<u8>;
+    list-u16: func(value: list<u16>) -> list<u16>;
+    list-u32: func(value: list<u32>) -> list<u32>;
+    list-u64: func(value: list<u64>) -> list<u64>;
+
+    list-f32: func(value: list<f32>) -> list<f32>;
+    list-f64: func(value: list<f64>) -> list<f64>;
+
+    list-bool: func(value: list<bool>) -> list<bool>;
+    list-char: func(value: list<char>) -> list<char>;
+    
     list-string: func(value: list<string>) -> list<string>;
 }
 
 world test-example {
-    export round-trip;
-
     import round-trip;
 
-    export init: func();
+    export round-trip;
 
     import log: func(message: string);
 }
