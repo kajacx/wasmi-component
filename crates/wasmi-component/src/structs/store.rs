@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, ensure};
 use wasmi::{AsContext, AsContextMut, Engine};
 
-use crate::{MemoryAccessPre, ResourceTable};
+use crate::MemoryAccessPre;
 
 pub struct Store<T> {
     store: wasmi::Store<StoreData<T>>,
@@ -12,9 +12,6 @@ pub struct StoreData<T> {
 
     memory_table: Vec<MemoryAccessPre>,
 
-    #[allow(unused)]
-    resource_table: ResourceTable,
-
     instance_call_stack: Vec<usize>,
 }
 
@@ -23,7 +20,6 @@ impl<T> Store<T> {
         let store_data = StoreData {
             data,
             memory_table: Vec::new(),
-            resource_table: ResourceTable::new(),
             instance_call_stack: Vec::new(),
         };
 

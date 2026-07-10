@@ -266,7 +266,7 @@ impl TestExampleExports {
     pub fn call_trip_string<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: &str,
+        value: impl LowerVal<String>,
     ) -> Result<String> {
         self.trip_string.call(ctx, (value,))
     }
@@ -274,7 +274,7 @@ impl TestExampleExports {
     pub fn call_trip_string_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: &str,
+        value: impl LowerVal<String>,
         callback: impl FnOnce(&str) -> R,
     ) -> Result<R> {
         self.trip_string.call_with_results(ctx, (value,), callback)

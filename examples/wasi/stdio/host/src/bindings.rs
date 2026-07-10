@@ -19,6 +19,43 @@ pub struct TestExampleExports {
 }
 
 #[allow(unused)]
+impl TestExampleExports {
+    pub fn call_print_stdout<T>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        text: impl LowerVal<String>,
+    ) -> Result<()> {
+        self.print_stdout.call(ctx, (text,))
+    }
+
+    pub fn call_print_stdout_with_results<T, R>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        text: impl LowerVal<String>,
+        callback: impl FnOnce(()) -> R,
+    ) -> Result<R> {
+        self.print_stdout.call_with_results(ctx, (text,), callback)
+    }
+
+    pub fn call_print_stderr<T>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        text: impl LowerVal<String>,
+    ) -> Result<()> {
+        self.print_stderr.call(ctx, (text,))
+    }
+
+    pub fn call_print_stderr_with_results<T, R>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        text: impl LowerVal<String>,
+        callback: impl FnOnce(()) -> R,
+    ) -> Result<R> {
+        self.print_stderr.call_with_results(ctx, (text,), callback)
+    }
+}
+
+#[allow(unused)]
 pub fn add_test_example_to_linker<T>(linker: &mut Linker<T>) -> Result<()> {
     Ok(())
 }

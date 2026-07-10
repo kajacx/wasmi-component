@@ -48,9 +48,15 @@ impl<T> super::bindgen::RootImports for T {
     ) -> HostResult<Result<(), StreamError>> {
         println!("Calling method_output_stream_write");
 
-        std::io::stdout()
-            .write_all(contents.as_u8_slice())
-            .expect("write to stdout");
+        if self_.index == 0 {
+            std::io::stdout()
+                .write_all(contents.as_u8_slice())
+                .expect("write to stdout");
+        } else {
+            std::io::stderr()
+                .write_all(contents.as_u8_slice())
+                .expect("write to stderr");
+        }
 
         Ok(Ok(()))
     }
@@ -103,7 +109,7 @@ impl<T> super::bindgen::RootImports for T {
     fn get_stderr(&mut self) -> HostResult<Own<OutputStreamResource>> {
         println!("Calling get_stderr");
 
-        Ok(Own::new(0))
+        Ok(Own::new(1))
     }
 
     fn resource_drop_terminal_input(&mut self, index: i32) -> HostResult<()> {
