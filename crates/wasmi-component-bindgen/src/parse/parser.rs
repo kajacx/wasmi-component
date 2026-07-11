@@ -1,7 +1,7 @@
 use heck::{ToSnakeCase, ToUpperCamelCase};
 use wit_parser::{
-    Docs, Function, Handle, Interface, Resolve, Span, Type, TypeDef, TypeDefKind, TypeId, World,
-    WorldItem, WorldKey,
+    Docs, Function, Interface, Resolve, Span, Type, TypeDef, TypeDefKind, World, WorldItem,
+    WorldKey,
 };
 
 use crate::parse::{Func, LowerArg, Param, ParamType, ParsedWit, ParsedWorld};
@@ -113,10 +113,6 @@ impl Parser {
                 result
             }
             WorldItem::Type { .. } => {
-                // let ty = &self.resolve.types[*id].kind;
-                // if matches!(ty, TypeDefKind::Resource) {
-                //     eprintln!("Resource ? found in ?");
-                // }
                 vec![]
             }
         }
@@ -267,16 +263,6 @@ impl Parser {
 
                 ParamType { canon, lower, lift }
             }
-            PreParsedType::Own(name) => ParamType {
-                canon: format!("Own<{name}>"),
-                lower: LowerArg::Specific(format!("Own<{name}>")),
-                lift: format!("Own<{name}>"),
-            },
-            PreParsedType::Borrow(name) => ParamType {
-                canon: format!("Borrow<{name}>"),
-                lower: LowerArg::Specific(format!("Borrow<{name}>")),
-                lift: format!("Borrow<{name}>"),
-            },
         };
     }
 
@@ -300,12 +286,7 @@ impl Parser {
                 let ty = &self.resolve.types[id];
                 match &ty.kind {
                     TypeDefKind::List(ty) => PreParsedType::List(*ty),
-                    TypeDefKind::Handle(Handle::Own(id)) => {
-                        PreParsedType::Own(self.resource_name(*id))
-                    }
-                    TypeDefKind::Handle(Handle::Borrow(id)) => {
-                        PreParsedType::Borrow(self.resource_name(*id))
-                    }
+                    TypeDefKind::Handle(_) => PreParsedType::Primitive("i32".to_string()),
                     TypeDefKind::Result(res) => PreParsedType::Result(res.ok, res.err),
                     TypeDefKind::Variant(_) => {
                         PreParsedType::Primitive(ty.name.as_ref().unwrap().to_upper_camel_case())
@@ -316,11 +297,6 @@ impl Parser {
                 }
             }
         }
-    }
-
-    fn resource_name(&self, id: TypeId) -> String {
-        let name = self.resolve.types[id].name.as_ref().unwrap();
-        format!("{}Resource", name.to_upper_camel_case())
     }
 }
 
@@ -346,6 +322,4 @@ enum PreParsedType<'a> {
     Option(Type),
     Result(Option<Type>, Option<Type>),
     Tuple(&'a [Type]),
-    Own(String),
-    Borrow(String),
 }

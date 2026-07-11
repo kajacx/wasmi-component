@@ -1,9 +1,8 @@
 use std::marker::PhantomData;
 
-use anyhow::{Context, Result};
 use wasmi::{AsContextMut, Val};
 
-use crate::{ComponentValue, FatPtr, LowerVal, MemoryAccessPre, StoreData, View};
+use crate::{CallResult, ComponentValue, FatPtr, LowerVal, MemoryAccessPre, StoreData, View};
 
 pub struct TypedFunc<Params, Results> {
     memory: MemoryAccessPre,
@@ -30,8 +29,9 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         params: impl LowerVal<Params>,
-    ) -> Result<Results> {
-        self.call_with_results(ctx, params, |res| res.lift_owned())?
+    ) -> CallResult<Results> {
+        let result = self.call_with_results(ctx, params, |res| res.lift_owned());
+        Ok(result??)
     }
 
     pub fn call_with_results<T, R>(
@@ -39,7 +39,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         mut ctx: impl AsContextMut<Data = StoreData<T>>,
         params: impl LowerVal<Params>,
         callback: impl FnOnce(Results::Borrowed<'_>) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         let mut args: [Val; 16] = std::array::from_fn(|_| Val::I32(0));
         let args_len = Params::arg_count();
 
@@ -62,19 +62,21 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
             .data_mut()
             .push_call_instance(instance_id);
 
-        let call_result = self
-            .inner
-            .call(ctx.as_context_mut(), &args[0..args_len], results_slice);
+        let call_result =
+            self.inner
+                .call_resumable(ctx.as_context_mut(), &args[0..args_len], results_slice);
 
         ctx.as_context_mut()
             .data_mut()
-            .pop_call_instance(instance_id, depth)?;
+            .pop_call_instance(instance_id, depth)
+            .expect("TODO: ");
 
         call_result?;
 
         let bytes = self.memory.memory.data(ctx.as_context());
         let lifted = if results_indirect {
-            let address = results[0].i32().context("i32 address return")? as usize;
+            // TODO: check params ... again
+            let address = results[0].i32().unwrap() as usize;
             let ptr = FatPtr::new(address, Results::byte_size(), 1);
 
             let slice = ptr.try_index(bytes)?;
@@ -86,9 +88,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         let return_val = callback(lifted);
 
         if let Some(post_return) = self.post_return {
-            let address = results[0]
-                .i32()
-                .context("Function with a cleanup method did not return an i32.")?;
+            let address = results[0].i32().expect("TODO: ");
             post_return.call(ctx, address)?;
         }
 

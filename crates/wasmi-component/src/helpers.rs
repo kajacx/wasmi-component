@@ -1,7 +1,3 @@
-pub fn anyhow_result_to_wasmi<T>(result: anyhow::Result<T>) -> Result<T, wasmi::Error> {
-    result.map_err(|error| wasmi::Error::new(error.to_string()))
-}
-
 pub fn round_up(value: usize, multiple: usize) -> usize {
     (value + multiple - 1) / multiple * multiple
 }

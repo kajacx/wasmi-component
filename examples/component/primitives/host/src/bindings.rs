@@ -1,11 +1,11 @@
 use wasmi_component::anyhow::Result;
 #[allow(unused)]
-use wasmi_component::wasi_p2::{add_wasi_p2_to_linker, resources::*};
+use wasmi_component::wasi_p2::{StreamError, add_wasi_p2_to_linker};
 #[allow(unused)]
-use wasmi_component::wasmi::{AsContext, AsContextMut};
+use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
 #[allow(unused)]
 use wasmi_component::{
-    Borrow, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerVal, Own, StoreData,
+    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerVal, StoreData,
     TypedFunc,
 };
 
@@ -63,7 +63,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i8,
-    ) -> Result<i8> {
+    ) -> CallResult<i8> {
         self.trip_s8.call(ctx, (value,))
     }
 
@@ -72,7 +72,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i8,
         callback: impl FnOnce(i8) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_s8.call_with_results(ctx, (value,), callback)
     }
 
@@ -80,7 +80,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i16,
-    ) -> Result<i16> {
+    ) -> CallResult<i16> {
         self.trip_s16.call(ctx, (value,))
     }
 
@@ -89,7 +89,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i16,
         callback: impl FnOnce(i16) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_s16.call_with_results(ctx, (value,), callback)
     }
 
@@ -97,7 +97,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i32,
-    ) -> Result<i32> {
+    ) -> CallResult<i32> {
         self.trip_s32.call(ctx, (value,))
     }
 
@@ -106,7 +106,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i32,
         callback: impl FnOnce(i32) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_s32.call_with_results(ctx, (value,), callback)
     }
 
@@ -114,7 +114,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i64,
-    ) -> Result<i64> {
+    ) -> CallResult<i64> {
         self.trip_s64.call(ctx, (value,))
     }
 
@@ -123,7 +123,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i64,
         callback: impl FnOnce(i64) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_s64.call_with_results(ctx, (value,), callback)
     }
 
@@ -131,7 +131,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u8,
-    ) -> Result<u8> {
+    ) -> CallResult<u8> {
         self.trip_u8.call(ctx, (value,))
     }
 
@@ -140,7 +140,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u8,
         callback: impl FnOnce(u8) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_u8.call_with_results(ctx, (value,), callback)
     }
 
@@ -148,7 +148,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u16,
-    ) -> Result<u16> {
+    ) -> CallResult<u16> {
         self.trip_u16.call(ctx, (value,))
     }
 
@@ -157,7 +157,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u16,
         callback: impl FnOnce(u16) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_u16.call_with_results(ctx, (value,), callback)
     }
 
@@ -165,7 +165,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u32,
-    ) -> Result<u32> {
+    ) -> CallResult<u32> {
         self.trip_u32.call(ctx, (value,))
     }
 
@@ -174,7 +174,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u32,
         callback: impl FnOnce(u32) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_u32.call_with_results(ctx, (value,), callback)
     }
 
@@ -182,7 +182,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u64,
-    ) -> Result<u64> {
+    ) -> CallResult<u64> {
         self.trip_u64.call(ctx, (value,))
     }
 
@@ -191,7 +191,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u64,
         callback: impl FnOnce(u64) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_u64.call_with_results(ctx, (value,), callback)
     }
 
@@ -199,7 +199,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: f32,
-    ) -> Result<f32> {
+    ) -> CallResult<f32> {
         self.trip_f32.call(ctx, (value,))
     }
 
@@ -208,7 +208,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: f32,
         callback: impl FnOnce(f32) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_f32.call_with_results(ctx, (value,), callback)
     }
 
@@ -216,7 +216,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: f64,
-    ) -> Result<f64> {
+    ) -> CallResult<f64> {
         self.trip_f64.call(ctx, (value,))
     }
 
@@ -225,7 +225,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: f64,
         callback: impl FnOnce(f64) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_f64.call_with_results(ctx, (value,), callback)
     }
 
@@ -233,7 +233,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: bool,
-    ) -> Result<bool> {
+    ) -> CallResult<bool> {
         self.trip_bool.call(ctx, (value,))
     }
 
@@ -242,7 +242,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: bool,
         callback: impl FnOnce(bool) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_bool.call_with_results(ctx, (value,), callback)
     }
 
@@ -250,7 +250,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: char,
-    ) -> Result<char> {
+    ) -> CallResult<char> {
         self.trip_char.call(ctx, (value,))
     }
 
@@ -259,7 +259,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: char,
         callback: impl FnOnce(char) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_char.call_with_results(ctx, (value,), callback)
     }
 
@@ -267,7 +267,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: impl LowerVal<String>,
-    ) -> Result<String> {
+    ) -> CallResult<String> {
         self.trip_string.call(ctx, (value,))
     }
 
@@ -276,13 +276,15 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: impl LowerVal<String>,
         callback: impl FnOnce(&str) -> R,
-    ) -> Result<R> {
+    ) -> CallResult<R> {
         self.trip_string.call_with_results(ctx, (value,), callback)
     }
 }
 
 #[allow(unused)]
-pub fn add_test_example_to_linker<T: TestExampleImports>(linker: &mut Linker<T>) -> Result<()> {
+pub fn add_test_example_to_linker<T: TestExampleImports>(
+    linker: &mut Linker<T>,
+) -> Result<(), LinkerError> {
     linker.func_new::<(i8,), i8>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-s8",

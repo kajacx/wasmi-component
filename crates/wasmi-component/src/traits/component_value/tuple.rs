@@ -1,12 +1,13 @@
-use std::cmp::max;
-
-use anyhow::Result;
 use wasmi::{Val, ValType};
 
-use crate::{ComponentValue, round_up};
+use crate::{ComponentValue, ConvertResult, ValueType, round_up};
 
 impl ComponentValue for () {
     type Borrowed<'a> = Self;
+
+    fn value_type() -> ValueType {
+        ValueType::Tuple(vec![])
+    }
 
     fn arg_count() -> usize {
         0
@@ -16,7 +17,7 @@ impl ComponentValue for () {
         vec![]
     }
 
-    fn lift_args<'a>(vals: &[Val], _memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+    fn lift_args<'a>(vals: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(vals.len(), Self::arg_count());
 
         Ok(())
@@ -30,7 +31,7 @@ impl ComponentValue for () {
         0
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], _memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+    fn lift_bytes<'a>(bytes: &[u8], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(bytes.len(), Self::byte_size());
 
         Ok(())
@@ -40,6 +41,10 @@ impl ComponentValue for () {
 impl<T: ComponentValue> ComponentValue for (T,) {
     type Borrowed<'a> = (T::Borrowed<'a>,);
 
+    fn value_type() -> ValueType {
+        ValueType::Tuple(vec![T::value_type()])
+    }
+
     fn arg_count() -> usize {
         T::arg_count()
     }
@@ -48,7 +53,7 @@ impl<T: ComponentValue> ComponentValue for (T,) {
         T::arg_types()
     }
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(vals.len(), Self::arg_count());
 
         Ok((T::lift_args(vals, memory)?,))
@@ -62,7 +67,7 @@ impl<T: ComponentValue> ComponentValue for (T,) {
         T::byte_size()
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(bytes.len(), Self::byte_size());
 
         Ok((T::lift_bytes(bytes, memory)?,))
@@ -71,6 +76,10 @@ impl<T: ComponentValue> ComponentValue for (T,) {
 
 impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
     type Borrowed<'a> = (T0::Borrowed<'a>, T1::Borrowed<'a>);
+
+    fn value_type() -> ValueType {
+        ValueType::Tuple(vec![T0::value_type(), T1::value_type()])
+    }
 
     fn arg_count() -> usize {
         T0::arg_count() + T1::arg_count()
@@ -83,7 +92,7 @@ impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
         params
     }
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(vals.len(), Self::arg_count());
 
         let mut index = 0;
@@ -100,7 +109,7 @@ impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
     }
 
     fn byte_align() -> usize {
-        max(T0::byte_align(), T1::byte_size())
+        std::cmp::max(T0::byte_align(), T1::byte_size())
     }
 
     fn byte_size() -> usize {
@@ -108,7 +117,7 @@ impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
         round_up(T0::byte_size(), align) + round_up(T1::byte_size(), align)
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(bytes.len(), Self::byte_size());
 
         let align = Self::byte_align();

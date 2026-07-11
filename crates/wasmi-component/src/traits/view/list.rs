@@ -1,9 +1,7 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use anyhow::{Result, bail};
-
-use crate::{ComponentValue, LeBytesU8, View};
+use crate::{ComponentValue, ConvertError, ConvertResult, LeBytesU8, View};
 
 /// T is the canonical type
 #[derive(Clone, Copy)]
@@ -47,12 +45,16 @@ impl<'a, T> ListAccessor<'a, T> {
         self.len() == 0
     }
 
-    pub fn get(&self, index: usize) -> Result<T::Borrowed<'a>>
+    pub fn get(&self, index: usize) -> ConvertResult<T::Borrowed<'a>>
     where
         T: ComponentValue,
     {
         if index >= self.len() {
-            bail!("ListAccessor: index {index} is out of range {}", self.len());
+            return Err(ConvertError::new(format!(
+                "ListAccessor<{}>: index {index} is out of range {}",
+                std::any::type_name::<T>(),
+                self.len()
+            )));
         }
 
         let start = index * T::byte_size();
@@ -60,7 +62,7 @@ impl<'a, T> ListAccessor<'a, T> {
         T::lift_bytes(&self.slice[start..(start + T::byte_size())], self.memory)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = Result<T::Borrowed<'a>>>
+    pub fn iter(&self) -> impl Iterator<Item = ConvertResult<T::Borrowed<'a>>>
     where
         T: ComponentValue,
     {
@@ -76,7 +78,7 @@ impl<'a, T> ListAccessor<'a, T> {
 }
 
 impl<T: ComponentValue> View<Vec<T>> for ListAccessor<'_, T> {
-    fn lift_owned(&self) -> Result<Vec<T>> {
+    fn lift_owned(&self) -> ConvertResult<Vec<T>> {
         self.iter()
             .map(|val| val?.lift_owned())
             .try_fold(Vec::new(), |mut vec, value| {
@@ -85,7 +87,7 @@ impl<T: ComponentValue> View<Vec<T>> for ListAccessor<'_, T> {
             })
     }
 
-    fn lift_to(&self, target: &mut Vec<T>) -> Result<()> {
+    fn lift_to(&self, target: &mut Vec<T>) -> ConvertResult<()> {
         for (index, item) in self.iter().enumerate() {
             if index < target.len() {
                 item?.lift_to(&mut target[index])?;

@@ -1,11 +1,9 @@
-use anyhow::Result;
-
-use crate::{ComponentValue, View};
+use crate::{ComponentValue, ConvertResult, View};
 
 impl<'a, T: ComponentValue, E: ComponentValue> View<Result<T, E>>
     for Result<T::Borrowed<'a>, E::Borrowed<'a>>
 {
-    fn lift_owned(&self) -> Result<Result<T, E>> {
+    fn lift_owned(&self) -> ConvertResult<Result<T, E>> {
         let owned = match self {
             Ok(ok) => Ok(ok.lift_owned()?),
             Err(err) => Err(err.lift_owned()?),
@@ -14,7 +12,7 @@ impl<'a, T: ComponentValue, E: ComponentValue> View<Result<T, E>>
         Ok(owned)
     }
 
-    fn lift_to(&self, target: &mut Result<T, E>) -> Result<()> {
+    fn lift_to(&self, target: &mut Result<T, E>) -> ConvertResult<()> {
         match self {
             Ok(self_ok) => {
                 if let Ok(target_ok) = target {
@@ -37,7 +35,7 @@ impl<'a, T: ComponentValue, E: ComponentValue> View<Result<T, E>>
 }
 
 impl<'a, T: ComponentValue> View<Option<T>> for Option<T::Borrowed<'a>> {
-    fn lift_owned(&self) -> Result<Option<T>> {
+    fn lift_owned(&self) -> ConvertResult<Option<T>> {
         let owned = match self {
             None => None,
             Some(val) => Some(val.lift_owned()?),
@@ -46,7 +44,7 @@ impl<'a, T: ComponentValue> View<Option<T>> for Option<T::Borrowed<'a>> {
         Ok(owned)
     }
 
-    fn lift_to(&self, target: &mut Option<T>) -> Result<()> {
+    fn lift_to(&self, target: &mut Option<T>) -> ConvertResult<()> {
         match self {
             None => {
                 *target = None;

@@ -19,12 +19,12 @@ impl Generator {
             concat!(
                 "use wasmi_component::anyhow::Result;\n",
                 "#[allow(unused)]\n",
-                "use wasmi_component::wasmi::{{AsContext, AsContextMut}};\n",
+                "use wasmi_component::wasmi::{{AsContext, AsContextMut, errors::LinkerError}};\n",
                 "#[allow(unused)]\n",
-                "use wasmi_component::{{Borrow, Component, ComponentValue, HostResult, Linker, ",
-                "ListAccessor, LowerVal, Own, StoreData, TypedFunc}};\n",
+                "use wasmi_component::{{CallResult, Component, ComponentValue, HostResult, ",
+                "Linker, ListAccessor, LowerVal, StoreData, TypedFunc}};\n",
                 "#[allow(unused)]\n",
-                "use wasmi_component::wasi_p2::{{add_wasi_p2_to_linker, resources::*}};\n"
+                "use wasmi_component::wasi_p2::{{StreamError, add_wasi_p2_to_linker}};\n"
             ),
         )
         .unwrap();
@@ -89,7 +89,7 @@ impl Generator {
                 output,
                 concat!(
                     "  pub fn call_{}<T>(&self, ctx: impl AsContextMut<Data = StoreData<T>>, {}) ",
-                    "-> Result<{}> {{\n",
+                    "-> CallResult<{}> {{\n",
                     "    self.{}.call(ctx, ({}))\n",
                     "  }}\n"
                 ),
@@ -106,7 +106,7 @@ impl Generator {
                 concat!(
                     "  pub fn call_{}_with_results<T, R>(&self, ",
                     "ctx: impl AsContextMut<Data = StoreData<T>>, {}",
-                    "callback: impl FnOnce({}) -> R)-> Result<R> {{\n",
+                    "callback: impl FnOnce({}) -> R)-> CallResult<R> {{\n",
                     "    self.{}.call_with_results(ctx, ({}), callback)\n",
                     "  }}\n"
                 ),
@@ -127,7 +127,7 @@ impl Generator {
             output,
             concat!(
                 "#[allow(unused)]\n",
-                "pub fn add_{}_to_linker<T{}>(linker: &mut Linker<T>) -> Result<()> {{"
+                "pub fn add_{}_to_linker<T{}>(linker: &mut Linker<T>) -> Result<(), LinkerError> {{"
             ),
             world.world_name.to_snake_case(),
             world.imports_bound
@@ -162,7 +162,7 @@ impl Generator {
                 "pub fn instantiate_{}_world<T>",
                 "(mut ctx: impl AsContextMut<Data = StoreData<T>>, ",
                 "linker: &Linker<T>, component: &Component)",
-                " -> Result<{}> {{",
+                " -> Result<{}, > {{",
             ),
             world.world_name.to_snake_case(),
             world.exports_name

@@ -1,10 +1,13 @@
-use anyhow::Result;
 use wasmi::{Val, ValType};
 
-use crate::{ComponentValue, FatPtr, ListAccessor};
+use crate::{ComponentValue, ConvertResult, FatPtr, ListAccessor, ValueType};
 
 impl<T: ComponentValue> ComponentValue for Vec<T> {
     type Borrowed<'a> = ListAccessor<'a, T>;
+
+    fn value_type() -> ValueType {
+        ValueType::List(Box::new(T::value_type()))
+    }
 
     fn arg_count() -> usize {
         2
@@ -14,7 +17,7 @@ impl<T: ComponentValue> ComponentValue for Vec<T> {
         vec![ValType::I32, ValType::I32]
     }
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         let ptr = FatPtr::from_args(vals, T::byte_size())?;
         Ok(ListAccessor::new(ptr.try_index(memory)?, ptr.count, memory))
     }
@@ -27,7 +30,7 @@ impl<T: ComponentValue> ComponentValue for Vec<T> {
         8
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         let ptr = FatPtr::from_bytes(bytes, T::byte_size())?;
         Ok(ListAccessor::new(ptr.try_index(memory)?, ptr.count, memory))
     }

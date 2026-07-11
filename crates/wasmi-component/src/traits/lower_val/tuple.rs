@@ -1,10 +1,9 @@
-use anyhow::Result;
 use wasmi::Val;
 
-use crate::{ComponentValue, LowerVal, MemoryAccess, round_up};
+use crate::{ComponentValue, ConvertResult, LowerVal, MemoryAccess, round_up};
 
 impl LowerVal<Self> for () {
-    fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Self::arg_count());
 
         Ok(())
@@ -14,7 +13,7 @@ impl LowerVal<Self> for () {
         &self,
         range: std::ops::Range<usize>,
         _memory: &mut impl MemoryAccess,
-    ) -> Result<()> {
+    ) -> ConvertResult<()> {
         debug_assert_eq!(range.len(), Self::byte_size());
 
         Ok(())
@@ -22,7 +21,7 @@ impl LowerVal<Self> for () {
 }
 
 impl<U: ComponentValue, T: LowerVal<U>> LowerVal<(U,)> for (T,) {
-    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), U::arg_count());
 
         T::lower_args(&self.0, args, memory)
@@ -32,7 +31,7 @@ impl<U: ComponentValue, T: LowerVal<U>> LowerVal<(U,)> for (T,) {
         &self,
         range: std::ops::Range<usize>,
         memory: &mut impl MemoryAccess,
-    ) -> Result<()> {
+    ) -> ConvertResult<()> {
         debug_assert_eq!(range.len(), U::byte_size());
 
         T::lower_bytes(&self.0, range, memory)
@@ -42,7 +41,7 @@ impl<U: ComponentValue, T: LowerVal<U>> LowerVal<(U,)> for (T,) {
 impl<U0: ComponentValue, T0: LowerVal<U0>, U1: ComponentValue, T1: LowerVal<U1>> LowerVal<(U0, U1)>
     for (T0, T1)
 {
-    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), <(U0, U1)>::arg_count());
 
         let mut index = 0;
@@ -62,7 +61,7 @@ impl<U0: ComponentValue, T0: LowerVal<U0>, U1: ComponentValue, T1: LowerVal<U1>>
         &self,
         range: std::ops::Range<usize>,
         memory: &mut impl MemoryAccess,
-    ) -> Result<()> {
+    ) -> ConvertResult<()> {
         debug_assert_eq!(range.len(), <(U0, U1)>::byte_size());
 
         let align = <(U0, U1)>::byte_align();

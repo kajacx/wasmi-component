@@ -1,10 +1,13 @@
-use anyhow::Result;
 use wasmi::{Val, ValType};
 
-use crate::{ComponentValue, FatPtr};
+use crate::{ComponentValue, ConvertError, ConvertResult, FatPtr, ValueType};
 
 impl ComponentValue for String {
     type Borrowed<'a> = &'a str;
+
+    fn value_type() -> ValueType {
+        ValueType::String
+    }
 
     fn arg_count() -> usize {
         2
@@ -14,13 +17,16 @@ impl ComponentValue for String {
         vec![ValType::I32, ValType::I32]
     }
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(vals.len(), Self::arg_count());
 
         let ptr = FatPtr::from_args(vals, 1)?;
         let slice = ptr.try_index(memory)?;
 
-        Ok(str::from_utf8(slice)?)
+        str::from_utf8(slice).map_err(|err| {
+            let ptr = "TODO:";
+            ConvertError::with_cause(format!("String {:?} isn't valid utf-8", ptr), Box::new(err))
+        })
     }
 
     fn byte_align() -> usize {
@@ -31,12 +37,15 @@ impl ComponentValue for String {
         8
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> Result<Self::Borrowed<'a>> {
+    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(bytes.len(), Self::byte_size());
 
         let ptr = FatPtr::from_bytes(bytes, 1)?;
         let slice = ptr.try_index(memory)?;
 
-        Ok(str::from_utf8(slice)?)
+        str::from_utf8(slice).map_err(|err| {
+            let ptr = "TODO:";
+            ConvertError::with_cause(format!("String {:?} isn't valid utf-8", ptr), Box::new(err))
+        })
     }
 }

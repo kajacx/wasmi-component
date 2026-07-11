@@ -1,8 +1,7 @@
-use anyhow::Result;
+use crate::ConvertResult;
 
 mod list;
 mod primitive;
-mod resource;
 mod result;
 mod string;
 mod tuple;
@@ -10,7 +9,7 @@ mod tuple;
 pub use list::ListAccessor;
 
 pub trait View<T> {
-    fn lift_owned(&self) -> Result<T>;
+    fn lift_owned(&self) -> ConvertResult<T>;
 
-    fn lift_to(&self, target: &mut T) -> Result<()>;
+    fn lift_to(&self, target: &mut T) -> ConvertResult<()>;
 }

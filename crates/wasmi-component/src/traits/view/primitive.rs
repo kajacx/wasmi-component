@@ -1,15 +1,13 @@
-use anyhow::Result;
-
-use crate::View;
+use crate::{ConvertResult, View};
 
 macro_rules! impl_view_primitive {
     ($ty: ty) => {
         impl View<Self> for $ty {
-            fn lift_owned(&self) -> Result<Self> {
+            fn lift_owned(&self) -> ConvertResult<Self> {
                 Ok(*self)
             }
 
-            fn lift_to(&self, target: &mut Self) -> Result<()> {
+            fn lift_to(&self, target: &mut Self) -> ConvertResult<()> {
                 *target = *self;
                 Ok(())
             }

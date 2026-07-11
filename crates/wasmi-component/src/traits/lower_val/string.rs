@@ -1,12 +1,11 @@
 use std::ops::Range;
 
-use anyhow::Result;
 use wasmi::Val;
 
-use crate::{ComponentValue, FatPtr, LowerVal, MemoryAccess};
+use crate::{ComponentValue, ConvertResult, FatPtr, LowerVal, MemoryAccess};
 
 impl<T: AsRef<str>> LowerVal<String> for T {
-    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), String::arg_count());
 
         let contents = self.as_ref();
@@ -16,7 +15,11 @@ impl<T: AsRef<str>> LowerVal<String> for T {
         Ok(())
     }
 
-    fn lower_bytes(&self, range: Range<usize>, memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower_bytes(
+        &self,
+        range: Range<usize>,
+        memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()> {
         debug_assert_eq!(range.len(), String::byte_size());
 
         let contents = self.as_ref();
@@ -27,7 +30,7 @@ impl<T: AsRef<str>> LowerVal<String> for T {
     }
 }
 
-fn write_contents(contents: &str, memory: &mut impl MemoryAccess) -> Result<FatPtr> {
+fn write_contents(contents: &str, memory: &mut impl MemoryAccess) -> ConvertResult<FatPtr> {
     let index = memory.allocate(contents.len(), 1)?;
     let slice = memory.slice(index..(index + contents.len()))?;
     slice.copy_from_slice(contents.as_bytes());

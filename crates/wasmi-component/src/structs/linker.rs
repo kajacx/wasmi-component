@@ -1,9 +1,8 @@
 use anyhow::{Context, Result};
-use wasmi::AsContextMut;
+use wasmi::{AsContextMut, errors::LinkerError};
 
 use crate::{
     Component, ComponentValue, HostResult, Instance, LowerVal, MemoryAccessPre, StoreData,
-    anyhow_result_to_wasmi,
 };
 
 pub struct Linker<T> {
@@ -17,7 +16,7 @@ impl<T> Linker<T> {
         }
     }
 
-    pub fn add_wasi_p2(&mut self) -> Result<&mut Self> {
+    pub fn add_wasi_p2(&mut self) -> Result<&mut Self, LinkerError> {
         crate::wasi_p2::add_wasi_p2_to_linker(self)?;
         Ok(self)
     }
@@ -27,7 +26,7 @@ impl<T> Linker<T> {
         module: &str,
         name: &str,
         callback: impl Fn(&mut T, Params::Borrowed<'_>) -> HostResult<Results> + Send + Sync + 'static,
-    ) -> Result<&mut Self> {
+    ) -> Result<&mut Self, LinkerError> {
         let mut params_ty = Params::arg_types();
         let mut result_ty = Results::arg_types();
         let has_external_result = result_ty.len() > 1;
@@ -41,12 +40,10 @@ impl<T> Linker<T> {
             name,
             wasmi::FuncType::new(params_ty, result_ty),
             move |mut caller, params, results| {
-                let instance_id = anyhow_result_to_wasmi(
-                    caller
-                        .data()
-                        .current_call_instance()
-                        .context("call instance stack is empty"),
-                )?;
+                let instance_id = caller
+                    .data()
+                    .current_call_instance()
+                    .expect("instance call stack should not be empty");
 
                 let memory_pre = *caller.data().get_memory(instance_id);
                 let (bytes, store_data) = memory_pre
@@ -61,18 +58,17 @@ impl<T> Linker<T> {
 
                 let user_data = store_data.data_mut();
 
-                let args = anyhow_result_to_wasmi(Params::lift_args(params_slice, bytes))?;
-                let res = anyhow_result_to_wasmi(callback(user_data, args))?;
+                let args = Params::lift_args(params_slice, bytes)?;
+                let res = callback(user_data, args)?;
                 let mut memory_filled = memory_pre.fill(caller);
 
                 if has_external_result {
-                    let address = anyhow_result_to_wasmi(
-                        params[params.len() - 1].i32().context("get return address"),
-                    )? as usize;
+                    // TODO: check type
+                    let address = params[params.len() - 1].i32().unwrap() as usize;
                     let range = address..(address + Results::byte_size());
-                    anyhow_result_to_wasmi(res.lower_bytes(range, &mut memory_filled))?;
+                    res.lower_bytes(range, &mut memory_filled)?;
                 } else {
-                    anyhow_result_to_wasmi(res.lower_args(results, &mut memory_filled))?;
+                    res.lower_args(results, &mut memory_filled)?;
                 }
 
                 Ok(())

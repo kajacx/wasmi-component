@@ -1,15 +1,14 @@
 use std::ops::Range;
 
-use anyhow::Result;
 use wasmi::Val;
 
-use crate::{ComponentValue, FatPtr, LowerVal, MemoryAccess};
+use crate::{ComponentValue, ConvertResult, FatPtr, LowerVal, MemoryAccess};
 
 impl<T: ComponentValue, S: AsSlice> LowerVal<Vec<T>> for S
 where
     S::Target: LowerVal<T>,
 {
-    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Vec::<T>::arg_count());
 
         let contents = self.as_slice();
@@ -19,7 +18,11 @@ where
         Ok(())
     }
 
-    fn lower_bytes(&self, range: Range<usize>, memory: &mut impl MemoryAccess) -> Result<()> {
+    fn lower_bytes(
+        &self,
+        range: Range<usize>,
+        memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()> {
         debug_assert_eq!(range.len(), Vec::<T>::byte_size());
 
         let contents = self.as_slice();
@@ -33,7 +36,7 @@ where
 fn write_contents<T: ComponentValue>(
     contents: &[impl LowerVal<T>],
     memory: &mut impl MemoryAccess,
-) -> Result<FatPtr> {
+) -> ConvertResult<FatPtr> {
     let len = T::byte_size() * contents.len();
     let start = memory.allocate(len, T::byte_align())?;
     let mut index = start;
