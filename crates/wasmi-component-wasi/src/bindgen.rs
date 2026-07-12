@@ -1,13 +1,18 @@
-use crate::anyhow::Result;
+use wasmi_component::anyhow::Result;
 #[allow(unused)]
-use crate::wasi_p2::{StreamError, add_wasi_p2_to_linker};
+use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
 #[allow(unused)]
-use crate::wasmi::{AsContext, AsContextMut, errors::LinkerError};
-#[allow(unused)]
-use crate::{
-    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerVal, StoreData,
+use wasmi_component::{
+    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerValue, StoreData,
     TypedFunc,
 };
+
+#[allow(unused)]
+#[derive(Debug, Clone, ComponentValue)]
+pub enum StreamError {
+    LastOperationFailed(i32),
+    Closed,
+}
 
 #[allow(unused)]
 pub trait RootImports {

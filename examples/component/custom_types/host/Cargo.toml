@@ -5,4 +5,3 @@ edition = "2024"
 
 [dependencies]
 wasmi-component = { path = "../../../../crates/wasmi-component" }
-wasmi-component-wasi = { path = "../../../../crates/wasmi-component-wasi" }

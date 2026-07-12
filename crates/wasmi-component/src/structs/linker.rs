@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use wasmi::{AsContextMut, errors::LinkerError};
 
 use crate::{
-    Component, ComponentValue, HostResult, Instance, LowerVal, MemoryAccessPre, StoreData,
+    Component, ComponentValue, HostResult, Instance, LowerValue, MemoryAccessPre, StoreData,
 };
 
 pub struct Linker<T> {
@@ -16,12 +16,7 @@ impl<T> Linker<T> {
         }
     }
 
-    pub fn add_wasi_p2(&mut self) -> Result<&mut Self, LinkerError> {
-        crate::wasi_p2::add_wasi_p2_to_linker(self)?;
-        Ok(self)
-    }
-
-    pub fn func_new<Params: ComponentValue, Results: ComponentValue + LowerVal<Results>>(
+    pub fn func_new<Params: ComponentValue, Results: ComponentValue + LowerValue<Results>>(
         &mut self,
         module: &str,
         name: &str,

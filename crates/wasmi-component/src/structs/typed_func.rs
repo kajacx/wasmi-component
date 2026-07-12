@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use wasmi::{AsContextMut, Val};
 
-use crate::{CallResult, ComponentValue, FatPtr, LowerVal, MemoryAccessPre, StoreData, View};
+use crate::{CallResult, ComponentValue, FatPtr, LowerValue, MemoryAccessPre, StoreData, View};
 
 pub struct TypedFunc<Params, Results> {
     memory: MemoryAccessPre,
@@ -28,7 +28,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
     pub fn call<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        params: impl LowerVal<Params>,
+        params: impl LowerValue<Params>,
     ) -> CallResult<Results> {
         let result = self.call_with_results(ctx, params, |res| res.lift_owned());
         Ok(result??)
@@ -37,7 +37,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
     pub fn call_with_results<T, R>(
         &self,
         mut ctx: impl AsContextMut<Data = StoreData<T>>,
-        params: impl LowerVal<Params>,
+        params: impl LowerValue<Params>,
         callback: impl FnOnce(Results::Borrowed<'_>) -> R,
     ) -> CallResult<R> {
         let mut args: [Val; 16] = std::array::from_fn(|_| Val::I32(0));

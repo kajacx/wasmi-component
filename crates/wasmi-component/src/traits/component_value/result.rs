@@ -26,12 +26,12 @@ impl<T: ComponentValue, E: ComponentValue> ComponentValue for Result<T, E> {
         result
     }
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(vals.len(), Self::arg_count());
+    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
-        match vals[0].i32() {
-            Some(0) => Ok(Ok(T::lift_args(&vals[1..(T::arg_count() + 1)], memory)?)),
-            Some(1) => Ok(Err(E::lift_args(&vals[1..(E::arg_count() + 1)], memory)?)),
+        match args[0].i32() {
+            Some(0) => Ok(Ok(T::lift_args(&args[1..(T::arg_count() + 1)], memory)?)),
+            Some(1) => Ok(Err(E::lift_args(&args[1..(E::arg_count() + 1)], memory)?)),
             other => Err(ConvertError::new(format!(
                 "Invalid determinant in Result::lift_args: {:?}",
                 other
@@ -86,12 +86,12 @@ impl<T: ComponentValue> ComponentValue for Option<T> {
         types
     }
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(vals.len(), Self::arg_count());
+    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
-        match vals[0].i32() {
+        match args[0].i32() {
             Some(0) => Ok(None),
-            Some(1) => Ok(Some(T::lift_args(vals, memory)?)),
+            Some(1) => Ok(Some(T::lift_args(args, memory)?)),
             other => Err(ConvertError::new(format!(
                 "Invalid determinant in Option::lift_args: {:?}",
                 other

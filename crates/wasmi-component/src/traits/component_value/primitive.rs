@@ -19,11 +19,11 @@ macro_rules! impl_component_value_primitive {
                 vec![$wasmi_ty]
             }
 
-            fn lift_args<'a>(vals: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-                debug_assert_eq!(vals.len(), Self::arg_count());
+            fn lift_args<'a>(args: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+                debug_assert_eq!(args.len(), Self::arg_count());
 
                 // TODO: Again: check types with wasmi
-                Ok((vals[0].$wasmi_getter().unwrap() as Self))
+                Ok((args[0].$wasmi_getter().unwrap() as Self))
             }
 
             fn byte_align() -> usize {
@@ -71,11 +71,11 @@ impl ComponentValue for f32 {
         vec![ValType::F32]
     }
 
-    fn lift_args<'a>(vals: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(vals.len(), Self::arg_count());
+    fn lift_args<'a>(args: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
         // TODO: result or other variants
-        Ok(vals[0].f32().map(|val| val.to_float()).unwrap())
+        Ok(args[0].f32().map(|val| val.to_float()).unwrap())
     }
 
     fn byte_align() -> usize {
@@ -108,11 +108,11 @@ impl ComponentValue for f64 {
         vec![ValType::F64]
     }
 
-    fn lift_args<'a>(vals: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(vals.len(), Self::arg_count());
+    fn lift_args<'a>(args: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
         // TODO: result or other variants
-        Ok(vals[0].f64().map(|val| val.to_float()).unwrap())
+        Ok(args[0].f64().map(|val| val.to_float()).unwrap())
     }
 
     fn byte_align() -> usize {
@@ -145,11 +145,11 @@ impl ComponentValue for bool {
         vec![ValType::I32]
     }
 
-    fn lift_args<'a>(vals: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(vals.len(), Self::arg_count());
+    fn lift_args<'a>(args: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
         // TODO: result / variant
-        match vals[0].i32().unwrap() {
+        match args[0].i32().unwrap() {
             0 => Ok(false),
             1 => Ok(true),
             other => Err(ConvertError::new(format!("Unexpected bool value: {other}"))),
@@ -190,11 +190,11 @@ impl ComponentValue for char {
         vec![ValType::I32]
     }
 
-    fn lift_args<'a>(vals: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(vals.len(), Self::arg_count());
+    fn lift_args<'a>(args: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
         // TODO: result / variant
-        let value = vals[0].i32().unwrap() as u32;
+        let value = args[0].i32().unwrap() as u32;
         char::from_u32(value)
             .ok_or_else(|| ConvertError::new(format!("Invalid char value: 0x{:08x}", value)))
     }

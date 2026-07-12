@@ -2,11 +2,11 @@ use std::ops::Range;
 
 use wasmi::Val;
 
-use crate::{ComponentValue, ConvertResult, FatPtr, LowerVal, MemoryAccess};
+use crate::{ComponentValue, ConvertResult, FatPtr, LowerValue, MemoryAccess};
 
-impl<T: ComponentValue, S: AsSlice> LowerVal<Vec<T>> for S
+impl<T: ComponentValue, S: AsSlice> LowerValue<Vec<T>> for S
 where
-    S::Target: LowerVal<T>,
+    S::Target: LowerValue<T>,
 {
     fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Vec::<T>::arg_count());
@@ -34,7 +34,7 @@ where
 }
 
 fn write_contents<T: ComponentValue>(
-    contents: &[impl LowerVal<T>],
+    contents: &[impl LowerValue<T>],
     memory: &mut impl MemoryAccess,
 ) -> ConvertResult<FatPtr> {
     let len = T::byte_size() * contents.len();

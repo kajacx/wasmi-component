@@ -3,13 +3,14 @@ set -e
 
 # Run from this directory
 
-cd crates/wasmi-component/src/wasi_p2
+cd crates/wasmi-component-wasi
 
-cargo run --manifest-path ../../../../Cargo.toml -p wasmi-component-bindgen -- ./wasi-p2-partial.wit > ./bindgen.rs
+cargo run --manifest-path ../../Cargo.toml -p wasmi-component-bindgen -- ./wasi-p2-partial.wit > ./src/bindgen.rs
 
-sed -i 's/^use wasmi_component::/use crate::/' ./bindgen.rs
+cargo expand bindgen > ./src/expanded.rs
 
-cd ../../../..
+cd ../..
 
 cargo fmt
 cargo build
+cargo test

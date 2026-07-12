@@ -11,8 +11,18 @@ pub struct ParamType {
     pub lift: String,
 }
 
+impl ParamType {
+    pub fn from_simple(name: &str) -> Self {
+        Self {
+            canon: name.to_string(),
+            lower: LowerArg::Specific(name.to_string()),
+            lift: name.to_string(),
+        }
+    }
+}
+
 pub enum LowerArg {
-    LowerVal,
+    LowerValue,
     Specific(String),
 }
 
@@ -20,7 +30,7 @@ impl LowerArg {
     pub fn specific(&self) -> Option<&str> {
         match self {
             Self::Specific(val) => Some(val),
-            Self::LowerVal => None,
+            Self::LowerValue => None,
         }
     }
 }

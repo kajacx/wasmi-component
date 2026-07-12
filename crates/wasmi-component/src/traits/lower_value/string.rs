@@ -2,9 +2,9 @@ use std::ops::Range;
 
 use wasmi::Val;
 
-use crate::{ComponentValue, ConvertResult, FatPtr, LowerVal, MemoryAccess};
+use crate::{ComponentValue, ConvertResult, FatPtr, LowerValue, MemoryAccess};
 
-impl<T: AsRef<str>> LowerVal<String> for T {
+impl<T: AsRef<str>> LowerValue<String> for T {
     fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), String::arg_count());
 

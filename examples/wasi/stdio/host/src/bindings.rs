@@ -1,11 +1,9 @@
 use wasmi_component::anyhow::Result;
 #[allow(unused)]
-use wasmi_component::wasi_p2::{StreamError, add_wasi_p2_to_linker};
-#[allow(unused)]
 use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
 #[allow(unused)]
 use wasmi_component::{
-    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerVal, StoreData,
+    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerValue, StoreData,
     TypedFunc,
 };
 
@@ -23,7 +21,7 @@ impl TestExampleExports {
     pub fn call_print_stdout<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        text: impl LowerVal<String>,
+        text: impl LowerValue<String>,
     ) -> CallResult<()> {
         self.print_stdout.call(ctx, (text,))
     }
@@ -31,7 +29,7 @@ impl TestExampleExports {
     pub fn call_print_stdout_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        text: impl LowerVal<String>,
+        text: impl LowerValue<String>,
         callback: impl FnOnce(()) -> R,
     ) -> CallResult<R> {
         self.print_stdout.call_with_results(ctx, (text,), callback)
@@ -40,7 +38,7 @@ impl TestExampleExports {
     pub fn call_print_stderr<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        text: impl LowerVal<String>,
+        text: impl LowerValue<String>,
     ) -> CallResult<()> {
         self.print_stderr.call(ctx, (text,))
     }
@@ -48,7 +46,7 @@ impl TestExampleExports {
     pub fn call_print_stderr_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        text: impl LowerVal<String>,
+        text: impl LowerValue<String>,
         callback: impl FnOnce(()) -> R,
     ) -> CallResult<R> {
         self.print_stderr.call_with_results(ctx, (text,), callback)

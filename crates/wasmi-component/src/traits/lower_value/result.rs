@@ -2,10 +2,10 @@ use std::ops::Range;
 
 use wasmi::Val;
 
-use crate::{ComponentValue, ConvertResult, LowerVal, MemoryAccess, Slice};
+use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess, Slice};
 
-impl<T: ComponentValue, E: ComponentValue, TVal: LowerVal<T>, EVal: LowerVal<E>>
-    LowerVal<Result<T, E>> for Result<TVal, EVal>
+impl<T: ComponentValue, E: ComponentValue, TVal: LowerValue<T>, EVal: LowerValue<E>>
+    LowerValue<Result<T, E>> for Result<TVal, EVal>
 {
     fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Result::<T, E>::arg_count());
@@ -50,7 +50,7 @@ impl<T: ComponentValue, E: ComponentValue, TVal: LowerVal<T>, EVal: LowerVal<E>>
     }
 }
 
-impl<T: ComponentValue, TVal: LowerVal<T>> LowerVal<Option<T>> for Option<TVal> {
+impl<T: ComponentValue, TVal: LowerValue<T>> LowerValue<Option<T>> for Option<TVal> {
     fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Option::<T>::arg_count());
 

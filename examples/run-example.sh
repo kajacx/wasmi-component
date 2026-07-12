@@ -47,6 +47,7 @@ fi
 
 cd host
 cargo fmt
+cargo expand bindings > src/expanded.rs
 if cargo run > output.log 2> error.log; then
     status=0
 else

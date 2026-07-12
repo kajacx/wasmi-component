@@ -1,0 +1,9 @@
+[package]
+name = "wasmi-component-wasi"
+description = "Add the component model to wasmi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+wasmi-component = { path = "../../crates/wasmi-component" }

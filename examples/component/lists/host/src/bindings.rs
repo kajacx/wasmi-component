@@ -1,11 +1,9 @@
 use wasmi_component::anyhow::Result;
 #[allow(unused)]
-use wasmi_component::wasi_p2::{StreamError, add_wasi_p2_to_linker};
-#[allow(unused)]
 use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
 #[allow(unused)]
 use wasmi_component::{
-    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerVal, StoreData,
+    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerValue, StoreData,
     TypedFunc,
 };
 
@@ -62,7 +60,7 @@ impl TestExampleExports {
     pub fn call_list_s8<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<i8>>,
+        value: impl LowerValue<Vec<i8>>,
     ) -> CallResult<Vec<i8>> {
         self.list_s8.call(ctx, (value,))
     }
@@ -70,7 +68,7 @@ impl TestExampleExports {
     pub fn call_list_s8_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<i8>>,
+        value: impl LowerValue<Vec<i8>>,
         callback: impl FnOnce(ListAccessor<i8>) -> R,
     ) -> CallResult<R> {
         self.list_s8.call_with_results(ctx, (value,), callback)
@@ -79,7 +77,7 @@ impl TestExampleExports {
     pub fn call_list_s16<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<i16>>,
+        value: impl LowerValue<Vec<i16>>,
     ) -> CallResult<Vec<i16>> {
         self.list_s16.call(ctx, (value,))
     }
@@ -87,7 +85,7 @@ impl TestExampleExports {
     pub fn call_list_s16_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<i16>>,
+        value: impl LowerValue<Vec<i16>>,
         callback: impl FnOnce(ListAccessor<i16>) -> R,
     ) -> CallResult<R> {
         self.list_s16.call_with_results(ctx, (value,), callback)
@@ -96,7 +94,7 @@ impl TestExampleExports {
     pub fn call_list_s32<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<i32>>,
+        value: impl LowerValue<Vec<i32>>,
     ) -> CallResult<Vec<i32>> {
         self.list_s32.call(ctx, (value,))
     }
@@ -104,7 +102,7 @@ impl TestExampleExports {
     pub fn call_list_s32_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<i32>>,
+        value: impl LowerValue<Vec<i32>>,
         callback: impl FnOnce(ListAccessor<i32>) -> R,
     ) -> CallResult<R> {
         self.list_s32.call_with_results(ctx, (value,), callback)
@@ -113,7 +111,7 @@ impl TestExampleExports {
     pub fn call_list_s64<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<i64>>,
+        value: impl LowerValue<Vec<i64>>,
     ) -> CallResult<Vec<i64>> {
         self.list_s64.call(ctx, (value,))
     }
@@ -121,7 +119,7 @@ impl TestExampleExports {
     pub fn call_list_s64_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<i64>>,
+        value: impl LowerValue<Vec<i64>>,
         callback: impl FnOnce(ListAccessor<i64>) -> R,
     ) -> CallResult<R> {
         self.list_s64.call_with_results(ctx, (value,), callback)
@@ -130,7 +128,7 @@ impl TestExampleExports {
     pub fn call_list_u8<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<u8>>,
+        value: impl LowerValue<Vec<u8>>,
     ) -> CallResult<Vec<u8>> {
         self.list_u8.call(ctx, (value,))
     }
@@ -138,7 +136,7 @@ impl TestExampleExports {
     pub fn call_list_u8_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<u8>>,
+        value: impl LowerValue<Vec<u8>>,
         callback: impl FnOnce(ListAccessor<u8>) -> R,
     ) -> CallResult<R> {
         self.list_u8.call_with_results(ctx, (value,), callback)
@@ -147,7 +145,7 @@ impl TestExampleExports {
     pub fn call_list_u16<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<u16>>,
+        value: impl LowerValue<Vec<u16>>,
     ) -> CallResult<Vec<u16>> {
         self.list_u16.call(ctx, (value,))
     }
@@ -155,7 +153,7 @@ impl TestExampleExports {
     pub fn call_list_u16_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<u16>>,
+        value: impl LowerValue<Vec<u16>>,
         callback: impl FnOnce(ListAccessor<u16>) -> R,
     ) -> CallResult<R> {
         self.list_u16.call_with_results(ctx, (value,), callback)
@@ -164,7 +162,7 @@ impl TestExampleExports {
     pub fn call_list_u32<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<u32>>,
+        value: impl LowerValue<Vec<u32>>,
     ) -> CallResult<Vec<u32>> {
         self.list_u32.call(ctx, (value,))
     }
@@ -172,7 +170,7 @@ impl TestExampleExports {
     pub fn call_list_u32_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<u32>>,
+        value: impl LowerValue<Vec<u32>>,
         callback: impl FnOnce(ListAccessor<u32>) -> R,
     ) -> CallResult<R> {
         self.list_u32.call_with_results(ctx, (value,), callback)
@@ -181,7 +179,7 @@ impl TestExampleExports {
     pub fn call_list_u64<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<u64>>,
+        value: impl LowerValue<Vec<u64>>,
     ) -> CallResult<Vec<u64>> {
         self.list_u64.call(ctx, (value,))
     }
@@ -189,7 +187,7 @@ impl TestExampleExports {
     pub fn call_list_u64_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<u64>>,
+        value: impl LowerValue<Vec<u64>>,
         callback: impl FnOnce(ListAccessor<u64>) -> R,
     ) -> CallResult<R> {
         self.list_u64.call_with_results(ctx, (value,), callback)
@@ -198,7 +196,7 @@ impl TestExampleExports {
     pub fn call_list_f32<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<f32>>,
+        value: impl LowerValue<Vec<f32>>,
     ) -> CallResult<Vec<f32>> {
         self.list_f32.call(ctx, (value,))
     }
@@ -206,7 +204,7 @@ impl TestExampleExports {
     pub fn call_list_f32_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<f32>>,
+        value: impl LowerValue<Vec<f32>>,
         callback: impl FnOnce(ListAccessor<f32>) -> R,
     ) -> CallResult<R> {
         self.list_f32.call_with_results(ctx, (value,), callback)
@@ -215,7 +213,7 @@ impl TestExampleExports {
     pub fn call_list_f64<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<f64>>,
+        value: impl LowerValue<Vec<f64>>,
     ) -> CallResult<Vec<f64>> {
         self.list_f64.call(ctx, (value,))
     }
@@ -223,7 +221,7 @@ impl TestExampleExports {
     pub fn call_list_f64_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<f64>>,
+        value: impl LowerValue<Vec<f64>>,
         callback: impl FnOnce(ListAccessor<f64>) -> R,
     ) -> CallResult<R> {
         self.list_f64.call_with_results(ctx, (value,), callback)
@@ -232,7 +230,7 @@ impl TestExampleExports {
     pub fn call_list_bool<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<bool>>,
+        value: impl LowerValue<Vec<bool>>,
     ) -> CallResult<Vec<bool>> {
         self.list_bool.call(ctx, (value,))
     }
@@ -240,7 +238,7 @@ impl TestExampleExports {
     pub fn call_list_bool_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<bool>>,
+        value: impl LowerValue<Vec<bool>>,
         callback: impl FnOnce(ListAccessor<bool>) -> R,
     ) -> CallResult<R> {
         self.list_bool.call_with_results(ctx, (value,), callback)
@@ -249,7 +247,7 @@ impl TestExampleExports {
     pub fn call_list_char<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<char>>,
+        value: impl LowerValue<Vec<char>>,
     ) -> CallResult<Vec<char>> {
         self.list_char.call(ctx, (value,))
     }
@@ -257,7 +255,7 @@ impl TestExampleExports {
     pub fn call_list_char_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<char>>,
+        value: impl LowerValue<Vec<char>>,
         callback: impl FnOnce(ListAccessor<char>) -> R,
     ) -> CallResult<R> {
         self.list_char.call_with_results(ctx, (value,), callback)
@@ -266,7 +264,7 @@ impl TestExampleExports {
     pub fn call_list_string<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<String>>,
+        value: impl LowerValue<Vec<String>>,
     ) -> CallResult<Vec<String>> {
         self.list_string.call(ctx, (value,))
     }
@@ -274,7 +272,7 @@ impl TestExampleExports {
     pub fn call_list_string_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<Vec<String>>,
+        value: impl LowerValue<Vec<String>>,
         callback: impl FnOnce(ListAccessor<String>) -> R,
     ) -> CallResult<R> {
         self.list_string.call_with_results(ctx, (value,), callback)

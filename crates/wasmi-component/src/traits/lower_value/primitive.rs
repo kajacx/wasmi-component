@@ -2,11 +2,11 @@ use std::ops::Range;
 
 use wasmi::Val;
 
-use crate::{ComponentValue, ConvertResult, LowerVal, MemoryAccess};
+use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess};
 
 macro_rules! impl_lower_val_primitive {
     ($main_ty: ty, $wasmi_ty: ty) => {
-        impl LowerVal<Self> for $main_ty {
+        impl LowerValue<Self> for $main_ty {
             fn lower_args(
                 &self,
                 args: &mut [Val],
@@ -47,7 +47,7 @@ impl_lower_val_primitive!(u64, i64);
 impl_lower_val_primitive!(f32, f32);
 impl_lower_val_primitive!(f64, f64);
 
-impl LowerVal<Self> for bool {
+impl LowerValue<Self> for bool {
     fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Self::arg_count());
 
@@ -69,7 +69,7 @@ impl LowerVal<Self> for bool {
     }
 }
 
-impl LowerVal<Self> for char {
+impl LowerValue<Self> for char {
     fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Self::arg_count());
 

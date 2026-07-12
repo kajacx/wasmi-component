@@ -85,12 +85,11 @@ impl bindings::TestExampleImports for HostData {
 }
 
 pub fn main() {
-    std::thread::Builder::new()
+    let _ = std::thread::Builder::new()
         .stack_size(128 * 1024 * 1024)
         .spawn(main_)
         .unwrap()
-        .join()
-        .unwrap();
+        .join();
 }
 
 pub fn main_() {

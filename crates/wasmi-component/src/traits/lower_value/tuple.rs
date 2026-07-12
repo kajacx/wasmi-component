@@ -1,8 +1,8 @@
 use wasmi::Val;
 
-use crate::{ComponentValue, ConvertResult, LowerVal, MemoryAccess, round_up};
+use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess, helpers::round_up};
 
-impl LowerVal<Self> for () {
+impl LowerValue<Self> for () {
     fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Self::arg_count());
 
@@ -20,7 +20,7 @@ impl LowerVal<Self> for () {
     }
 }
 
-impl<U: ComponentValue, T: LowerVal<U>> LowerVal<(U,)> for (T,) {
+impl<U: ComponentValue, T: LowerValue<U>> LowerValue<(U,)> for (T,) {
     fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), U::arg_count());
 
@@ -38,8 +38,8 @@ impl<U: ComponentValue, T: LowerVal<U>> LowerVal<(U,)> for (T,) {
     }
 }
 
-impl<U0: ComponentValue, T0: LowerVal<U0>, U1: ComponentValue, T1: LowerVal<U1>> LowerVal<(U0, U1)>
-    for (T0, T1)
+impl<U0: ComponentValue, T0: LowerValue<U0>, U1: ComponentValue, T1: LowerValue<U1>>
+    LowerValue<(U0, U1)> for (T0, T1)
 {
     fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), <(U0, U1)>::arg_count());

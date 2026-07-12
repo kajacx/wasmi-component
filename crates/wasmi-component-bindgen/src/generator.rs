@@ -22,12 +22,14 @@ impl Generator {
                 "use wasmi_component::wasmi::{{AsContext, AsContextMut, errors::LinkerError}};\n",
                 "#[allow(unused)]\n",
                 "use wasmi_component::{{CallResult, Component, ComponentValue, HostResult, ",
-                "Linker, ListAccessor, LowerVal, StoreData, TypedFunc}};\n",
-                "#[allow(unused)]\n",
-                "use wasmi_component::wasi_p2::{{StreamError, add_wasi_p2_to_linker}};\n"
+                "Linker, ListAccessor, LowerValue, StoreData, TypedFunc}};\n",
             ),
         )
         .unwrap();
+
+        wit.types
+            .iter()
+            .for_each(|ty| writeln!(output, "{ty}").unwrap());
 
         wit.worlds
             .iter()

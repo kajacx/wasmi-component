@@ -1,6 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["crates/wasmi-component", "crates/wasmi-component-bindgen"]
+members = [
+    "crates/wasmi-component",
+    "crates/wasmi-component-bindgen",
+    "crates/wasmi-component-macros",
+    "crates/wasmi-component-wasi",
+]
 exclude = ["examples/"]
 
 [workspace.package]

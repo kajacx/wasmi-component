@@ -17,8 +17,8 @@ impl<T: ComponentValue> ComponentValue for Vec<T> {
         vec![ValType::I32, ValType::I32]
     }
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        let ptr = FatPtr::from_args(vals, T::byte_size())?;
+    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        let ptr = FatPtr::from_args(args, T::byte_size())?;
         Ok(ListAccessor::new(ptr.try_index(memory)?, ptr.count, memory))
     }
 

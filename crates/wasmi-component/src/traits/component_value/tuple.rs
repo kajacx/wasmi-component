@@ -1,6 +1,6 @@
 use wasmi::{Val, ValType};
 
-use crate::{ComponentValue, ConvertResult, ValueType, round_up};
+use crate::{ComponentValue, ConvertResult, ValueType, helpers::round_up};
 
 impl ComponentValue for () {
     type Borrowed<'a> = Self;
@@ -17,8 +17,8 @@ impl ComponentValue for () {
         vec![]
     }
 
-    fn lift_args<'a>(vals: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(vals.len(), Self::arg_count());
+    fn lift_args<'a>(args: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
         Ok(())
     }
@@ -53,10 +53,10 @@ impl<T: ComponentValue> ComponentValue for (T,) {
         T::arg_types()
     }
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(vals.len(), Self::arg_count());
+    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
-        Ok((T::lift_args(vals, memory)?,))
+        Ok((T::lift_args(args, memory)?,))
     }
 
     fn byte_align() -> usize {
@@ -92,15 +92,15 @@ impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
         params
     }
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(vals.len(), Self::arg_count());
+    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
         let mut index = 0;
 
-        let val0 = T0::lift_args(&vals[index..(index + T0::arg_count())], memory)?;
+        let val0 = T0::lift_args(&args[index..(index + T0::arg_count())], memory)?;
         index += T0::arg_count();
 
-        let val1 = T1::lift_args(&vals[index..(index + T1::arg_count())], memory)?;
+        let val1 = T1::lift_args(&args[index..(index + T1::arg_count())], memory)?;
         index += T1::arg_count();
 
         debug_assert_eq!(index, Self::arg_count());

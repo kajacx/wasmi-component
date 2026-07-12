@@ -57,7 +57,7 @@ impl Func {
                     "{}: {}, ",
                     param.name,
                     match &param.ty.lower {
-                        LowerArg::LowerVal => format!("impl LowerVal<{}>", param.ty.canon),
+                        LowerArg::LowerValue => format!("impl LowerValue<{}>", param.ty.canon),
                         LowerArg::Specific(specific) => specific.to_string(),
                     }
                 )

@@ -1,0 +1,18 @@
+package wasmi-component:component-examples@0.1.0;
+
+interface round-trip {
+    record person {
+        id: u64,
+        name: string,
+    }
+
+    trip-person: func(value: person) -> person;
+}
+
+world test-example {
+    import round-trip;
+
+    export round-trip;
+
+    import log: func(message: string);
+}

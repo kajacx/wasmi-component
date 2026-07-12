@@ -19,7 +19,7 @@ pub trait ComponentValue: Sized + Debug {
 
     fn arg_types() -> Vec<ValType>;
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>>;
+    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>>;
 
     fn byte_align() -> usize;
 

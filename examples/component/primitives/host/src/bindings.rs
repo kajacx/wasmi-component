@@ -1,11 +1,9 @@
 use wasmi_component::anyhow::Result;
 #[allow(unused)]
-use wasmi_component::wasi_p2::{StreamError, add_wasi_p2_to_linker};
-#[allow(unused)]
 use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
 #[allow(unused)]
 use wasmi_component::{
-    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerVal, StoreData,
+    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerValue, StoreData,
     TypedFunc,
 };
 
@@ -266,7 +264,7 @@ impl TestExampleExports {
     pub fn call_trip_string<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<String>,
+        value: impl LowerValue<String>,
     ) -> CallResult<String> {
         self.trip_string.call(ctx, (value,))
     }
@@ -274,7 +272,7 @@ impl TestExampleExports {
     pub fn call_trip_string_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerVal<String>,
+        value: impl LowerValue<String>,
         callback: impl FnOnce(&str) -> R,
     ) -> CallResult<R> {
         self.trip_string.call_with_results(ctx, (value,), callback)

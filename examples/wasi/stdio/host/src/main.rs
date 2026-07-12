@@ -12,12 +12,11 @@ const WASM: &[u8] =
 struct HostData {}
 
 pub fn main() {
-    std::thread::Builder::new()
+    let _ = std::thread::Builder::new()
         .stack_size(128 * 1024 * 1024)
         .spawn(main_)
         .unwrap()
-        .join()
-        .unwrap();
+        .join();
 }
 
 pub fn main_() {
@@ -25,7 +24,7 @@ pub fn main_() {
     let mut store = Store::new(&engine, HostData::default());
 
     let mut linker = Linker::new(store.engine());
-    linker.add_wasi_p2().unwrap();
+    wasmi_component_wasi::add_wasi_p2_to_linker(&mut linker).unwrap();
     add_test_example_to_linker(&mut linker).unwrap();
 
     let component = Component::new(&engine, WASM).unwrap();

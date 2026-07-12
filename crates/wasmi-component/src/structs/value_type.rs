@@ -18,10 +18,11 @@ pub enum ValueType {
 
     String,
 
-    List(Box<ValueType>),
-    Tuple(Vec<ValueType>),
     Option(Box<ValueType>),
     Result(Box<ValueType>, Box<ValueType>),
+    Tuple(Vec<ValueType>),
+    List(Box<ValueType>),
 
+    Record(Vec<(String, ValueType)>),
     Variant(Vec<(String, Option<ValueType>)>),
 }

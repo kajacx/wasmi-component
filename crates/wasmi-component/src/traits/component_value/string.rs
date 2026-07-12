@@ -17,10 +17,10 @@ impl ComponentValue for String {
         vec![ValType::I32, ValType::I32]
     }
 
-    fn lift_args<'a>(vals: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(vals.len(), Self::arg_count());
+    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+        debug_assert_eq!(args.len(), Self::arg_count());
 
-        let ptr = FatPtr::from_args(vals, 1)?;
+        let ptr = FatPtr::from_args(args, 1)?;
         let slice = ptr.try_index(memory)?;
 
         str::from_utf8(slice).map_err(|err| {
