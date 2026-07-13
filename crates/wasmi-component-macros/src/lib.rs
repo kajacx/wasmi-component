@@ -42,7 +42,7 @@ pub fn derive_component_value(input: proc_macro::TokenStream) -> proc_macro::Tok
                 #arg_types
             }
 
-            fn lift_args<'a>(args: &[wasmi_component::wasmi::Val], memory: &'a [u8]) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
+            fn lift_args<'a>(args: &[wasmi_component::WasmValue], memory: &'a [u8]) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
                 #lift_args
             }
 
@@ -71,7 +71,7 @@ pub fn derive_component_value(input: proc_macro::TokenStream) -> proc_macro::Tok
         }
 
         impl wasmi_component::LowerValue<Self> for #type_name {
-            fn lower_args(&self, args: &mut [wasmi_component::wasmi::Val], memory: &mut impl wasmi_component::MemoryAccess) -> wasmi_component::ConvertResult<()> {
+            fn lower_args(&self, args: &mut [wasmi_component::WasmValue], memory: &mut impl wasmi_component::MemoryAccess) -> wasmi_component::ConvertResult<()> {
                 #lower_args
             }
 

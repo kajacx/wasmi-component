@@ -1,20 +1,18 @@
 use std::ops::Range;
 
-use wasmi::Val;
-
-use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess};
+use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess, WasmValue};
 
 macro_rules! impl_lower_val_primitive {
-    ($main_ty: ty, $wasmi_ty: ty) => {
+    ($main_ty: ty) => {
         impl LowerValue<Self> for $main_ty {
             fn lower_args(
                 &self,
-                args: &mut [Val],
+                args: &mut [WasmValue],
                 _memory: &mut impl MemoryAccess,
             ) -> ConvertResult<()> {
                 debug_assert_eq!(args.len(), Self::arg_count());
 
-                args[0] = Val::from(*self as $wasmi_ty);
+                args[0] = WasmValue::from(*self);
 
                 Ok(())
             }
@@ -34,24 +32,28 @@ macro_rules! impl_lower_val_primitive {
     };
 }
 
-impl_lower_val_primitive!(i8, i32);
-impl_lower_val_primitive!(i16, i32);
-impl_lower_val_primitive!(i32, i32);
-impl_lower_val_primitive!(i64, i64);
+impl_lower_val_primitive!(i8);
+impl_lower_val_primitive!(i16);
+impl_lower_val_primitive!(i32);
+impl_lower_val_primitive!(i64);
 
-impl_lower_val_primitive!(u8, i32);
-impl_lower_val_primitive!(u16, i32);
-impl_lower_val_primitive!(u32, i32);
-impl_lower_val_primitive!(u64, i64);
+impl_lower_val_primitive!(u8);
+impl_lower_val_primitive!(u16);
+impl_lower_val_primitive!(u32);
+impl_lower_val_primitive!(u64);
 
-impl_lower_val_primitive!(f32, f32);
-impl_lower_val_primitive!(f64, f64);
+impl_lower_val_primitive!(f32);
+impl_lower_val_primitive!(f64);
 
 impl LowerValue<Self> for bool {
-    fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> ConvertResult<()> {
+    fn lower_args(
+        &self,
+        args: &mut [WasmValue],
+        _memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Self::arg_count());
 
-        args[0] = Val::I32(if *self { 1 } else { 0 });
+        args[0] = WasmValue::I32(if *self { 1 } else { 0 });
 
         Ok(())
     }
@@ -70,10 +72,14 @@ impl LowerValue<Self> for bool {
 }
 
 impl LowerValue<Self> for char {
-    fn lower_args(&self, args: &mut [Val], _memory: &mut impl MemoryAccess) -> ConvertResult<()> {
+    fn lower_args(
+        &self,
+        args: &mut [WasmValue],
+        _memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Self::arg_count());
 
-        args[0] = Val::from(*self as i32);
+        args[0] = WasmValue::from(*self as i32);
 
         Ok(())
     }

@@ -8,7 +8,7 @@ use wasmi_component::{
 };
 
 #[allow(unused)]
-#[derive(Debug, Clone, ComponentValue)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
 pub enum StreamError {
     LastOperationFailed(i32),
     Closed,

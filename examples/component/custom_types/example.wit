@@ -6,7 +6,14 @@ interface round-trip {
         name: string,
     }
 
+    variant data {
+        number(f64),
+        text(string),
+    }
+
     trip-person: func(value: person) -> person;
+
+    trip-data: func(value: data) -> data;
 }
 
 world test-example {

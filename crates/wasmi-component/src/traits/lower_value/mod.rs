@@ -1,17 +1,19 @@
 use std::ops::Range;
 
-use wasmi::Val;
-
-use crate::{ComponentValue, ConvertResult, MemoryAccess};
+use crate::{ComponentValue, ConvertResult, MemoryAccess, WasmValue};
 
 mod list;
+mod option;
 mod primitive;
-mod result;
 mod string;
 mod tuple;
 
 pub trait LowerValue<T: ComponentValue> {
-    fn lower_args(&self, args: &mut [Val], memory: &mut impl MemoryAccess) -> ConvertResult<()>;
+    fn lower_args(
+        &self,
+        args: &mut [WasmValue],
+        memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()>;
 
     fn lower_bytes(&self, range: Range<usize>, memory: &mut impl MemoryAccess)
     -> ConvertResult<()>;

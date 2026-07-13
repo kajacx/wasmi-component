@@ -80,7 +80,7 @@ impl<'a, T> ListAccessor<'a, T> {
 impl<T: ComponentValue> View<Vec<T>> for ListAccessor<'_, T> {
     fn lift_owned(&self) -> ConvertResult<Vec<T>> {
         self.iter()
-            .map(|val| val?.lift_owned())
+            .map(|value| value?.lift_owned())
             .try_fold(Vec::new(), |mut vec, value| {
                 vec.push(value?);
                 Ok(vec)

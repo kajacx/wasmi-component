@@ -1,6 +1,6 @@
-use wasmi::{Val, ValType};
+use wasmi::ValType;
 
-use crate::{ComponentValue, ConvertError, ConvertResult, FatPtr, ValueType};
+use crate::{ComponentValue, ConvertError, ConvertResult, FatPtr, ValueType, WasmValue};
 
 impl ComponentValue for String {
     type Borrowed<'a> = &'a str;
@@ -17,7 +17,7 @@ impl ComponentValue for String {
         vec![ValType::I32, ValType::I32]
     }
 
-    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(args.len(), Self::arg_count());
 
         let ptr = FatPtr::from_args(args, 1)?;
@@ -44,7 +44,6 @@ impl ComponentValue for String {
         let slice = ptr.try_index(memory)?;
 
         str::from_utf8(slice).map_err(|err| {
-            let ptr = "TODO:";
             ConvertError::with_cause(format!("String {:?} isn't valid utf-8", ptr), Box::new(err))
         })
     }

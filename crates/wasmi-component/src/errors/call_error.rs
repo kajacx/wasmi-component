@@ -2,10 +2,10 @@ use std::fmt::Display;
 
 use crate::ConvertError;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum CallError {
     WasmError,
-    ConvertError,
+    ConvertError(ConvertError),
     HostTrap,
     OutOfFuel,
 }
@@ -26,8 +26,8 @@ impl From<wasmi::Error> for CallError {
 }
 
 impl From<ConvertError> for CallError {
-    fn from(_value: ConvertError) -> Self {
-        Self::ConvertError // TODO:
+    fn from(value: ConvertError) -> Self {
+        Self::ConvertError(value)
     }
 }
 
@@ -35,7 +35,7 @@ impl Display for CallError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::WasmError => write!(f, "CallError::WasmError"),
-            Self::ConvertError => write!(f, "CallError::ConvertError"),
+            Self::ConvertError(err) => write!(f, "Call to TODO: name failed: {err}"),
             Self::HostTrap => write!(f, "CallError::HostTrap"),
             Self::OutOfFuel => write!(f, "CallError::OutOfFuel"),
         }

@@ -21,6 +21,13 @@ impl bindings::TestExampleImports for HostData {
         Ok(value)
     }
 
+    fn trip_data(&mut self, value: bindings::Data) -> HostResult<bindings::Data> {
+        println!("[HOST]: Receiving Data value {value:?}");
+        let value = value.lift_owned()?;
+        println!("[HOST]: Returning Data value {value:?}");
+        Ok(value)
+    }
+
     fn log(&mut self, message: &str) -> HostResult<()> {
         println!("{message}");
         Ok(())
@@ -60,5 +67,17 @@ pub fn main_() {
         .unwrap();
     assert_eq!(result.id, 64);
     assert_eq!(result.name, "Tom");
+    println!("Result is: {result:?}\n");
+
+    let result = exports
+        .call_trip_data(&mut store, bindings::Data::Number(62.0))
+        .unwrap();
+    assert_eq!(result, bindings::Data::Number(62.0));
+    println!("Result is: {result:?}\n");
+
+    let result = exports
+        .call_trip_data(&mut store, bindings::Data::Text("Hello data".to_string()))
+        .unwrap();
+    assert_eq!(result, bindings::Data::Text("Hello data".to_string()));
     println!("Result is: {result:?}\n");
 }

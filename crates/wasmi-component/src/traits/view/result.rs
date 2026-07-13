@@ -38,7 +38,7 @@ impl<'a, T: ComponentValue> View<Option<T>> for Option<T::Borrowed<'a>> {
     fn lift_owned(&self) -> ConvertResult<Option<T>> {
         let owned = match self {
             None => None,
-            Some(val) => Some(val.lift_owned()?),
+            Some(value) => Some(value.lift_owned()?),
         };
 
         Ok(owned)

@@ -29,7 +29,7 @@ pub enum LowerArg {
 impl LowerArg {
     pub fn specific(&self) -> Option<&str> {
         match self {
-            Self::Specific(val) => Some(val),
+            Self::Specific(value) => Some(value),
             Self::LowerValue => None,
         }
     }

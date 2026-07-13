@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 
-use wasmi::{Val, ValType};
+use wasmi::ValType;
 
-use crate::{ConvertResult, ValueType, View};
+use crate::{ConvertResult, ValueType, View, WasmValue};
 
 mod list;
+mod option;
 mod primitive;
-mod result;
 mod string;
 mod tuple;
 
@@ -19,7 +19,7 @@ pub trait ComponentValue: Sized + Debug {
 
     fn arg_types() -> Vec<ValType>;
 
-    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>>;
+    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>>;
 
     fn byte_align() -> usize;
 

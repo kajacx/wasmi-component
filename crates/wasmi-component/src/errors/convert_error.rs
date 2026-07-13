@@ -38,12 +38,12 @@ impl From<ConvertError> for wasmi::Error {
 
 impl std::fmt::Display for ConvertError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ConvertError")
+        write!(f, "conversion failed because \"{}\"", self.message)
     }
 }
 
 impl std::error::Error for ConvertError {
-    fn cause(&self) -> Option<&dyn Error> {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
         self.cause.as_deref()
     }
 }

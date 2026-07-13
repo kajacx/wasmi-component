@@ -1,18 +1,23 @@
 use std::marker::PhantomData;
 
-use wasmi::{AsContextMut, Val};
+use wasmi::AsContextMut;
 
-use crate::{CallResult, ComponentValue, FatPtr, LowerValue, MemoryAccessPre, StoreData, View};
+use crate::{
+    CallResult, ComponentValue, FatPtr, LowerValue, MemoryAccessPre, StoreData, View, WasmValue,
+};
 
 pub struct TypedFunc<Params, Results> {
     memory: MemoryAccessPre,
+
     inner: wasmi::Func,
     post_return: Option<wasmi::TypedFunc<i32, ()>>,
+
+    param_types: Vec<wasmi::ValType>,
     _signature: PhantomData<fn(Params) -> Results>,
 }
 
 impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results> {
-    pub fn new(
+    pub(crate) fn new(
         memory: MemoryAccessPre,
         inner: wasmi::Func,
         post_return: Option<wasmi::TypedFunc<i32, ()>>,
@@ -21,6 +26,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
             memory,
             inner,
             post_return,
+            param_types: Params::arg_types(),
             _signature: PhantomData,
         }
     }
@@ -40,20 +46,30 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         params: impl LowerValue<Params>,
         callback: impl FnOnce(Results::Borrowed<'_>) -> R,
     ) -> CallResult<R> {
-        let mut args: [Val; 16] = std::array::from_fn(|_| Val::I32(0));
-        let args_len = Params::arg_count();
+        let params_user = params;
+
+        let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unset);
+        let params_len = Params::arg_count();
+        debug_assert_eq!(self.param_types.len(), params_len);
 
         let mut memory_access = self.memory.fill(ctx.as_context_mut());
-        params.lower_args(&mut args[0..args_len], &mut memory_access)?;
+        params_user.lower_args(&mut params_wasm[0..params_len], &mut memory_access)?;
         drop(memory_access);
 
-        let mut results = [Val::I32(0)];
+        let mut params_wasmi: [_; 16] = std::array::from_fn(|_| wasmi::Val::I32(0));
+        WasmValue::convert_to_wasmi(
+            &params_wasm[0..params_len],
+            &self.param_types,
+            &mut params_wasmi[0..params_len],
+        )?;
+
+        let mut results_wasmi = [wasmi::Val::I32(0)];
         let results_indirect = Results::arg_count() > 1;
 
         let results_slice = if results_indirect {
-            &mut results
+            &mut results_wasmi
         } else {
-            &mut results[0..Results::arg_count()]
+            &mut results_wasmi[0..Results::arg_count()]
         };
 
         let instance_id = self.memory.instance_id;
@@ -62,9 +78,11 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
             .data_mut()
             .push_call_instance(instance_id);
 
-        let call_result =
-            self.inner
-                .call_resumable(ctx.as_context_mut(), &args[0..args_len], results_slice);
+        let call_result = self.inner.call_resumable(
+            ctx.as_context_mut(),
+            &params_wasmi[0..params_len],
+            results_slice,
+        );
 
         ctx.as_context_mut()
             .data_mut()
@@ -76,19 +94,23 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         let bytes = self.memory.memory.data(ctx.as_context());
         let lifted = if results_indirect {
             // TODO: check params ... again
-            let address = results[0].i32().unwrap() as usize;
+            let address = results_wasmi[0].i32().unwrap() as usize;
             let ptr = FatPtr::new(address, Results::byte_size(), 1);
 
             let slice = ptr.try_index(bytes)?;
             Results::lift_bytes(slice, bytes)?
         } else {
-            Results::lift_args(results_slice, bytes)?
+            let mut results = [WasmValue::Unset];
+            WasmValue::convert_from_wasmi(results_slice, &mut results[0..results_slice.len()]);
+            Results::lift_args(&results[0..results_slice.len()], bytes)?
         };
 
         let return_val = callback(lifted);
 
         if let Some(post_return) = self.post_return {
-            let address = results[0].i32().expect("TODO: ");
+            let address = results_wasmi[0]
+                .i32()
+                .expect("function should return an i32 if it has a post return fn");
             post_return.call(ctx, address)?;
         }
 

@@ -1,8 +1,8 @@
 use std::ops::Range;
 
-use wasmi::{AsContextMut, Memory, Val};
+use wasmi::{AsContextMut, Memory};
 
-use crate::{ConvertError, ConvertResult};
+use crate::{ConvertError, ConvertResult, WasmValue};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MemoryAccessPre {
@@ -110,13 +110,11 @@ impl FatPtr {
         Self { start, count, size }
     }
 
-    pub fn from_args(args: &[Val], size: usize) -> ConvertResult<Self> {
+    pub fn from_args(args: &[WasmValue], size: usize) -> ConvertResult<Self> {
         debug_assert_eq!(args.len(), 2);
 
-        // TODO: need to check if a component can "lie"
-        // or what happens if this is in a result for example
-        let start = args[0].i32().unwrap() as usize;
-        let count = args[1].i32().unwrap() as usize;
+        let start = args[0].i32()? as usize;
+        let count = args[1].i32()? as usize;
 
         Ok(Self { start, count, size })
     }
@@ -145,11 +143,11 @@ impl FatPtr {
         })
     }
 
-    pub fn write_to_args(&self, args: &mut [Val]) {
+    pub fn write_to_args(&self, args: &mut [WasmValue]) {
         debug_assert_eq!(args.len(), 2);
 
-        args[0] = Val::I32(self.start as _);
-        args[1] = Val::I32(self.count as _);
+        args[0] = WasmValue::I32(self.start as _);
+        args[1] = WasmValue::I32(self.count as _);
     }
 
     pub fn write_to_bytes(&self, bytes: &mut [u8]) {

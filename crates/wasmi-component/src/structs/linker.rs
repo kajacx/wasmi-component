@@ -3,6 +3,7 @@ use wasmi::{AsContextMut, errors::LinkerError};
 
 use crate::{
     Component, ComponentValue, HostResult, Instance, LowerValue, MemoryAccessPre, StoreData,
+    WasmValue,
 };
 
 pub struct Linker<T> {
@@ -23,18 +24,24 @@ impl<T> Linker<T> {
         callback: impl Fn(&mut T, Params::Borrowed<'_>) -> HostResult<Results> + Send + Sync + 'static,
     ) -> Result<&mut Self, LinkerError> {
         let mut params_ty = Params::arg_types();
-        let mut result_ty = Results::arg_types();
-        let has_external_result = result_ty.len() > 1;
+        let mut results_ty = Results::arg_types();
+
+        let results_ty_original = results_ty.clone();
+
+        let params_len = params_ty.len();
+        let results_len = results_ty.len();
+
+        let has_external_result = results_ty.len() > 1;
         if has_external_result {
             params_ty.push(wasmi::ValType::I32);
-            result_ty.clear();
+            results_ty.clear();
         }
 
         self.linker.func_new(
             module,
             name,
-            wasmi::FuncType::new(params_ty, result_ty),
-            move |mut caller, params, results| {
+            wasmi::FuncType::new(params_ty, results_ty),
+            move |mut caller, params_wasmi, results_wasmi| {
                 let instance_id = caller
                     .data()
                     .current_call_instance()
@@ -45,25 +52,31 @@ impl<T> Linker<T> {
                     .memory
                     .data_and_store_mut(caller.as_context_mut());
 
-                let params_slice = if has_external_result {
-                    &params[0..(params.len() - 1)]
-                } else {
-                    params
-                };
+                let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unset);
+                WasmValue::convert_from_wasmi(
+                    &params_wasmi[0..params_len],
+                    &mut params_wasm[0..params_len],
+                );
 
                 let user_data = store_data.data_mut();
 
-                let args = Params::lift_args(params_slice, bytes)?;
-                let res = callback(user_data, args)?;
+                let params_user = Params::lift_args(&params_wasm[0..params_len], bytes)?;
+                let results_user = callback(user_data, params_user)?;
                 let mut memory_filled = memory_pre.fill(caller);
 
                 if has_external_result {
-                    // TODO: check type
-                    let address = params[params.len() - 1].i32().unwrap() as usize;
+                    let address = params_wasmi[params_len].i32().unwrap() as usize;
                     let range = address..(address + Results::byte_size());
-                    res.lower_bytes(range, &mut memory_filled)?;
+                    results_user.lower_bytes(range, &mut memory_filled)?;
                 } else {
-                    res.lower_args(results, &mut memory_filled)?;
+                    let mut results_wasm = [WasmValue::Unset];
+                    results_user
+                        .lower_args(&mut results_wasm[0..results_len], &mut memory_filled)?;
+                    WasmValue::convert_to_wasmi(
+                        &results_wasm[0..results_len],
+                        &results_ty_original,
+                        results_wasmi,
+                    )?;
                 }
 
                 Ok(())

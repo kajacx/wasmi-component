@@ -20,7 +20,7 @@ impl Parser {
             .resolve
             .types
             .iter()
-            .flat_map(|(_, ty)| self.write_type(ty))
+            .filter_map(|(_, ty)| self.write_type(ty))
             .collect();
 
         let worlds = self
@@ -33,11 +33,12 @@ impl Parser {
         ParsedWit { types, worlds }
     }
 
-    fn write_type(&self, ty: &TypeDef) -> Vec<String> {
+    fn write_type(&self, ty: &TypeDef) -> Option<String> {
         match &ty.kind {
             TypeDefKind::Record(record) => {
-                let mut output =
-                    String::from("#[allow(unused)]\n#[derive(Debug, Clone, ComponentValue)]\n");
+                let mut output = String::from(
+                    "#[allow(unused)]\n#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]\n",
+                );
 
                 output.push_str("pub struct ");
                 output.push_str(&ty.name.as_ref().unwrap().to_upper_camel_case());
@@ -52,12 +53,12 @@ impl Parser {
                 });
 
                 output.push_str("}\n");
-
-                vec![output]
+                Some(output)
             }
             TypeDefKind::Variant(var) => {
-                let mut output =
-                    String::from("#[allow(unused)]\n#[derive(Debug, Clone, ComponentValue)]\n");
+                let mut output = String::from(
+                    "#[allow(unused)]\n#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]\n",
+                );
 
                 output.push_str("pub enum ");
                 output.push_str(&ty.name.as_ref().unwrap().to_upper_camel_case());
@@ -74,10 +75,9 @@ impl Parser {
                 });
 
                 output.push_str("}\n");
-
-                vec![output]
+                Some(output)
             }
-            _ => vec![],
+            _ => None,
         }
     }
 

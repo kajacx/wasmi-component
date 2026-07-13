@@ -1,6 +1,6 @@
-use wasmi::{Val, ValType};
+use wasmi::ValType;
 
-use crate::{ComponentValue, ConvertResult, ValueType, helpers::round_up};
+use crate::{ComponentValue, ConvertResult, ValueType, WasmValue, helpers::round_up};
 
 impl ComponentValue for () {
     type Borrowed<'a> = Self;
@@ -17,7 +17,7 @@ impl ComponentValue for () {
         vec![]
     }
 
-    fn lift_args<'a>(args: &[Val], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+    fn lift_args<'a>(args: &[WasmValue], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(args.len(), Self::arg_count());
 
         Ok(())
@@ -53,7 +53,7 @@ impl<T: ComponentValue> ComponentValue for (T,) {
         T::arg_types()
     }
 
-    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(args.len(), Self::arg_count());
 
         Ok((T::lift_args(args, memory)?,))
@@ -92,7 +92,7 @@ impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
         params
     }
 
-    fn lift_args<'a>(args: &[Val], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
+    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(args.len(), Self::arg_count());
 
         let mut index = 0;

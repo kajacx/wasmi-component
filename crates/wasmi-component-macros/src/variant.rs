@@ -5,7 +5,6 @@ use syn::DataEnum;
 use crate::Generator;
 
 pub struct VariantGenerator<'a> {
-    #[allow(unused)]
     pub name: &'a Ident,
     pub data: &'a DataEnum,
 }
@@ -37,26 +36,22 @@ impl Generator for VariantGenerator<'_> {
             }
         }
 
-        output.extend(quote! { max });
+        output.extend(quote! { 1 + max });
         output
     }
 
     fn arg_types(&self) -> TokenStream {
-        // TODO: this just grabs first non-empty field and is horrible
-        let field_ty = &self
-            .data
-            .variants
-            .iter()
-            .filter_map(|case| case.fields.iter().next())
-            .next()
-            .unwrap()
-            .ty;
+        let mut output = quote! {};
 
-        quote! {
-            let mut types = vec![wasmi_component::wasmi::ValType::I32];
-            types.extend(#field_ty::arg_types());
-            types
+        for field in &self.data.variants {
+            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
+
+            if let Some(ty) = field_ty {
+                output.extend(quote! { #ty::arg_types(), });
+            }
         }
+
+        quote! { wasmi_component::helpers::variant_types([#output]) }
     }
 
     fn lift_args(&self) -> TokenStream {
@@ -68,20 +63,23 @@ impl Generator for VariantGenerator<'_> {
             let field_name = &field.ident;
 
             let value = if let Some(ty) = field_ty {
-                quote! { (#field_ty::lift_args(&args[1..(1 + #ty::arg_count())], memory)?) }
+                quote! { (#ty::lift_args(&args[1..(1 + #ty::arg_count())], memory)?.lift_owned()?) }
             } else {
                 quote! {}
             };
 
-            output.extend(quote! { #index => {
-                Ok(Self::#field_name #value)
-            } });
+            output.extend(quote! { #index => Ok(Self::#field_name #value), });
         }
 
-        quote! { match args[0].i32().unwrap() {
-            #output
-            other => Err(wasmi_component::ConvertError::new(format!("Invalid determinant {other} in TODO: name")))
-        } }
+        let name = &self.name.to_string();
+
+        quote! {
+            use wasmi_component::View;
+            match args[0].i32()? {
+                #output
+                other => Err(wasmi_component::ConvertError::new(format!("invalid determinant {other} in {}::lift_args", #name)))
+            }
+        }
     }
 
     fn lower_args(&self) -> TokenStream {
@@ -94,18 +92,27 @@ impl Generator for VariantGenerator<'_> {
 
             if let Some(ty) = field_ty {
                 output.extend(quote! { Self::#field_name(value) => {
-                    args[0] = wasmi_component::wasmi::Val::I32(#index);
-                    value.lower_args(&mut args[1..(1 + #ty::arg_count())], memory)
+                    args[0] = wasmi_component::WasmValue::I32(#index);
+                    value.lower_args(&mut args[1..(1 + #ty::arg_count())], memory)?;
+                    1 + #ty::arg_count()
                 } });
             } else {
                 output.extend(quote! { Self::#field_name => {
-                    args[0] = wasmi_component::wasmi::Val::I32(#index);
-                    Ok(())
+                    args[0] = wasmi_component::WasmValue::I32(#index);
+                    1
                 } });
             }
         }
 
-        quote! { match self { #output } }
+        quote! {
+            let written = match self { #output };
+
+            for arg in &mut args[written..] {
+                *arg = wasmi_component::WasmValue::Unused;
+            }
+
+            Ok(())
+        }
     }
 
     fn byte_align(&self) -> TokenStream {
@@ -141,37 +148,65 @@ impl Generator for VariantGenerator<'_> {
     }
 
     fn lift_bytes(&self) -> TokenStream {
-        quote! { todo!("lift_bytes variant") }
+        let mut output = quote! {};
+
+        for (index, field) in self.data.variants.iter().enumerate() {
+            let index = index as u8; // TODO: more than 256 variants
+            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
+            let field_name = &field.ident;
+
+            let value = if let Some(ty) = field_ty {
+                quote! { (#ty::lift_bytes(&bytes[offset..(#ty::byte_size() + offset)], memory)?.lift_owned()?) }
+            } else {
+                quote! {}
+            };
+
+            output.extend(quote! { #index => Ok(Self::#field_name #value), });
+        }
+
+        let name = &self.name.to_string();
+
+        quote! {
+            use wasmi_component::View;
+            let offset = Self::byte_align();
+            match bytes[0] {
+                #output
+                other => Err(wasmi_component::ConvertError::new(format!("invalid determinant {other} in {}::lift_bytes", #name)))
+            }
+        }
     }
 
     fn lower_bytes(&self) -> TokenStream {
-        quote! { todo!("lower_bytes variant") }
+        let mut output = quote! {};
+
+        for (index, field) in self.data.variants.iter().enumerate() {
+            let index = index as u8; // TODO: more than 256 variants
+            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
+            let field_name = &field.ident;
+
+            if let Some(ty) = field_ty {
+                output.extend(quote! { Self::#field_name(value) => {
+                    memory
+                        .slice(range.start..(range.start + 1))?
+                        .copy_from_slice(&[#index]);
+
+                    value.lower_bytes(range.slice(offset..(offset + #ty::byte_size())), memory)
+                } });
+            } else {
+                output.extend(quote! { Self::#field_name => {
+                    memory
+                        .slice(range.start..(range.start + 1))?
+                        .copy_from_slice(&[0]);
+
+                    Ok(())
+                } });
+            }
+        }
+
+        quote! {
+            use wasmi_component::Slice;
+            let offset = Self::byte_align();
+            match self { #output }
+        }
     }
-
-    // fn lower_bytes(
-    //     &self,
-    //     range: Range<usize>,
-    //     memory: &mut impl MemoryAccess,
-    // ) -> ConvertResult<()> {
-    //     debug_assert_eq!(range.len(), Option::<T>::byte_size());
-
-    //     let offset = Option::<T>::byte_align();
-
-    //     match self {
-    //         None => {
-    //             memory
-    //                 .slice(range.start..(range.start + 1))?
-    //                 .copy_from_slice(&[0]);
-
-    //             Ok(())
-    //         }
-    //         Some(val) => {
-    //             memory
-    //                 .slice(range.start..(range.start + 1))?
-    //                 .copy_from_slice(&[1]);
-
-    //             val.lower_bytes(range.slice(offset..(offset + T::byte_size())), memory)
-    //         }
-    //     }
-    // }
 }
