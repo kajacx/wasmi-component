@@ -8,7 +8,9 @@ const WASM: &[u8] = include_bytes!(
 );
 
 #[derive(Default)]
-struct HostData {}
+struct HostData {
+    names: Vec<String>,
+}
 
 impl bindings::TestExampleImports for HostData {
     fn list_s8(&mut self, value: ListAccessor<i8>) -> HostResult<Vec<i8>> {
@@ -189,24 +191,14 @@ pub fn main_() {
     assert_eq!(result, ["Hello", "beautiful", "world"]);
     println!("Result is: {result:?}\n");
 
-    let result = exports
-        .call_list_string_with_results(&mut store, ["Hello", "zero", "copy"], |result| {
-            let mut iter = result.iter();
-
-            let item = iter.next().unwrap().unwrap();
-            assert_eq!(item, "Hello");
-            println!("Item is: {item}");
-
-            let item = iter.next().unwrap().unwrap();
-            assert_eq!(item, "zero");
-            println!("Item is: {item}");
-
-            let item = iter.next().unwrap().unwrap();
-            assert_eq!(item, "copy");
-            println!("Item is: {item}");
-
-            result.len()
-        })
+    exports
+        .call_list_string_with_results(
+            &mut store,
+            ["Hello", "zero", "copy"],
+            |store_data, result| {
+                result.lift_to(&mut store_data.names).unwrap();
+            },
+        )
         .unwrap();
-    assert_eq!(result, 3);
+    assert_eq!(store.data().names, ["Hello", "zero", "copyy"]);
 }

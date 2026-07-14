@@ -50,7 +50,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: Person,
-        callback: impl FnOnce(Person) -> R,
+        callback: impl FnOnce(&mut T, Person) -> R,
     ) -> CallResult<R> {
         self.trip_person.call_with_results(ctx, (value,), callback)
     }
@@ -67,7 +67,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: Data,
-        callback: impl FnOnce(Data) -> R,
+        callback: impl FnOnce(&mut T, Data) -> R,
     ) -> CallResult<R> {
         self.trip_data.call_with_results(ctx, (value,), callback)
     }

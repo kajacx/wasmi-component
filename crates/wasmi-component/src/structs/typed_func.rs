@@ -35,7 +35,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         ctx: impl AsContextMut<Data = StoreData<T>>,
         params: impl LowerValue<Params>,
     ) -> CallResult<Results> {
-        let result = self.call_with_results(ctx, params, |res| res.lift_owned());
+        let result = self.call_with_results(ctx, params, |_data, res| res.lift_owned());
         Ok(result??)
     }
 
@@ -43,7 +43,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         &self,
         mut ctx: impl AsContextMut<Data = StoreData<T>>,
         params: impl LowerValue<Params>,
-        callback: impl FnOnce(Results::Borrowed<'_>) -> R,
+        callback: impl FnOnce(&mut T, Results::Borrowed<'_>) -> R,
     ) -> CallResult<R> {
         let params_user = params;
 
@@ -92,7 +92,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         // Propagate error now, after the call stack has been updated
         call_result?;
 
-        let bytes = self.memory.memory.data(ctx.as_context());
+        let (bytes, store_data) = self.memory.memory.data_and_store_mut(ctx.as_context_mut());
         let results_user = if results_indirect {
             let address = results_wasmi[0].i32().unwrap() as usize;
             let ptr = FatPtr::new(address, Results::byte_size(), 1);
@@ -105,7 +105,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
             Results::lift_args(&results_wasm[0..results_slice.len()], bytes)?
         };
 
-        let return_value = callback(results_user);
+        let return_value = callback(store_data.data_mut(), results_user);
 
         if let Some(post_return) = self.post_return {
             let address = results_wasmi[0]

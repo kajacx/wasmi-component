@@ -30,7 +30,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         text: impl LowerValue<String>,
-        callback: impl FnOnce(()) -> R,
+        callback: impl FnOnce(&mut T, ()) -> R,
     ) -> CallResult<R> {
         self.print_stdout.call_with_results(ctx, (text,), callback)
     }
@@ -47,7 +47,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         text: impl LowerValue<String>,
-        callback: impl FnOnce(()) -> R,
+        callback: impl FnOnce(&mut T, ()) -> R,
     ) -> CallResult<R> {
         self.print_stderr.call_with_results(ctx, (text,), callback)
     }

@@ -1,5 +1,5 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{Component, HostResult, Linker, Store};
+use wasmi_component::{Component, HostResult, Linker, Store, View};
 
 use crate::bindings::add_test_example_to_linker;
 
@@ -10,7 +10,9 @@ const WASM: &[u8] = include_bytes!(
 );
 
 #[derive(Default)]
-struct HostData {}
+struct HostData {
+    text: String,
+}
 
 impl bindings::TestExampleImports for HostData {
     fn trip_s8(&mut self, value: i8) -> HostResult<i8> {
@@ -158,12 +160,10 @@ pub fn main_() {
     assert_eq!(result, "Hello world");
     println!("Result is: {result}\n");
 
-    let len = exports
-        .call_trip_string_with_results(&mut store, "Zero copy", |result| {
-            assert_eq!(result, "Zero copy");
-            println!("Result is: {result}\n");
-            result.len()
+    exports
+        .call_trip_string_with_results(&mut store, "Zero copy", |store_data, result| {
+            result.lift_to(&mut store_data.text).unwrap();
         })
         .unwrap();
-    assert_eq!(len, "Zero copy".len())
+    assert_eq!(store.data().text, "Zero copy")
 }

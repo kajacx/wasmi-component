@@ -108,7 +108,7 @@ impl Generator {
                 concat!(
                     "  pub fn call_{}_with_results<T, R>(&self, ",
                     "ctx: impl AsContextMut<Data = StoreData<T>>, {}",
-                    "callback: impl FnOnce({}) -> R)-> CallResult<R> {{\n",
+                    "callback: impl FnOnce(&mut T, {}) -> R)-> CallResult<R> {{\n",
                     "    self.{}.call_with_results(ctx, ({}), callback)\n",
                     "  }}\n"
                 ),

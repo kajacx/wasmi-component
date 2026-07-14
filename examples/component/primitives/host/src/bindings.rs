@@ -69,7 +69,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i8,
-        callback: impl FnOnce(i8) -> R,
+        callback: impl FnOnce(&mut T, i8) -> R,
     ) -> CallResult<R> {
         self.trip_s8.call_with_results(ctx, (value,), callback)
     }
@@ -86,7 +86,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i16,
-        callback: impl FnOnce(i16) -> R,
+        callback: impl FnOnce(&mut T, i16) -> R,
     ) -> CallResult<R> {
         self.trip_s16.call_with_results(ctx, (value,), callback)
     }
@@ -103,7 +103,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i32,
-        callback: impl FnOnce(i32) -> R,
+        callback: impl FnOnce(&mut T, i32) -> R,
     ) -> CallResult<R> {
         self.trip_s32.call_with_results(ctx, (value,), callback)
     }
@@ -120,7 +120,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: i64,
-        callback: impl FnOnce(i64) -> R,
+        callback: impl FnOnce(&mut T, i64) -> R,
     ) -> CallResult<R> {
         self.trip_s64.call_with_results(ctx, (value,), callback)
     }
@@ -137,7 +137,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u8,
-        callback: impl FnOnce(u8) -> R,
+        callback: impl FnOnce(&mut T, u8) -> R,
     ) -> CallResult<R> {
         self.trip_u8.call_with_results(ctx, (value,), callback)
     }
@@ -154,7 +154,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u16,
-        callback: impl FnOnce(u16) -> R,
+        callback: impl FnOnce(&mut T, u16) -> R,
     ) -> CallResult<R> {
         self.trip_u16.call_with_results(ctx, (value,), callback)
     }
@@ -171,7 +171,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u32,
-        callback: impl FnOnce(u32) -> R,
+        callback: impl FnOnce(&mut T, u32) -> R,
     ) -> CallResult<R> {
         self.trip_u32.call_with_results(ctx, (value,), callback)
     }
@@ -188,7 +188,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: u64,
-        callback: impl FnOnce(u64) -> R,
+        callback: impl FnOnce(&mut T, u64) -> R,
     ) -> CallResult<R> {
         self.trip_u64.call_with_results(ctx, (value,), callback)
     }
@@ -205,7 +205,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: f32,
-        callback: impl FnOnce(f32) -> R,
+        callback: impl FnOnce(&mut T, f32) -> R,
     ) -> CallResult<R> {
         self.trip_f32.call_with_results(ctx, (value,), callback)
     }
@@ -222,7 +222,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: f64,
-        callback: impl FnOnce(f64) -> R,
+        callback: impl FnOnce(&mut T, f64) -> R,
     ) -> CallResult<R> {
         self.trip_f64.call_with_results(ctx, (value,), callback)
     }
@@ -239,7 +239,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: bool,
-        callback: impl FnOnce(bool) -> R,
+        callback: impl FnOnce(&mut T, bool) -> R,
     ) -> CallResult<R> {
         self.trip_bool.call_with_results(ctx, (value,), callback)
     }
@@ -256,7 +256,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: char,
-        callback: impl FnOnce(char) -> R,
+        callback: impl FnOnce(&mut T, char) -> R,
     ) -> CallResult<R> {
         self.trip_char.call_with_results(ctx, (value,), callback)
     }
@@ -273,7 +273,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: impl LowerValue<String>,
-        callback: impl FnOnce(&str) -> R,
+        callback: impl FnOnce(&mut T, &str) -> R,
     ) -> CallResult<R> {
         self.trip_string.call_with_results(ctx, (value,), callback)
     }
