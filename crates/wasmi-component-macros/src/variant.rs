@@ -1,12 +1,12 @@
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
 use syn::DataEnum;
 
-use crate::Generator;
+use crate::{Generator, GeneratorData};
 
 pub struct VariantGenerator<'a> {
-    pub name: &'a Ident,
     pub data: &'a DataEnum,
+    pub gen_data: GeneratorData<'a>,
 }
 
 impl Generator for VariantGenerator<'_> {
@@ -56,6 +56,7 @@ impl Generator for VariantGenerator<'_> {
 
     fn lift_args(&self) -> TokenStream {
         let mut output = quote! {};
+        let borrowed_name = &self.gen_data.borrowed_name;
 
         for (index, field) in self.data.variants.iter().enumerate() {
             let index = index as i32;
@@ -63,18 +64,17 @@ impl Generator for VariantGenerator<'_> {
             let field_name = &field.ident;
 
             let value = if let Some(ty) = field_ty {
-                quote! { (#ty::lift_args(&args[1..(1 + #ty::arg_count())], memory)?.lift_owned()?) }
+                quote! { (#ty::lift_args(&args[1..(1 + #ty::arg_count())], memory)?) }
             } else {
                 quote! {}
             };
 
-            output.extend(quote! { #index => Ok(Self::#field_name #value), });
+            output.extend(quote! { #index => Ok(#borrowed_name::#field_name #value), });
         }
 
-        let name = &self.name.to_string();
+        let name = &self.gen_data.name.to_string();
 
         quote! {
-            use wasmi_component::View;
             match args[0].i32()? {
                 #output
                 other => Err(wasmi_component::ConvertError::new(format!("invalid determinant {other} in {}::lift_args", #name)))
@@ -149,6 +149,7 @@ impl Generator for VariantGenerator<'_> {
 
     fn lift_bytes(&self) -> TokenStream {
         let mut output = quote! {};
+        let borrowed_name = &self.gen_data.borrowed_name;
 
         for (index, field) in self.data.variants.iter().enumerate() {
             let index = index as u8; // TODO: more than 256 variants
@@ -156,18 +157,17 @@ impl Generator for VariantGenerator<'_> {
             let field_name = &field.ident;
 
             let value = if let Some(ty) = field_ty {
-                quote! { (#ty::lift_bytes(&bytes[offset..(#ty::byte_size() + offset)], memory)?.lift_owned()?) }
+                quote! { (#ty::lift_bytes(&bytes[offset..(#ty::byte_size() + offset)], memory)?) }
             } else {
                 quote! {}
             };
 
-            output.extend(quote! { #index => Ok(Self::#field_name #value), });
+            output.extend(quote! { #index => Ok(#borrowed_name::#field_name #value), });
         }
 
-        let name = &self.name.to_string();
+        let name = &self.gen_data.name.to_string();
 
         quote! {
-            use wasmi_component::View;
             let offset = Self::byte_align();
             match bytes[0] {
                 #output
@@ -208,5 +208,71 @@ impl Generator for VariantGenerator<'_> {
             let offset = Self::byte_align();
             match self { #output }
         }
+    }
+
+    fn borrowed_def(&self) -> TokenStream {
+        let mut output = quote! {};
+
+        for field in &self.data.variants {
+            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
+            let field_name = &field.ident;
+            if let Some(ty) = field_ty {
+                output.extend(
+                    quote! { #field_name(<#ty as wasmi_component::ComponentValue>::Borrowed<'a>), },
+                );
+            } else {
+                output.extend(quote! { #field_name, });
+            }
+        }
+
+        let vis = &self.gen_data.vis;
+        let borrowed_name = &self.gen_data.borrowed_name;
+        quote! { #vis enum #borrowed_name<'a> { #output } }
+    }
+
+    fn lift_owned(&self) -> TokenStream {
+        let mut output = quote! {};
+        let name = &self.gen_data.name;
+
+        for field in &self.data.variants {
+            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
+            let field_name = &field.ident;
+            if let Some(_ty) = field_ty {
+                output.extend(
+                    quote! { Self::#field_name(value) => #name::#field_name(value.lift_owned()?), },
+                );
+            } else {
+                output.extend(quote! { Self::#field_name => #name::#field_name, });
+            }
+        }
+
+        quote! { Ok(match self { #output }) }
+    }
+
+    fn lift_to(&self) -> TokenStream {
+        let mut output = quote! {};
+        let name = &self.gen_data.name;
+
+        for field in &self.data.variants {
+            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
+            let field_name = &field.ident;
+            if let Some(_ty) = field_ty {
+                output.extend(quote! { Self::#field_name(self_val) => {
+                    if let #name::#field_name(target_val) = target {
+                        self_val.lift_to(target_val)
+                    } else {
+                        *target = #name::#field_name(self_val.lift_owned()?);
+                        Ok(())
+                    }
+                } });
+            } else {
+                output.extend(quote! { Self::#field_name => {
+                    *target = #name::#field_name;
+                    Ok(())
+                } });
+            }
+        }
+
+        quote! { match self { #output } }
     }
 }

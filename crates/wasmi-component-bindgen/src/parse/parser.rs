@@ -227,12 +227,12 @@ impl Parser {
                             lift: format!("ListAccessor<{}>", ty.canon),
                         }
                     }
-                    TypeDefKind::Record(_) => {
-                        ParamType::from_simple(&ty.name.as_ref().unwrap().to_upper_camel_case())
-                    }
-                    TypeDefKind::Variant(_) => {
-                        ParamType::from_simple(&ty.name.as_ref().unwrap().to_upper_camel_case())
-                    }
+                    TypeDefKind::Record(_) => ParamType::from_custom_type(
+                        &ty.name.as_ref().unwrap().to_upper_camel_case(),
+                    ),
+                    TypeDefKind::Variant(_) => ParamType::from_custom_type(
+                        &ty.name.as_ref().unwrap().to_upper_camel_case(),
+                    ),
                     TypeDefKind::Handle(_) => ParamType::from_simple("i32"),
                     _ => todo!(),
                 }

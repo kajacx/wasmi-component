@@ -19,6 +19,14 @@ impl ParamType {
             lift: name.to_string(),
         }
     }
+
+    pub fn from_custom_type(name: &str) -> Self {
+        Self {
+            canon: name.to_string(),
+            lower: LowerArg::Specific(name.to_string()),
+            lift: format!("{name}Borrowed"),
+        }
+    }
 }
 
 pub enum LowerArg {

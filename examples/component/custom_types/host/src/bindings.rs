@@ -23,9 +23,9 @@ pub enum Data {
 
 #[allow(unused)]
 pub trait TestExampleImports {
-    fn trip_person(&mut self, value: Person) -> HostResult<Person>;
+    fn trip_person(&mut self, value: PersonBorrowed) -> HostResult<Person>;
 
-    fn trip_data(&mut self, value: Data) -> HostResult<Data>;
+    fn trip_data(&mut self, value: DataBorrowed) -> HostResult<Data>;
 
     fn log(&mut self, message: &str) -> HostResult<()>;
 }
@@ -50,7 +50,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: Person,
-        callback: impl FnOnce(&mut T, Person) -> R,
+        callback: impl FnOnce(&mut T, PersonBorrowed) -> R,
     ) -> CallResult<R> {
         self.trip_person.call_with_results(ctx, (value,), callback)
     }
@@ -67,7 +67,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: Data,
-        callback: impl FnOnce(&mut T, Data) -> R,
+        callback: impl FnOnce(&mut T, DataBorrowed) -> R,
     ) -> CallResult<R> {
         self.trip_data.call_with_results(ctx, (value,), callback)
     }

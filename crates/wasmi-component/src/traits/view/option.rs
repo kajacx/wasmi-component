@@ -1,5 +1,33 @@
 use crate::{ComponentValue, ConvertResult, View};
 
+impl<'a, T: ComponentValue> View<Option<T>> for Option<T::Borrowed<'a>> {
+    fn lift_owned(&self) -> ConvertResult<Option<T>> {
+        let owned = match self {
+            None => None,
+            Some(value) => Some(value.lift_owned()?),
+        };
+
+        Ok(owned)
+    }
+
+    fn lift_to(&self, target: &mut Option<T>) -> ConvertResult<()> {
+        match self {
+            None => {
+                *target = None;
+                Ok(())
+            }
+            Self::Some(self_val) => {
+                if let Some(target_val) = target {
+                    self_val.lift_to(target_val)
+                } else {
+                    *target = Some(self_val.lift_owned()?);
+                    Ok(())
+                }
+            }
+        }
+    }
+}
+
 impl<'a, T: ComponentValue, E: ComponentValue> View<Result<T, E>>
     for Result<T::Borrowed<'a>, E::Borrowed<'a>>
 {
@@ -27,34 +55,6 @@ impl<'a, T: ComponentValue, E: ComponentValue> View<Result<T, E>>
                     self_err.lift_to(target_err)
                 } else {
                     *target = Err(self_err.lift_owned()?);
-                    Ok(())
-                }
-            }
-        }
-    }
-}
-
-impl<'a, T: ComponentValue> View<Option<T>> for Option<T::Borrowed<'a>> {
-    fn lift_owned(&self) -> ConvertResult<Option<T>> {
-        let owned = match self {
-            None => None,
-            Some(value) => Some(value.lift_owned()?),
-        };
-
-        Ok(owned)
-    }
-
-    fn lift_to(&self, target: &mut Option<T>) -> ConvertResult<()> {
-        match self {
-            None => {
-                *target = None;
-                Ok(())
-            }
-            Self::Some(self_val) => {
-                if let Some(target_val) = target {
-                    self_val.lift_to(target_val)
-                } else {
-                    *target = Some(self_val.lift_owned()?);
                     Ok(())
                 }
             }

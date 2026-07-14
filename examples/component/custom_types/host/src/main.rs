@@ -14,14 +14,14 @@ const WASM: &[u8] = include_bytes!(
 struct HostData {}
 
 impl bindings::TestExampleImports for HostData {
-    fn trip_person(&mut self, value: bindings::Person) -> HostResult<bindings::Person> {
+    fn trip_person(&mut self, value: bindings::PersonBorrowed) -> HostResult<bindings::Person> {
         println!("[HOST]: Receiving Person value {value:?}");
         let value = value.lift_owned()?;
         println!("[HOST]: Returning Person value {value:?}");
         Ok(value)
     }
 
-    fn trip_data(&mut self, value: bindings::Data) -> HostResult<bindings::Data> {
+    fn trip_data(&mut self, value: bindings::DataBorrowed) -> HostResult<bindings::Data> {
         println!("[HOST]: Receiving Data value {value:?}");
         let value = value.lift_owned()?;
         println!("[HOST]: Returning Data value {value:?}");

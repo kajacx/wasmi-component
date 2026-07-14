@@ -1,13 +1,12 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{DataStruct, Ident};
+use syn::DataStruct;
 
-use crate::Generator;
+use crate::{Generator, GeneratorData};
 
 pub struct RecordGenerator<'a> {
-    #[allow(unused)]
-    pub name: &'a Ident,
     pub data: &'a DataStruct,
+    pub gen_data: GeneratorData<'a>,
 }
 
 impl Generator for RecordGenerator<'_> {
@@ -41,19 +40,19 @@ impl Generator for RecordGenerator<'_> {
     }
 
     fn lift_args(&self) -> TokenStream {
-        let mut output = quote! { use wasmi_component::View; let mut index = 0; };
+        let mut output = quote! { let mut index = 0; };
         let mut result = quote! {};
 
         for field in &self.data.fields {
             let field_ty = &field.ty;
             let field_name = field.ident.as_ref().unwrap();
             output.extend(quote! { let #field_name = #field_ty::lift_args(&args[index .. (index + #field_ty::arg_count())], memory)?; });
-            output.extend(quote! { let #field_name = #field_name.lift_owned()?; });
             output.extend(quote! { index += #field_ty::arg_count(); });
             result.extend(quote! { #field_name, });
         }
 
-        output.extend(quote! { Ok( Self { #result } ) });
+        let borrowed_name = &self.gen_data.borrowed_name;
+        output.extend(quote! { Ok( #borrowed_name { #result } ) });
         output
     }
 
@@ -94,19 +93,19 @@ impl Generator for RecordGenerator<'_> {
     }
 
     fn lift_bytes(&self) -> TokenStream {
-        let mut output = quote! { use wasmi_component::View; let align = Self::byte_align(); let mut index = 0; };
+        let mut output = quote! { let align = Self::byte_align(); let mut index = 0; };
         let mut result = quote! {};
 
         for field in &self.data.fields {
             let field_ty = &field.ty;
             let field_name = field.ident.as_ref().unwrap();
             output.extend(quote! { let #field_name = #field_ty::lift_bytes(&bytes[index .. (index + #field_ty::byte_size())], memory)?; });
-            output.extend(quote! { let #field_name = #field_name.lift_owned()?; });
             output.extend(quote! { index += wasmi_component::helpers::round_up(#field_ty::byte_size(), align); });
             result.extend(quote! { #field_name, });
         }
 
-        output.extend(quote! { Ok( Self { #result } ) });
+        let borrowed_name = &self.gen_data.borrowed_name;
+        output.extend(quote! { Ok( #borrowed_name { #result } ) });
         output
     }
 
@@ -121,6 +120,45 @@ impl Generator for RecordGenerator<'_> {
         }
 
         output.extend(quote! { Ok(()) });
+        output
+    }
+
+    fn borrowed_def(&self) -> TokenStream {
+        let mut output = quote! {};
+
+        for field in &self.data.fields {
+            let field_ty = &field.ty;
+            let field_name = field.ident.as_ref().unwrap();
+            let vis = &field.vis;
+            output.extend(quote! { #vis #field_name: <#field_ty as wasmi_component::ComponentValue>::Borrowed<'a>, });
+        }
+
+        let vis = &self.gen_data.vis;
+        let borrowed_name = &self.gen_data.borrowed_name;
+        quote! { #vis struct #borrowed_name<'a> { #output } }
+    }
+
+    fn lift_owned(&self) -> TokenStream {
+        let mut output = quote! {};
+
+        for field in &self.data.fields {
+            let field_name = field.ident.as_ref().unwrap();
+            output.extend(quote! { #field_name: self.#field_name.lift_owned()?, });
+        }
+
+        let name = &self.gen_data.name;
+        quote! { Ok(#name { #output }) }
+    }
+
+    fn lift_to(&self) -> TokenStream {
+        let mut output = quote! {};
+
+        for field in &self.data.fields {
+            let field_name = field.ident.as_ref().unwrap();
+            output.extend(quote! { self.#field_name.lift_to(&mut target.#field_name)?; });
+        }
+
+        output.extend(quote! {Ok(())});
         output
     }
 }
