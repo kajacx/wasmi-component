@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use crate::pointers::{PtrView, ptr_start};
 use crate::{ComponentValue, ConvertError, ConvertResult, LeBytesU8, View};
 
 /// T is the canonical type
@@ -113,41 +114,5 @@ impl<T> Debug for ListAccessor<'_, T> {
             )
             .field("host_memory", &PtrView::new(self.memory, 0))
             .finish()
-    }
-}
-
-fn ptr_start<T>(pointer: &[T]) -> usize {
-    pointer.as_ptr() as usize
-}
-
-struct PtrView<'a> {
-    start: usize,
-    data: &'a [u8],
-}
-
-impl<'a> PtrView<'a> {
-    pub fn new(ptr: &'a [u8], offset: usize) -> Self {
-        Self {
-            start: ptr_start(ptr) - offset,
-            data: ptr,
-        }
-    }
-}
-
-impl Debug for PtrView<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Ptr {{ start: 0x{:x}, len: {}",
-            self.start,
-            self.data.len()
-        )?;
-        if self.data.len() <= 32 {
-            write!(f, ", data: 0x")?;
-            for byte in self.data {
-                write!(f, "{:02x}", byte)?;
-            }
-        }
-        write!(f, " }}")
     }
 }

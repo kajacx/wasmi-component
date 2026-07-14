@@ -4,9 +4,16 @@ use crate::ConvertError;
 
 #[derive(Debug)]
 pub enum CallError {
+    /// Error that originated inside of the wasm core module, like a panic or unhandled exception.
     WasmError,
+
+    /// Error caused by a problem when converting a component value to core wasm arguments or vice versa.
     ConvertError(ConvertError),
+
+    /// A resumable trap explicitly created by the host to pause execution so it can be resumed later.
     HostTrap,
+
+    /// Core wasm module has ran out of fuel, execution can be continued later.
     OutOfFuel,
 }
 

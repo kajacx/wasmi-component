@@ -5,8 +5,7 @@ use crate::*;
 
 #[derive(Debug)]
 pub struct Component {
-    pub core_module: wasmi::Module,
-    pub is_wasi_p2: bool,
+    pub(crate) core_module: wasmi::Module,
 }
 
 impl Component {
@@ -16,16 +15,11 @@ impl Component {
         let mut modules = Vec::with_capacity(4);
 
         for payload in parser.parse_all(bytes) {
-            match payload.expect("TODO:") {
+            match payload.map_err(|err| wasmi::Error::new(err.message()))? {
                 Payload::ModuleSection {
                     unchecked_range, ..
                 } => {
                     let module_bytes = &bytes[unchecked_range];
-
-                    // let module_name = format!("../modules/module{}.core.wasm", modules.len());
-                    // let mut file = std::fs::File::create(module_name).unwrap();
-                    // std::io::Write::write_all(&mut file, module_bytes).unwrap();
-
                     let module = wasmi::Module::new(engine, module_bytes)?;
                     modules.push(module);
                 }
@@ -33,13 +27,12 @@ impl Component {
             }
         }
 
-        Ok(Self {
-            core_module: modules.remove(0),
-            is_wasi_p2: true, // TODO: detect a wasi component
-        })
-    }
-
-    pub fn is_wasi_p2(&self) -> bool {
-        self.is_wasi_p2
+        if modules.len() >= 1 {
+            Ok(Self {
+                core_module: modules.remove(0),
+            })
+        } else {
+            Err(wasmi::Error::new("component did contain any core modules"))
+        }
     }
 }

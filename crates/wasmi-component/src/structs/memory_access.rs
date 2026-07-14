@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use wasmi::{AsContextMut, Memory};
 
-use crate::{ConvertError, ConvertResult, WasmValue};
+use crate::{ConvertError, ConvertResult, pointers};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MemoryAccessPre {
@@ -75,10 +75,9 @@ impl<'a, C: AsContextMut> MemoryAccess for MemoryAccessFilled<'a, C> {
             .cabi_realloc
             .call(&mut self.ctx, (0, 0, align as i32, len as i32))
             .map_err(|err| {
-                ConvertError::with_cause(
-                    format!("Call to allocate, len {len}, align {align} failed"),
-                    Box::new(err),
-                )
+                ConvertError::new("call to allocate failed")
+                    .with_additional(format!("len {len}, align {align}"))
+                    .with_cause(Box::new(err))
             })?;
 
         Ok(address as usize)
@@ -87,74 +86,18 @@ impl<'a, C: AsContextMut> MemoryAccess for MemoryAccessFilled<'a, C> {
     fn slice(&mut self, range: Range<usize>) -> ConvertResult<&mut [u8]> {
         let bytes = self.memory.data_mut(self.ctx.as_context_mut());
 
-        bytes
-            .get_mut(range)
-            .ok_or_else(|| ConvertError::new(format!("MemoryAccess::slice TODO: better message")))
-    }
-}
+        let mem_start = pointers::ptr_start(bytes);
+        let mem_len = bytes.len();
 
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct FatPtr {
-    /// Address where the memory starts
-    pub start: usize,
-
-    /// The number of items
-    pub count: usize,
-
-    /// Size in bytes of one item
-    pub size: usize,
-}
-
-impl FatPtr {
-    pub fn new(start: usize, count: usize, size: usize) -> Self {
-        Self { start, count, size }
-    }
-
-    pub fn from_args(args: &[WasmValue], size: usize) -> ConvertResult<Self> {
-        debug_assert_eq!(args.len(), 2);
-
-        let start = args[0].i32()? as usize;
-        let count = args[1].i32()? as usize;
-
-        Ok(Self { start, count, size })
-    }
-
-    pub fn from_bytes(bytes: &[u8], size: usize) -> ConvertResult<Self> {
-        debug_assert_eq!(bytes.len(), 8);
-
-        let start = u32::from_le_bytes(bytes[0..4].try_into().unwrap()) as usize;
-        let count = u32::from_le_bytes(bytes[4..8].try_into().unwrap()) as usize;
-
-        Ok(Self { start, count, size })
-    }
-
-    pub fn as_range(&self) -> Range<usize> {
-        self.start..(self.start + (self.count * self.size))
-    }
-
-    pub fn try_index<'a>(&self, bytes: &'a [u8]) -> ConvertResult<&'a [u8]> {
-        bytes.get(self.as_range()).ok_or_else(|| {
+        bytes.get_mut(range.clone()).ok_or_else(|| {
             ConvertError::new(format!(
-                "Tried to index memory of size {} at {} with length {}",
-                bytes.len(),
-                self.start,
-                self.count * self.size
+                "requested range (start: {:x}, length: {}) is out of bounds for memory (start: {:x}, length: {})",
+                range.start,
+                range.len(),
+                mem_start,
+                mem_len,
             ))
         })
-    }
-
-    pub fn write_to_args(&self, args: &mut [WasmValue]) {
-        debug_assert_eq!(args.len(), 2);
-
-        args[0] = WasmValue::I32(self.start as _);
-        args[1] = WasmValue::I32(self.count as _);
-    }
-
-    pub fn write_to_bytes(&self, bytes: &mut [u8]) {
-        debug_assert_eq!(bytes.len(), 8);
-
-        bytes[0..4].copy_from_slice(&(self.start as u32).to_le_bytes());
-        bytes[4..8].copy_from_slice(&(self.count as u32).to_le_bytes());
     }
 }
 

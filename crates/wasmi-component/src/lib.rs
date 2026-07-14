@@ -2,6 +2,7 @@ pub use anyhow;
 pub use wasmi;
 
 mod errors;
+mod pointers;
 mod structs;
 mod traits;
 

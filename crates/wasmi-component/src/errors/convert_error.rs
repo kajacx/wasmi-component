@@ -3,24 +3,29 @@ use std::error::Error;
 #[derive(Debug)]
 pub struct ConvertError {
     pub message: String,
+    pub additional: Option<String>,
     pub cause: Option<Box<dyn Error>>,
 }
 
 pub type ConvertResult<T> = Result<T, ConvertError>;
 
 impl ConvertError {
-    pub fn new(message: String) -> Self {
+    pub fn new(message: impl Into<String>) -> Self {
         Self {
-            message,
+            message: message.into(),
+            additional: None,
             cause: None,
         }
     }
 
-    pub fn with_cause(message: String, cause: Box<dyn Error>) -> Self {
-        Self {
-            message,
-            cause: Some(cause),
-        }
+    pub fn with_additional(mut self, additional: impl Into<String>) -> Self {
+        self.additional = Some(additional.into());
+        self
+    }
+
+    pub fn with_cause(mut self, cause: Box<dyn Error>) -> Self {
+        self.cause = Some(cause);
+        self
     }
 }
 

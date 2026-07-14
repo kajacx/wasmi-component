@@ -1,6 +1,7 @@
 use wasmi::ValType;
 
-use crate::{ComponentValue, ConvertError, ConvertResult, FatPtr, ValueType, WasmValue};
+use crate::pointers::{FatPtr, PtrView, ptr_start};
+use crate::{ComponentValue, ConvertError, ConvertResult, ValueType, WasmValue};
 
 impl ComponentValue for String {
     type Borrowed<'a> = &'a str;
@@ -21,12 +22,7 @@ impl ComponentValue for String {
         debug_assert_eq!(args.len(), Self::arg_count());
 
         let ptr = FatPtr::from_args(args, 1)?;
-        let slice = ptr.try_index(memory)?;
-
-        str::from_utf8(slice).map_err(|err| {
-            let ptr = "TODO:";
-            ConvertError::with_cause(format!("String {:?} isn't valid utf-8", ptr), Box::new(err))
-        })
+        convert_slice(ptr, memory)
     }
 
     fn byte_align() -> usize {
@@ -41,10 +37,15 @@ impl ComponentValue for String {
         debug_assert_eq!(bytes.len(), Self::byte_size());
 
         let ptr = FatPtr::from_bytes(bytes, 1)?;
-        let slice = ptr.try_index(memory)?;
-
-        str::from_utf8(slice).map_err(|err| {
-            ConvertError::with_cause(format!("String {:?} isn't valid utf-8", ptr), Box::new(err))
-        })
+        convert_slice(ptr, memory)
     }
+}
+
+fn convert_slice<'a>(ptr: FatPtr, memory: &'a [u8]) -> ConvertResult<&'a str> {
+    let slice = ptr.try_index(memory)?;
+    str::from_utf8(slice).map_err(|err| {
+        ConvertError::new(format!("string isn't valid utf-8"))
+            .with_additional(format!("{:?}", PtrView::new(slice, ptr_start(memory))))
+            .with_cause(Box::new(err))
+    })
 }

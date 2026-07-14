@@ -1,6 +1,7 @@
 use std::ops::Range;
 
-use crate::{ComponentValue, ConvertResult, FatPtr, LowerValue, MemoryAccess, WasmValue};
+use crate::pointers::FatPtr;
+use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess, WasmValue};
 
 impl<T: ComponentValue, S: AsSlice> LowerValue<Vec<T>> for S
 where

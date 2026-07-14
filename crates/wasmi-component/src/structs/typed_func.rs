@@ -2,9 +2,8 @@ use std::marker::PhantomData;
 
 use wasmi::AsContextMut;
 
-use crate::{
-    CallResult, ComponentValue, FatPtr, LowerValue, MemoryAccessPre, StoreData, View, WasmValue,
-};
+use crate::pointers::FatPtr;
+use crate::{CallResult, ComponentValue, LowerValue, MemoryAccessPre, StoreData, View, WasmValue};
 
 pub struct TypedFunc<Params, Results> {
     memory: MemoryAccessPre,
@@ -78,6 +77,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
             .data_mut()
             .push_call_instance(instance_id);
 
+        // Do not propagate error yet
         let call_result = self.inner.call_resumable(
             ctx.as_context_mut(),
             &params_wasmi[0..params_len],
@@ -87,33 +87,33 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         ctx.as_context_mut()
             .data_mut()
             .pop_call_instance(instance_id, depth)
-            .expect("TODO: ");
+            .expect("instance call stack should match");
 
+        // Propagate error now, after the call stack has been updated
         call_result?;
 
         let bytes = self.memory.memory.data(ctx.as_context());
-        let lifted = if results_indirect {
-            // TODO: check params ... again
+        let results_user = if results_indirect {
             let address = results_wasmi[0].i32().unwrap() as usize;
             let ptr = FatPtr::new(address, Results::byte_size(), 1);
 
             let slice = ptr.try_index(bytes)?;
             Results::lift_bytes(slice, bytes)?
         } else {
-            let mut results = [WasmValue::Unset];
-            WasmValue::convert_from_wasmi(results_slice, &mut results[0..results_slice.len()]);
-            Results::lift_args(&results[0..results_slice.len()], bytes)?
+            let mut results_wasm = [WasmValue::Unset];
+            WasmValue::convert_from_wasmi(results_slice, &mut results_wasm[0..results_slice.len()]);
+            Results::lift_args(&results_wasm[0..results_slice.len()], bytes)?
         };
 
-        let return_val = callback(lifted);
+        let return_value = callback(results_user);
 
         if let Some(post_return) = self.post_return {
             let address = results_wasmi[0]
                 .i32()
-                .expect("function should return an i32 if it has a post return fn");
+                .expect("function should return an i32 if it has a post return fn"); // TODO: misbehaving component
             post_return.call(ctx, address)?;
         }
 
-        Ok(return_val)
+        Ok(return_value)
     }
 }
