@@ -14,6 +14,12 @@ pub enum StreamError {
     Closed,
 }
 
+impl AsRef<StreamError> for StreamError {
+    fn as_ref(&self) -> &StreamError {
+        self
+    }
+}
+
 #[allow(unused)]
 pub trait RootImports {
     fn method_pollable_block(&mut self, self_: i32) -> HostResult<()>;

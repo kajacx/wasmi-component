@@ -3,10 +3,7 @@ use std::ops::Range;
 use crate::pointers::FatPtr;
 use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess, WasmValue};
 
-impl<T: ComponentValue, S: AsSlice> LowerValue<Vec<T>> for S
-where
-    S::Target: LowerValue<T>,
-{
+impl<T: ComponentValue, E: LowerValue<T>> LowerValue<Vec<T>> for [E] {
     fn lower_args(
         &self,
         args: &mut [WasmValue],
@@ -14,7 +11,7 @@ where
     ) -> ConvertResult<()> {
         debug_assert_eq!(args.len(), Vec::<T>::arg_count());
 
-        let contents = self.as_slice();
+        let contents = self;
         let ptr = write_contents(contents, memory)?;
         ptr.write_to_args(args);
 
@@ -28,11 +25,47 @@ where
     ) -> ConvertResult<()> {
         debug_assert_eq!(range.len(), Vec::<T>::byte_size());
 
-        let contents = self.as_slice();
+        let contents = self;
         let ptr = write_contents(contents, memory)?;
         ptr.write_to_bytes(memory.slice(range)?);
 
         Ok(())
+    }
+}
+
+impl<T: ComponentValue, E: LowerValue<T>> LowerValue<Vec<T>> for Vec<E> {
+    fn lower_args(
+        &self,
+        args: &mut [WasmValue],
+        memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()> {
+        self.as_slice().lower_args(args, memory)
+    }
+
+    fn lower_bytes(
+        &self,
+        range: Range<usize>,
+        memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()> {
+        self.as_slice().lower_bytes(range, memory)
+    }
+}
+
+impl<T: ComponentValue, E: LowerValue<T>, const N: usize> LowerValue<Vec<T>> for [E; N] {
+    fn lower_args(
+        &self,
+        args: &mut [WasmValue],
+        memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()> {
+        self.as_slice().lower_args(args, memory)
+    }
+
+    fn lower_bytes(
+        &self,
+        range: Range<usize>,
+        memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()> {
+        self.as_slice().lower_bytes(range, memory)
     }
 }
 
@@ -50,36 +83,4 @@ fn write_contents<T: ComponentValue>(
     }
 
     Ok(FatPtr::new(start, contents.len(), T::byte_size()))
-}
-
-// Cannot use AsRef<[T]> directly because a type *might* have conflicting implementations.
-#[blanket::blanket(derive(Ref, Mut, Box, Rc, Arc, Cow))]
-pub trait AsSlice {
-    type Target;
-
-    fn as_slice(&self) -> &[Self::Target];
-}
-
-impl<T, const N: usize> AsSlice for [T; N] {
-    type Target = T;
-
-    fn as_slice(&self) -> &[Self::Target] {
-        self
-    }
-}
-
-impl<T> AsSlice for [T] {
-    type Target = T;
-
-    fn as_slice(&self) -> &[T] {
-        self
-    }
-}
-
-impl<T> AsSlice for Vec<T> {
-    type Target = T;
-
-    fn as_slice(&self) -> &[T] {
-        self.as_ref()
-    }
 }

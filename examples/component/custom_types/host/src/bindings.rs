@@ -14,11 +14,23 @@ pub struct Person {
     pub name: String,
 }
 
+impl AsRef<Person> for Person {
+    fn as_ref(&self) -> &Person {
+        self
+    }
+}
+
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
 pub enum Data {
     Number(f64),
     Text(String),
+}
+
+impl AsRef<Data> for Data {
+    fn as_ref(&self) -> &Data {
+        self
+    }
 }
 
 #[allow(unused)]
@@ -41,35 +53,37 @@ impl TestExampleExports {
     pub fn call_trip_person<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: Person,
+        value: impl AsRef<Person>,
     ) -> CallResult<Person> {
-        self.trip_person.call(ctx, (value,))
+        self.trip_person.call(ctx, (value.as_ref(),))
     }
 
     pub fn call_trip_person_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: Person,
+        value: impl AsRef<Person>,
         callback: impl FnOnce(&mut T, PersonBorrowed) -> R,
     ) -> CallResult<R> {
-        self.trip_person.call_with_results(ctx, (value,), callback)
+        self.trip_person
+            .call_with_results(ctx, (value.as_ref(),), callback)
     }
 
     pub fn call_trip_data<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: Data,
+        value: impl AsRef<Data>,
     ) -> CallResult<Data> {
-        self.trip_data.call(ctx, (value,))
+        self.trip_data.call(ctx, (value.as_ref(),))
     }
 
     pub fn call_trip_data_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: Data,
+        value: impl AsRef<Data>,
         callback: impl FnOnce(&mut T, DataBorrowed) -> R,
     ) -> CallResult<R> {
-        self.trip_data.call_with_results(ctx, (value,), callback)
+        self.trip_data
+            .call_with_results(ctx, (value.as_ref(),), callback)
     }
 }
 

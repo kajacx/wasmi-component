@@ -58,6 +58,7 @@ impl Func {
                     param.name,
                     match &param.ty.lower {
                         LowerArg::LowerValue => format!("impl LowerValue<{}>", param.ty.canon),
+                        LowerArg::AsRef => format!("impl AsRef<{}>", param.ty.canon),
                         LowerArg::Specific(specific) => specific.to_string(),
                     }
                 )
@@ -72,10 +73,13 @@ impl Func {
             .collect()
     }
 
-    pub fn param_names(&self) -> String {
+    pub fn param_names_as_args(&self) -> String {
         self.params
             .iter()
-            .map(|param| format!("{}, ", param.name))
+            .map(|param| match param.ty.lower {
+                LowerArg::AsRef => format!("{}.as_ref(), ", param.name),
+                _ => format!("{}, ", param.name),
+            })
             .collect()
     }
 }

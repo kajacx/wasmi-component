@@ -23,7 +23,7 @@ impl ParamType {
     pub fn from_custom_type(name: &str) -> Self {
         Self {
             canon: name.to_string(),
-            lower: LowerArg::Specific(name.to_string()),
+            lower: LowerArg::AsRef,
             lift: format!("{name}Borrowed"),
         }
     }
@@ -31,6 +31,7 @@ impl ParamType {
 
 pub enum LowerArg {
     LowerValue,
+    AsRef,
     Specific(String),
 }
 
@@ -38,7 +39,7 @@ impl LowerArg {
     pub fn specific(&self) -> Option<&str> {
         match self {
             Self::Specific(value) => Some(value),
-            Self::LowerValue => None,
+            _ => None,
         }
     }
 }

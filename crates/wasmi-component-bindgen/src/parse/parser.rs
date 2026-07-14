@@ -34,14 +34,16 @@ impl Parser {
     }
 
     fn write_type(&self, ty: &TypeDef) -> Option<String> {
+        let mut output = String::from(
+            "#[allow(unused)]\n#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]\n",
+        );
+
         match &ty.kind {
             TypeDefKind::Record(record) => {
-                let mut output = String::from(
-                    "#[allow(unused)]\n#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]\n",
-                );
+                let name = ty.name.as_ref().unwrap().to_upper_camel_case();
 
                 output.push_str("pub struct ");
-                output.push_str(&ty.name.as_ref().unwrap().to_upper_camel_case());
+                output.push_str(&name);
                 output.push_str(" {\n");
 
                 record.fields.iter().for_each(|field| {
@@ -52,19 +54,22 @@ impl Parser {
                     output.push_str(",\n");
                 });
 
-                output.push_str("}\n");
+                output.push_str("}\n\n");
+
+                output.push_str(&format!(
+                    "impl AsRef<{name}> for {name} {{ fn as_ref(&self) -> &{name} {{ self }} }}\n\n"
+                ));
+
                 Some(output)
             }
-            TypeDefKind::Variant(var) => {
-                let mut output = String::from(
-                    "#[allow(unused)]\n#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]\n",
-                );
+            TypeDefKind::Variant(variant) => {
+                let name = ty.name.as_ref().unwrap().to_upper_camel_case();
 
                 output.push_str("pub enum ");
-                output.push_str(&ty.name.as_ref().unwrap().to_upper_camel_case());
+                output.push_str(&name);
                 output.push_str(" {\n");
 
-                var.cases.iter().for_each(|case| {
+                variant.cases.iter().for_each(|case| {
                     output.push_str(&case.name.to_upper_camel_case());
                     if let Some(ty) = case.ty {
                         output.push('(');
@@ -74,7 +79,11 @@ impl Parser {
                     output.push_str(",\n");
                 });
 
-                output.push_str("}\n");
+                output.push_str("}\n\n");
+                output.push_str(&format!(
+                    "impl AsRef<{name}> for {name} {{ fn as_ref(&self) -> &{name} {{ self }} }}\n\n"
+                ));
+
                 Some(output)
             }
             _ => None,

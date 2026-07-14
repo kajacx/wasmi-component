@@ -70,7 +70,7 @@ pub fn main_() {
     println!("Result is: {result:?}\n");
 
     let result = exports
-        .call_trip_data(&mut store, bindings::Data::Number(62.0))
+        .call_trip_data(&mut store, &bindings::Data::Number(62.0))
         .unwrap();
     assert_eq!(result, bindings::Data::Number(62.0));
     println!("Result is: {result:?}\n");

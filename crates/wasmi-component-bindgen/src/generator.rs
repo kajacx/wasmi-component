@@ -99,7 +99,7 @@ impl Generator {
                 func.params_full_lower(),
                 func.result.canon,
                 func.rust_name(),
-                func.param_names(),
+                func.param_names_as_args(),
             )
             .unwrap();
 
@@ -116,7 +116,7 @@ impl Generator {
                 func.params_full_lower(),
                 func.result.lift,
                 func.rust_name(),
-                func.param_names(),
+                func.param_names_as_args(),
             )
             .unwrap();
         });

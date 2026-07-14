@@ -3,7 +3,7 @@ use std::ops::Range;
 use crate::pointers::FatPtr;
 use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess, WasmValue};
 
-impl<T: AsRef<str>> LowerValue<String> for T {
+impl LowerValue<String> for str {
     fn lower_args(
         &self,
         args: &mut [WasmValue],
@@ -30,6 +30,24 @@ impl<T: AsRef<str>> LowerValue<String> for T {
         ptr.write_to_bytes(memory.slice(range)?);
 
         Ok(())
+    }
+}
+
+impl LowerValue<String> for String {
+    fn lower_args(
+        &self,
+        args: &mut [WasmValue],
+        memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()> {
+        self.as_str().lower_args(args, memory)
+    }
+
+    fn lower_bytes(
+        &self,
+        range: Range<usize>,
+        memory: &mut impl MemoryAccess,
+    ) -> ConvertResult<()> {
+        self.as_str().lower_bytes(range, memory)
     }
 }
 

@@ -14,6 +14,12 @@ pub(crate) struct FatPtr {
     pub size: usize,
 }
 
+impl AsRef<FatPtr> for &FatPtr {
+    fn as_ref(&self) -> &FatPtr {
+        self
+    }
+}
+
 impl FatPtr {
     pub fn new(start: usize, count: usize, size: usize) -> Self {
         Self { start, count, size }
