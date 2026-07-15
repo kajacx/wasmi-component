@@ -39,4 +39,25 @@ impl bindings::exports::wasmi_component::component_examples::round_trip::Guest f
         bindings::log(&format!("[GUEST]: Returning Data value {value:?}"));
         value
     }
+
+    fn trip_mixed(_a: crate::Person, _b: i32, _c: Result<crate::Data, String>) -> () {
+        bindings::log(&format!("[GUEST]: Hello trip mixed"));
+    }
+}
+
+impl bindings::Guest for GuestComponent {
+    fn init(_args: Vec<String>) -> bindings::Outcome {
+        bindings::log(&format!("[GUEST]: Hello init"));
+        bindings::Outcome::Ok
+    }
+}
+
+impl bindings::exports::additional_exports::Guest for GuestComponent {
+    fn pet(
+        _target: bindings::exports::additional_exports::Animal,
+        _pets: u32,
+    ) -> Result<(), String> {
+        bindings::log(&format!("[GUEST]: Hello pet"));
+        Ok(())
+    }
 }

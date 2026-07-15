@@ -1,12 +1,13 @@
 use std::path::{Path, PathBuf};
 
+use wasmi_component_parser::Parser;
 use wit_parser::{Resolve, UnresolvedPackageGroup};
 
+mod func_helpers;
 mod generator;
-mod parse;
+mod type_helpers;
 
 use generator::*;
-use parse::*;
 
 #[derive(clap::Parser)]
 #[command(version, about = "Experimental zero-copy component bindgen for wasmi")]

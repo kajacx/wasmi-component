@@ -33,3 +33,22 @@ impl<'a, T0: ComponentValue, T1: ComponentValue> View<(T0, T1)>
         Ok(())
     }
 }
+
+impl<'a, T0: ComponentValue, T1: ComponentValue, T2: ComponentValue> View<(T0, T1, T2)>
+    for (T0::Borrowed<'a>, T1::Borrowed<'a>, T2::Borrowed<'a>)
+{
+    fn lift_owned(&self) -> ConvertResult<(T0, T1, T2)> {
+        Ok((
+            self.0.lift_owned()?,
+            self.1.lift_owned()?,
+            self.2.lift_owned()?,
+        ))
+    }
+
+    fn lift_to(&self, target: &mut (T0, T1, T2)) -> ConvertResult<()> {
+        self.0.lift_to(&mut target.0)?;
+        self.1.lift_to(&mut target.1)?;
+        self.2.lift_to(&mut target.2)?;
+        Ok(())
+    }
+}

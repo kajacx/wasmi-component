@@ -17,7 +17,10 @@ impl Generator for RecordGenerator<'_> {
             let field_ty = &field.ty;
             output.extend(quote! { (#field_name.to_string(), #field_ty::value_type()), });
         }
-        quote! { wasmi_component::ValueType::Record(vec![ #output ]) }
+        quote! { wasmi_component::ValueType::Record{
+            name: "".to_string(),
+            fields: vec![ #output ],
+        } }
     }
 
     fn arg_count(&self) -> TokenStream {

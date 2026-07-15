@@ -1,6 +1,7 @@
 use wasmi::ValType;
+use wasmi_component_parser::ValueType;
 
-use crate::{ComponentValue, ConvertError, ConvertResult, ValueType, WasmValue, helpers};
+use crate::{ComponentValue, ConvertError, ConvertResult, WasmValue, helpers};
 
 impl<T: ComponentValue> ComponentValue for Option<T> {
     type Borrowed<'a> = Option<T::Borrowed<'a>>;

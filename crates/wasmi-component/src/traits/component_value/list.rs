@@ -1,7 +1,8 @@
 use wasmi::ValType;
+use wasmi_component_parser::ValueType;
 
 use crate::pointers::FatPtr;
-use crate::{ComponentValue, ConvertResult, ListAccessor, ValueType, WasmValue};
+use crate::{ComponentValue, ConvertResult, ListAccessor, WasmValue};
 
 impl<T: ComponentValue> ComponentValue for Vec<T> {
     type Borrowed<'a> = ListAccessor<'a, T>;

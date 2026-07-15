@@ -1,8 +1,9 @@
 use std::fmt::Debug;
 
 use wasmi::ValType;
+use wasmi_component_parser::ValueType;
 
-use crate::{ConvertResult, ValueType, View, WasmValue};
+use crate::{ConvertResult, View, WasmValue};
 
 mod list;
 mod option;

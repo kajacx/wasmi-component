@@ -14,12 +14,6 @@ pub struct Person {
     pub name: String,
 }
 
-impl AsRef<Person> for Person {
-    fn as_ref(&self) -> &Person {
-        self
-    }
-}
-
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
 pub enum Data {
@@ -27,10 +21,25 @@ pub enum Data {
     Text(String),
 }
 
-impl AsRef<Data> for Data {
-    fn as_ref(&self) -> &Data {
-        self
-    }
+#[allow(unused)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
+pub enum Outcome {
+    Ok,
+    Error(i32),
+}
+
+#[allow(unused)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
+pub struct Fruit {
+    pub kind: String,
+    pub weight: f32,
+}
+
+#[allow(unused)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
+pub struct Animal {
+    pub species: String,
+    pub age: u32,
 }
 
 #[allow(unused)]
@@ -39,51 +48,118 @@ pub trait TestExampleImports {
 
     fn trip_data(&mut self, value: DataBorrowed) -> HostResult<Data>;
 
+    fn trip_mixed(
+        &mut self,
+        a: PersonBorrowed,
+        b: i32,
+        c: Result<DataBorrowed, &str>,
+    ) -> HostResult<()>;
+
+    fn price(&mut self, item: ListAccessor<(Fruit, u32)>) -> HostResult<f32>;
+
     fn log(&mut self, message: &str) -> HostResult<()>;
 }
 
 #[allow(unused)]
 pub struct TestExampleExports {
+    pub init: TypedFunc<(Vec<String>,), Outcome>,
     pub trip_person: TypedFunc<(Person,), Person>,
     pub trip_data: TypedFunc<(Data,), Data>,
+    pub trip_mixed: TypedFunc<(Person, i32, Result<Data, String>), ()>,
+    pub pet: TypedFunc<(Animal, u32), Result<(), String>>,
 }
 
 #[allow(unused)]
 impl TestExampleExports {
+    pub fn call_init<T>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        args: impl LowerValue<Vec<String>>,
+    ) -> CallResult<Outcome> {
+        self.init.call(ctx, (args,))
+    }
+
+    pub fn call_init_with_results<T, R>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        args: impl LowerValue<Vec<String>>,
+        callback: impl FnOnce(&mut T, OutcomeBorrowed) -> R,
+    ) -> CallResult<R> {
+        self.init.call_with_results(ctx, (args,), callback)
+    }
+
     pub fn call_trip_person<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl AsRef<Person>,
+        value: &Person,
     ) -> CallResult<Person> {
-        self.trip_person.call(ctx, (value.as_ref(),))
+        self.trip_person.call(ctx, (value,))
     }
 
     pub fn call_trip_person_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl AsRef<Person>,
+        value: &Person,
         callback: impl FnOnce(&mut T, PersonBorrowed) -> R,
     ) -> CallResult<R> {
-        self.trip_person
-            .call_with_results(ctx, (value.as_ref(),), callback)
+        self.trip_person.call_with_results(ctx, (value,), callback)
     }
 
     pub fn call_trip_data<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl AsRef<Data>,
+        value: &Data,
     ) -> CallResult<Data> {
-        self.trip_data.call(ctx, (value.as_ref(),))
+        self.trip_data.call(ctx, (value,))
     }
 
     pub fn call_trip_data_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl AsRef<Data>,
+        value: &Data,
         callback: impl FnOnce(&mut T, DataBorrowed) -> R,
     ) -> CallResult<R> {
-        self.trip_data
-            .call_with_results(ctx, (value.as_ref(),), callback)
+        self.trip_data.call_with_results(ctx, (value,), callback)
+    }
+
+    pub fn call_trip_mixed<T>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        a: &Person,
+        b: i32,
+        c: impl LowerValue<Result<Data, String>>,
+    ) -> CallResult<()> {
+        self.trip_mixed.call(ctx, (a, b, c))
+    }
+
+    pub fn call_trip_mixed_with_results<T, R>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        a: &Person,
+        b: i32,
+        c: impl LowerValue<Result<Data, String>>,
+        callback: impl FnOnce(&mut T, ()) -> R,
+    ) -> CallResult<R> {
+        self.trip_mixed.call_with_results(ctx, (a, b, c), callback)
+    }
+
+    pub fn call_pet<T>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        target: &Animal,
+        pets: u32,
+    ) -> CallResult<Result<(), String>> {
+        self.pet.call(ctx, (target, pets))
+    }
+
+    pub fn call_pet_with_results<T, R>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        target: &Animal,
+        pets: u32,
+        callback: impl FnOnce(&mut T, Result<(), &str>) -> R,
+    ) -> CallResult<R> {
+        self.pet.call_with_results(ctx, (target, pets), callback)
     }
 }
 
@@ -103,6 +179,18 @@ pub fn add_test_example_to_linker<T: TestExampleImports>(
         |host_data, params| host_data.trip_data(params.0),
     )?;
 
+    linker.func_new::<(Person, i32, Result<Data, String>), ()>(
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-mixed",
+        |host_data, params| host_data.trip_mixed(params.0, params.1, params.2),
+    )?;
+
+    linker.func_new::<(Vec<(Fruit, u32)>,), f32>(
+        "additional-imports",
+        "price",
+        |host_data, params| host_data.price(params.0),
+    )?;
+
     linker
         .func_new::<(String,), ()>("$root", "log", |host_data, params| host_data.log(params.0))?;
 
@@ -117,6 +205,8 @@ pub fn instantiate_test_example_world<T>(
 ) -> Result<TestExampleExports> {
     let instance = linker.instantiate(ctx.as_context_mut(), &component)?;
 
+    let init = instance.get_typed_func(ctx.as_context(), "init")?;
+
     let trip_person = instance.get_typed_func(
         ctx.as_context(),
         "wasmi-component:component-examples/round-trip@0.1.0#trip-person",
@@ -127,8 +217,18 @@ pub fn instantiate_test_example_world<T>(
         "wasmi-component:component-examples/round-trip@0.1.0#trip-data",
     )?;
 
+    let trip_mixed = instance.get_typed_func(
+        ctx.as_context(),
+        "wasmi-component:component-examples/round-trip@0.1.0#trip-mixed",
+    )?;
+
+    let pet = instance.get_typed_func(ctx.as_context(), "additional-exports#pet")?;
+
     Ok(TestExampleExports {
+        init,
         trip_person,
         trip_data,
+        trip_mixed,
+        pet,
     })
 }

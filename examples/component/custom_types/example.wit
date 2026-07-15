@@ -14,6 +14,8 @@ interface round-trip {
     trip-person: func(value: person) -> person;
 
     trip-data: func(value: data) -> data;
+
+    trip-mixed: func(a: person, b: s32, c: result<data, string>);
 }
 
 world test-example {
@@ -21,5 +23,30 @@ world test-example {
 
     export round-trip;
 
+    import additional-imports: interface {
+        record fruit {
+            kind: string,
+            weight: f32,
+        }
+
+        price: func(item: list<tuple<fruit, u32>>) -> f32;
+    }
+
+    export additional-exports: interface {
+        record animal {
+            species: string,
+            age: u32,
+        }
+
+        pet: func(target: animal, pets: u32) -> result<_, string>;
+    }
+
+    variant outcome {
+        ok,
+        error(s32),
+    }
+
     import log: func(message: string);
+
+    export init: func(args: list<string>) -> outcome;
 }

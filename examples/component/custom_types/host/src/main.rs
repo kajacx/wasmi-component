@@ -28,6 +28,23 @@ impl bindings::TestExampleImports for HostData {
         Ok(value)
     }
 
+    fn trip_mixed(
+        &mut self,
+        _a: bindings::PersonBorrowed,
+        _b: i32,
+        _c: wasmi_component::anyhow::Result<bindings::DataBorrowed, &str>,
+    ) -> HostResult<()> {
+        Ok(())
+    }
+
+    fn price(
+        &mut self,
+        item: wasmi_component::ListAccessor<(bindings::Fruit, u32)>,
+    ) -> HostResult<f32> {
+        println!("{item:?}");
+        Ok(0.0)
+    }
+
     fn log(&mut self, message: &str) -> HostResult<()> {
         println!("{message}");
         Ok(())
@@ -59,7 +76,7 @@ pub fn main_() {
     let result = exports
         .call_trip_person(
             &mut store,
-            Person {
+            &Person {
                 id: 64,
                 name: "Tom".to_string(),
             },
@@ -76,7 +93,7 @@ pub fn main_() {
     println!("Result is: {result:?}\n");
 
     let result = exports
-        .call_trip_data(&mut store, bindings::Data::Text("Hello data".to_string()))
+        .call_trip_data(&mut store, &bindings::Data::Text("Hello data".to_string()))
         .unwrap();
     assert_eq!(result, bindings::Data::Text("Hello data".to_string()));
     println!("Result is: {result:?}\n");

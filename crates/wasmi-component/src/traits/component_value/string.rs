@@ -1,7 +1,8 @@
 use wasmi::ValType;
+use wasmi_component_parser::ValueType;
 
 use crate::pointers::{FatPtr, PtrView, ptr_start};
-use crate::{ComponentValue, ConvertError, ConvertResult, ValueType, WasmValue};
+use crate::{ComponentValue, ConvertError, ConvertResult, WasmValue};
 
 impl ComponentValue for String {
     type Borrowed<'a> = &'a str;

@@ -22,7 +22,10 @@ impl Generator for VariantGenerator<'_> {
 
             output.extend(quote! { (#field_name.to_string(), #field_ty), });
         }
-        quote! { wasmi_component::ValueType::Variant(vec![ #output ]) }
+        quote! { wasmi_component::ValueType::Variant{
+            name: "".to_string(),
+            cases: vec![ #output ],
+        } }
     }
 
     fn arg_count(&self) -> TokenStream {
