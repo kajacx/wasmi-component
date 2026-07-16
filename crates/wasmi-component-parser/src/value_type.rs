@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Eq, PartialOrd, Ord)]
 pub enum ValueType {
     S8,
     S16,

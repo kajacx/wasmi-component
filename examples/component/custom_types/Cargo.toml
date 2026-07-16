@@ -1,0 +1,8 @@
+[package]
+name = "example-custom-types-host"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+wasmi-component = { path = "../../../crates/wasmi-component" }

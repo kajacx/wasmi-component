@@ -1,5 +1,6 @@
 Cargo.lock
 target/
 
+*.wasm
 *.wat
 expanded.rs

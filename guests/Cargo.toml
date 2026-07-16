@@ -1,0 +1,13 @@
+[workspace]
+resolver = "2"
+members = [
+    "component/primitives",
+    "component/lists",
+    "component/custom_types",
+    "wasi/stdio",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"

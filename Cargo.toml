@@ -6,8 +6,13 @@ members = [
     "crates/wasmi-component-macros",
     "crates/wasmi-component-parser",
     "crates/wasmi-component-wasi",
+
+    "examples/component/primitives",
+    "examples/component/lists",
+    "examples/component/custom_types",
+    "examples/wasi/stdio",
 ]
-exclude = ["examples/"]
+exclude = ["guests/"]
 
 [workspace.package]
 version = "0.1.0"
