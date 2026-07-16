@@ -5,8 +5,7 @@ use wasmi_component_parser::{ParsedWit, ParsedWorld, ValueType};
 
 use crate::{
     func_helpers::{
-        exported_name, param_names_as_args, param_types_canon, params_full_lift, params_full_lower,
-        params_indexes,
+        param_names_as_args, param_types_canon, params_full_lift, params_full_lower, params_indexes,
     },
     type_helpers::{canonical_name, liftable_type, rust_snake_case},
 };
@@ -46,15 +45,14 @@ impl Generator {
     }
 
     fn write_type(&self, ty: &ValueType, output: &mut String) {
-        writeln!(output, "#[allow(unused)]").unwrap();
-        writeln!(
-            output,
-            "#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]"
-        )
-        .unwrap();
-
         match ty {
             ValueType::Record { name, fields } => {
+                writeln!(output, "#[allow(unused)]").unwrap();
+                writeln!(
+                    output,
+                    "#[derive(Debug, Clone, Default, PartialEq, PartialOrd, ComponentValue)]"
+                )
+                .unwrap();
                 writeln!(output, "pub struct {} {{", name.to_upper_camel_case()).unwrap();
 
                 fields.iter().for_each(|(name, ty)| {
@@ -70,6 +68,12 @@ impl Generator {
                 writeln!(output, "}}\n").unwrap();
             }
             ValueType::Variant { name, cases } => {
+                writeln!(output, "#[allow(unused)]").unwrap();
+                writeln!(
+                    output,
+                    "#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]"
+                )
+                .unwrap();
                 writeln!(output, "pub enum {} {{", name.to_upper_camel_case()).unwrap();
 
                 cases.iter().for_each(|(name, ty)| {
@@ -117,7 +121,7 @@ impl Generator {
             writeln!(
                 output,
                 "    fn {}(&mut self, {}) -> HostResult<{}>;\n",
-                rust_snake_case(&func.func_name),
+                rust_snake_case(&func.ident.name),
                 params_full_lift(func),
                 canonical_name(&func.result)
             )
@@ -140,7 +144,7 @@ impl Generator {
             writeln!(
                 output,
                 "    pub {}: TypedFunc<({}), {}>,",
-                rust_snake_case(&func.func_name),
+                rust_snake_case(&func.ident.name),
                 param_types_canon(func),
                 canonical_name(&func.result)
             )
@@ -167,10 +171,10 @@ impl Generator {
                     "        self.{}.call(ctx, ({}))\n",
                     "    }}\n"
                 ),
-                rust_snake_case(&func.func_name),
+                rust_snake_case(&func.ident.name),
                 params_full_lower(func),
                 canonical_name(&func.result),
-                rust_snake_case(&func.func_name),
+                rust_snake_case(&func.ident.name),
                 param_names_as_args(func),
             )
             .unwrap();
@@ -184,10 +188,10 @@ impl Generator {
                     "        self.{}.call_with_results(ctx, ({}), callback)\n",
                     "    }}\n"
                 ),
-                rust_snake_case(&func.func_name),
+                rust_snake_case(&func.ident.name),
                 params_full_lower(func),
                 liftable_type(&func.result),
-                rust_snake_case(&func.func_name),
+                rust_snake_case(&func.ident.name),
                 param_names_as_args(func),
             )
             .unwrap();
@@ -221,15 +225,15 @@ impl Generator {
                 ),
                 param_types_canon(func),
                 canonical_name(&func.result),
-                func.module_name.as_deref().unwrap_or("$root"),
-                func.func_name,
-                rust_snake_case(&func.func_name),
+                func.ident.imported_module_name(),
+                &func.ident.name,
+                rust_snake_case(&func.ident.name),
                 params_indexes(func)
             )
             .unwrap();
         });
 
-        writeln!(output, "  Ok(())\n}}\n").unwrap();
+        writeln!(output, "    Ok(())\n}}\n").unwrap();
     }
 
     fn generate_instantiate(&self, world: &ParsedWorld, output: &mut String) {
@@ -256,9 +260,10 @@ impl Generator {
         world.exports.iter().for_each(|func| {
             writeln!(
                 output,
-                "    let {} = instance.get_typed_func(ctx.as_context(), \"{}\")?;",
-                rust_snake_case(&func.func_name),
-                exported_name(func)
+                "    let {} = instance.get_typed_func(ctx.as_context(), \"{}\", \"{}\")?;",
+                rust_snake_case(&func.ident.name),
+                func.ident.module,
+                func.ident.name
             )
             .unwrap();
             writeln!(output).unwrap();
@@ -271,7 +276,7 @@ impl Generator {
         )
         .unwrap();
         world.exports.iter().for_each(|func| {
-            writeln!(output, "        {},", rust_snake_case(&func.func_name)).unwrap();
+            writeln!(output, "        {},", rust_snake_case(&func.ident.name)).unwrap();
         });
         writeln!(output, "    }})").unwrap();
 

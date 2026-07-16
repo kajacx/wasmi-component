@@ -1,5 +1,6 @@
 use crate::Func;
 
+#[derive(Debug, Clone, Default)]
 pub struct ParsedWorld {
     pub name: String,
     pub imports: Vec<Func>,

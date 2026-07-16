@@ -13,4 +13,5 @@ pub use structs::*;
 pub use traits::*;
 
 pub use wasmi_component_macros::ComponentValue;
+pub use wasmi_component_parser;
 pub use wasmi_component_parser::ValueType;

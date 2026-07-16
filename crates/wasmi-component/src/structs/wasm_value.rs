@@ -39,18 +39,6 @@ impl_from!(u64, I64);
 impl_from!(f32, F32);
 impl_from!(f64, F64);
 
-impl From<wasmi::Val> for WasmValue {
-    fn from(value: wasmi::Val) -> Self {
-        match value {
-            wasmi::Val::I32(val) => Self::I32(val),
-            wasmi::Val::I64(val) => Self::I64(val),
-            wasmi::Val::F32(val) => Self::F32(val.to_float()),
-            wasmi::Val::F64(val) => Self::F64(val.to_float()),
-            other => unimplemented!("only basic types are supported, got {other:?} instead"),
-        }
-    }
-}
-
 impl WasmValue {
     pub fn i32(self) -> ConvertResult<i32> {
         match self {
@@ -154,5 +142,23 @@ impl WasmValue {
                 other2
             ),
         }
+    }
+}
+
+impl From<wasmi::Val> for WasmValue {
+    fn from(value: wasmi::Val) -> Self {
+        match value {
+            wasmi::Val::I32(val) => Self::I32(val),
+            wasmi::Val::I64(val) => Self::I64(val),
+            wasmi::Val::F32(val) => Self::F32(val.to_float()),
+            wasmi::Val::F64(val) => Self::F64(val.to_float()),
+            other => unimplemented!("only basic types are supported, got {other:?} instead"),
+        }
+    }
+}
+
+impl Default for WasmValue {
+    fn default() -> Self {
+        Self::Unset
     }
 }

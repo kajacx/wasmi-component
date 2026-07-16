@@ -11,7 +11,7 @@ mod bindings {
     export!(GuestComponent);
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Person {
     name: String,
     id: u64,

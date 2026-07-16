@@ -8,7 +8,7 @@ use wasmi_component::{
 };
 
 #[allow(unused)]
-#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
+#[derive(Debug, Clone, Default, PartialEq, PartialOrd, ComponentValue)]
 pub struct Person {
     pub id: u64,
     pub name: String,
@@ -29,14 +29,14 @@ pub enum Outcome {
 }
 
 #[allow(unused)]
-#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
+#[derive(Debug, Clone, Default, PartialEq, PartialOrd, ComponentValue)]
 pub struct Fruit {
     pub kind: String,
     pub weight: f32,
 }
 
 #[allow(unused)]
-#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
+#[derive(Debug, Clone, Default, PartialEq, PartialOrd, ComponentValue)]
 pub struct Animal {
     pub species: String,
     pub age: u32,
@@ -205,24 +205,27 @@ pub fn instantiate_test_example_world<T>(
 ) -> Result<TestExampleExports> {
     let instance = linker.instantiate(ctx.as_context_mut(), &component)?;
 
-    let init = instance.get_typed_func(ctx.as_context(), "init")?;
+    let init = instance.get_typed_func(ctx.as_context(), "", "init")?;
 
     let trip_person = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-person",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-person",
     )?;
 
     let trip_data = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-data",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-data",
     )?;
 
     let trip_mixed = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-mixed",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-mixed",
     )?;
 
-    let pet = instance.get_typed_func(ctx.as_context(), "additional-exports#pet")?;
+    let pet = instance.get_typed_func(ctx.as_context(), "additional-exports", "pet")?;
 
     Ok(TestExampleExports {
         init,

@@ -21,7 +21,7 @@ impl TestExampleExports {
     pub fn call_print_stdout<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        text: impl LowerValue<String>,
+        text: &str,
     ) -> CallResult<()> {
         self.print_stdout.call(ctx, (text,))
     }
@@ -29,7 +29,7 @@ impl TestExampleExports {
     pub fn call_print_stdout_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        text: impl LowerValue<String>,
+        text: &str,
         callback: impl FnOnce(&mut T, ()) -> R,
     ) -> CallResult<R> {
         self.print_stdout.call_with_results(ctx, (text,), callback)
@@ -38,7 +38,7 @@ impl TestExampleExports {
     pub fn call_print_stderr<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        text: impl LowerValue<String>,
+        text: &str,
     ) -> CallResult<()> {
         self.print_stderr.call(ctx, (text,))
     }
@@ -46,7 +46,7 @@ impl TestExampleExports {
     pub fn call_print_stderr_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        text: impl LowerValue<String>,
+        text: &str,
         callback: impl FnOnce(&mut T, ()) -> R,
     ) -> CallResult<R> {
         self.print_stderr.call_with_results(ctx, (text,), callback)
@@ -68,12 +68,14 @@ pub fn instantiate_test_example_world<T>(
 
     let print_stdout = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:wasi-examples/exported-funcs@0.1.0#print-stdout",
+        "wasmi-component:wasi-examples/exported-funcs@0.1.0",
+        "print-stdout",
     )?;
 
     let print_stderr = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:wasi-examples/exported-funcs@0.1.0#print-stderr",
+        "wasmi-component:wasi-examples/exported-funcs@0.1.0",
+        "print-stderr",
     )?;
 
     Ok(TestExampleExports {

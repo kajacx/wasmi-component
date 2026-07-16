@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::{ConvertError, ConvertResult, WasmValue};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub(crate) struct FatPtr {
     /// Address where the memory starts
     pub start: usize,

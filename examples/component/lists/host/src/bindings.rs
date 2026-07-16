@@ -377,67 +377,80 @@ pub fn instantiate_test_example_world<T>(
 
     let list_s8 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-s8",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-s8",
     )?;
 
     let list_s16 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-s16",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-s16",
     )?;
 
     let list_s32 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-s32",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-s32",
     )?;
 
     let list_s64 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-s64",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-s64",
     )?;
 
     let list_u8 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-u8",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-u8",
     )?;
 
     let list_u16 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-u16",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-u16",
     )?;
 
     let list_u32 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-u32",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-u32",
     )?;
 
     let list_u64 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-u64",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-u64",
     )?;
 
     let list_f32 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-f32",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-f32",
     )?;
 
     let list_f64 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-f64",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-f64",
     )?;
 
     let list_bool = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-bool",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-bool",
     )?;
 
     let list_char = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-char",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-char",
     )?;
 
     let list_string = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#list-string",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "list-string",
     )?;
 
     Ok(TestExampleExports {

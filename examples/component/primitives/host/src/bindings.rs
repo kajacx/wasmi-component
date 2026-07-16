@@ -264,7 +264,7 @@ impl TestExampleExports {
     pub fn call_trip_string<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerValue<String>,
+        value: &str,
     ) -> CallResult<String> {
         self.trip_string.call(ctx, (value,))
     }
@@ -272,7 +272,7 @@ impl TestExampleExports {
     pub fn call_trip_string_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        value: impl LowerValue<String>,
+        value: &str,
         callback: impl FnOnce(&mut T, &str) -> R,
     ) -> CallResult<R> {
         self.trip_string.call_with_results(ctx, (value,), callback)
@@ -377,67 +377,80 @@ pub fn instantiate_test_example_world<T>(
 
     let trip_s8 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-s8",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-s8",
     )?;
 
     let trip_s16 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-s16",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-s16",
     )?;
 
     let trip_s32 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-s32",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-s32",
     )?;
 
     let trip_s64 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-s64",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-s64",
     )?;
 
     let trip_u8 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-u8",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-u8",
     )?;
 
     let trip_u16 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-u16",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-u16",
     )?;
 
     let trip_u32 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-u32",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-u32",
     )?;
 
     let trip_u64 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-u64",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-u64",
     )?;
 
     let trip_f32 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-f32",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-f32",
     )?;
 
     let trip_f64 = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-f64",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-f64",
     )?;
 
     let trip_bool = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-bool",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-bool",
     )?;
 
     let trip_char = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-char",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-char",
     )?;
 
     let trip_string = instance.get_typed_func(
         ctx.as_context(),
-        "wasmi-component:component-examples/round-trip@0.1.0#trip-string",
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-string",
     )?;
 
     Ok(TestExampleExports {

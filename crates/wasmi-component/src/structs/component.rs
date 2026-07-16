@@ -1,17 +1,17 @@
-use std::collections::HashMap;
+use std::rc::Rc;
 
 use wasmi::Engine;
 use wasmi_component_parser::ValueType;
 
-use crate::ComponentBuilder;
+use crate::{ComponentBuilder, FuncStorage};
 
 #[derive(Debug, Clone)]
 pub struct Component {
     pub(crate) core_module: wasmi::Module,
 
-    pub(crate) imported_funcs: HashMap<String, FuncSignature>,
-
-    pub(crate) exported_funcs: HashMap<String, FuncSignature>,
+    #[allow(unused)] // TODO:
+    pub(crate) imported_funcs: FuncStorage,
+    pub(crate) exported_funcs: Rc<FuncStorage>,
 }
 
 impl Component {
@@ -20,10 +20,7 @@ impl Component {
 
         let core_module = wasmi::Module::new(engine, builder.core_module()?)?;
         let imported_funcs = builder.imported_funcs()?;
-        let exported_funcs = builder.exported_funcs()?;
-
-        println!("IMPORTED: {:?}", imported_funcs);
-        println!("EXPORTED: {:?}", exported_funcs);
+        let exported_funcs = Rc::new(builder.exported_funcs()?);
 
         Ok(Self {
             core_module,
@@ -33,8 +30,15 @@ impl Component {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct FuncSignature {
-    pub params: Vec<(String, ValueType)>,
+    /// All params squished into a single tuple.
+    pub params: ValueType,
     pub result: ValueType,
+}
+
+impl FuncSignature {
+    pub fn new(params: ValueType, result: ValueType) -> Self {
+        Self { params, result }
+    }
 }

@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use wasmi::{AsContextMut, errors::LinkerError};
+use wasmi_component_parser::FuncIdentifier;
 
 use crate::{
     Component, ComponentValue, HostResult, Instance, LowerValue, MemoryAccessPre, StoreData,
@@ -19,10 +20,12 @@ impl<T> Linker<T> {
 
     pub fn func_new<Params: ComponentValue, Results: ComponentValue + LowerValue<Results>>(
         &mut self,
-        module: &str,
-        name: &str,
+        module: impl Into<String>,
+        name: impl Into<String>,
         callback: impl Fn(&mut T, Params::Borrowed<'_>) -> HostResult<Results> + Send + Sync + 'static,
     ) -> Result<&mut Self, LinkerError> {
+        let ident = FuncIdentifier::new(module.into(), name.into());
+
         let mut params_ty = Params::arg_types();
         let mut results_ty = Results::arg_types();
 
@@ -38,8 +41,8 @@ impl<T> Linker<T> {
         }
 
         self.linker.func_new(
-            module,
-            name,
+            ident.imported_module_name(),
+            &ident.name,
             wasmi::FuncType::new(params_ty, results_ty),
             move |mut caller, params_wasmi, results_wasmi| {
                 let instance_id = caller
@@ -110,6 +113,10 @@ impl<T> Linker<T> {
             .data_mut()
             .insert_memory(memory_index, memory_pre);
 
-        Ok(Instance::new(instance, memory_pre))
+        Ok(Instance::new(
+            instance,
+            component.exported_funcs.clone(),
+            memory_pre,
+        ))
     }
 }

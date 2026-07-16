@@ -2,14 +2,6 @@ use wasmi_component_parser::Func;
 
 use crate::type_helpers::{as_lower, canonical_name, liftable_type, rust_snake_case};
 
-pub fn exported_name(func: &Func) -> String {
-    if let Some(module) = func.module_name.as_ref() {
-        format!("{module}#{}", func.func_name)
-    } else {
-        func.func_name.clone()
-    }
-}
-
 pub fn params_full_lift(func: &Func) -> String {
     func.params
         .iter()

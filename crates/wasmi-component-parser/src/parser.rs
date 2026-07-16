@@ -6,7 +6,7 @@ use wit_parser::{
 use crate::{Func, ParsedWit, ParsedWorld, ValueType};
 
 pub struct Parser {
-    resolve: Resolve,
+    pub resolve: Resolve,
 }
 
 impl Parser {
@@ -50,7 +50,7 @@ impl Parser {
         }
     }
 
-    fn parse_world(&self, world: &World) -> ParsedWorld {
+    pub fn parse_world(&self, world: &World) -> ParsedWorld {
         let name = world.name.clone();
 
         let imports = world
@@ -125,10 +125,10 @@ impl Parser {
                 let name = &pkg.name.name;
                 let version = self.interface_version(iface);
 
-                Some(format!("{namespace}:{name}/{interface_name}{version}"))
+                format!("{namespace}:{name}/{interface_name}{version}")
             }
-            (Some(_), None) => Some(key.clone().unwrap_name()),
-            (None, _) => None,
+            (Some(_), None) => key.clone().unwrap_name(),
+            (None, _) => "".to_string(),
         };
 
         let params: Vec<_> = func
