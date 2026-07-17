@@ -7,7 +7,7 @@ use crate::{
     func_helpers::{
         param_names_as_args, param_types_canon, params_full_lift, params_full_lower, params_indexes,
     },
-    type_helpers::{canonical_name, liftable_type, rust_snake_case},
+    type_helpers::{as_lift, canonical_name, rust_snake_case},
 };
 
 pub struct Generator {}
@@ -193,7 +193,7 @@ impl Generator {
                 ),
                 rust_snake_case(&func.ident.name),
                 params_full_lower(func),
-                liftable_type(&func.result),
+                as_lift(&func.result),
                 rust_snake_case(&func.ident.name),
                 param_names_as_args(func),
             )

@@ -71,7 +71,7 @@ pub fn canonical_name(ty: &ValueType) -> String {
 /// - `list<string>` -> `ListAccessor<String>`
 /// - `option<list<u8>>` -> `Option<&[u8]>`
 /// - `custom-type` -> `CustomTypeBorrowed`
-pub fn liftable_type(ty: &ValueType) -> String {
+pub fn as_lift(ty: &ValueType) -> String {
     match ty {
         ValueType::S8 => "i8".into(),
         ValueType::S16 => "i16".into(),
@@ -91,14 +91,14 @@ pub fn liftable_type(ty: &ValueType) -> String {
 
         ValueType::String => "&str".into(),
 
-        ValueType::Option(ty) => format!("Option<{}>", liftable_type(ty)),
+        ValueType::Option(ty) => format!("Option<{}>", as_lift(ty)),
         ValueType::Result(ok, err) => {
-            format!("Result<{}, {}>", liftable_type(ok), liftable_type(err))
+            format!("Result<{}, {}>", as_lift(ok), as_lift(err))
         }
         ValueType::Tuple(tuple) => {
             let mut result = String::from("(");
             for ty in tuple {
-                result.push_str(&liftable_type(ty));
+                result.push_str(&as_lift(ty));
                 result.push_str(", ");
             }
             result.push(')');
@@ -114,6 +114,7 @@ pub fn liftable_type(ty: &ValueType) -> String {
 /// `Lower` is currently used only in exported function arguments. Examples:
 /// - `s32` -> `i32`
 /// - `string` -> `&str`
+/// - `list<i32>` -> `impl Lower<Vec<i32>>`
 /// - `list<string>` -> `impl Lower<Vec<String>>`
 /// - `option<list<u8>>` -> `impl Lower<Option<Vec<u8>>>`
 /// - `custom-type` -> `&CustomType`
@@ -137,26 +138,16 @@ pub fn as_lower(ty: &ValueType) -> String {
 
         ValueType::String => "&str".into(),
 
-        ValueType::Option(ty) => format!("impl Lower<Option<{}>>", canonical_name(ty)),
-        ValueType::Result(ok, err) => format!(
-            "impl Lower<Result<{}, {}>>",
-            canonical_name(ok),
-            canonical_name(err)
-        ),
-        ValueType::Tuple(tuple) => {
-            if tuple.is_empty() {
-                return "()".into();
+        ValueType::Option(_)
+        | ValueType::Result(_, _)
+        | ValueType::Tuple(_)
+        | ValueType::List(_) => {
+            if ty.is_unit() {
+                "()".into()
+            } else {
+                format!("impl Lower<{}>", canonical_name(ty))
             }
-
-            let mut result = String::from("impl Lower<(");
-            for ty in tuple {
-                result.push_str(&canonical_name(ty));
-                result.push_str(", ");
-            }
-            result.push_str(")>");
-            result
         }
-        ValueType::List(ty) => format!("impl Lower<Vec<{}>>", canonical_name(ty)),
 
         ValueType::Record { name, .. } => format!("&{}", name.to_upper_camel_case()),
         ValueType::Variant { name, .. } => format!("&{}", name.to_upper_camel_case()),

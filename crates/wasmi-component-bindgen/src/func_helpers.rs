@@ -1,11 +1,11 @@
 use wasmi_component_parser::Func;
 
-use crate::type_helpers::{as_lower, canonical_name, liftable_type, rust_snake_case};
+use crate::type_helpers::{as_lower, canonical_name, as_lift, rust_snake_case};
 
 pub fn params_full_lift(func: &Func) -> String {
     func.params
         .iter()
-        .map(|(name, ty)| format!("{}: {}, ", rust_snake_case(name), liftable_type(ty)))
+        .map(|(name, ty)| format!("{}: {}, ", rust_snake_case(name), as_lift(ty)))
         .collect()
 }
 
