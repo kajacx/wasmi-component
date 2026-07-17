@@ -68,7 +68,7 @@ pub fn derive_component_value(input: proc_macro::TokenStream) -> proc_macro::Tok
         #[derive(Clone, Debug)]
         #borrowed_def
 
-        impl wasmi_component::View<#type_name> for #borrowed_name<'_> {
+        impl wasmi_component::Lift<#type_name> for #borrowed_name<'_> {
             fn lift_owned(&self) -> wasmi_component::ConvertResult<#type_name> {
                 #lift_owned
             }

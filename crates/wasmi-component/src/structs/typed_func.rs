@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use wasmi::AsContextMut;
 
 use crate::pointers::FatPtr;
-use crate::{CallResult, ComponentValue, LowerValue, MemoryAccessPre, StoreData, View, WasmValue};
+use crate::{CallResult, ComponentValue, Lift, LowerValue, MemoryAccessPre, StoreData, WasmValue};
 
 #[derive(Debug, Clone)]
 pub struct TypedFunc<Params, Results> {

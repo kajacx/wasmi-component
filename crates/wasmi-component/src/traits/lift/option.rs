@@ -1,6 +1,6 @@
-use crate::{ComponentValue, ConvertResult, View};
+use crate::{ComponentValue, ConvertResult, Lift};
 
-impl<'a, T: ComponentValue> View<Option<T>> for Option<T::Borrowed<'a>> {
+impl<'a, T: ComponentValue> Lift<Option<T>> for Option<T::Borrowed<'a>> {
     fn lift_owned(&self) -> ConvertResult<Option<T>> {
         let owned = match self {
             None => None,
@@ -28,7 +28,7 @@ impl<'a, T: ComponentValue> View<Option<T>> for Option<T::Borrowed<'a>> {
     }
 }
 
-impl<'a, T: ComponentValue, E: ComponentValue> View<Result<T, E>>
+impl<'a, T: ComponentValue, E: ComponentValue> Lift<Result<T, E>>
     for Result<T::Borrowed<'a>, E::Borrowed<'a>>
 {
     fn lift_owned(&self) -> ConvertResult<Result<T, E>> {

@@ -1,5 +1,5 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{Component, HostResult, Linker, ListAccessor, Store, View};
+use wasmi_component::{Component, HostResult, Lift, Linker, ListAccessor, Store};
 
 mod bindings;
 

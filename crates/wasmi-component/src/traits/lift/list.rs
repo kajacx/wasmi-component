@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use crate::pointers::{PtrView, ptr_start};
-use crate::{ComponentValue, ConvertError, ConvertResult, LeBytesU8, View};
+use crate::{ComponentValue, ConvertError, ConvertResult, LeBytesU8, Lift};
 
 /// T is the canonical type
 #[derive(Clone, Copy)]
@@ -78,7 +78,7 @@ impl<'a, T> ListAccessor<'a, T> {
     }
 }
 
-impl<T: ComponentValue> View<Vec<T>> for ListAccessor<'_, T> {
+impl<T: ComponentValue> Lift<Vec<T>> for ListAccessor<'_, T> {
     fn lift_owned(&self) -> ConvertResult<Vec<T>> {
         self.iter()
             .map(|value| value?.lift_owned())

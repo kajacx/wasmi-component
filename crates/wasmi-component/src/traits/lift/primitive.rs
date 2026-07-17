@@ -1,8 +1,8 @@
-use crate::{ConvertResult, View};
+use crate::{ConvertResult, Lift};
 
 macro_rules! impl_view_primitive {
     ($ty: ty) => {
-        impl View<Self> for $ty {
+        impl Lift<Self> for $ty {
             fn lift_owned(&self) -> ConvertResult<Self> {
                 Ok(*self)
             }

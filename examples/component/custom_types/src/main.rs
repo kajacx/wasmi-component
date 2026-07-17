@@ -1,5 +1,5 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{Component, HostResult, Linker, Store, View};
+use wasmi_component::{Component, HostResult, Lift, Linker, Store};
 
 use crate::bindings::Person;
 

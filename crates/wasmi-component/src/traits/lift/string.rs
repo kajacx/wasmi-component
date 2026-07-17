@@ -1,8 +1,8 @@
 use std::fmt::Write;
 
-use crate::{ConvertResult, View};
+use crate::{ConvertResult, Lift};
 
-impl<'a> View<String> for &'a str {
+impl<'a> Lift<String> for &'a str {
     fn lift_owned(&self) -> ConvertResult<String> {
         Ok(self.to_string())
     }

@@ -1,6 +1,6 @@
-use crate::{ComponentValue, ConvertResult, View};
+use crate::{ComponentValue, ConvertResult, Lift};
 
-impl View<Self> for () {
+impl Lift<Self> for () {
     fn lift_owned(&self) -> ConvertResult<Self> {
         Ok(())
     }
@@ -10,7 +10,7 @@ impl View<Self> for () {
     }
 }
 
-impl<'a, T: ComponentValue> View<(T,)> for (T::Borrowed<'a>,) {
+impl<'a, T: ComponentValue> Lift<(T,)> for (T::Borrowed<'a>,) {
     fn lift_owned(&self) -> ConvertResult<(T,)> {
         Ok((self.0.lift_owned()?,))
     }
@@ -20,7 +20,7 @@ impl<'a, T: ComponentValue> View<(T,)> for (T::Borrowed<'a>,) {
     }
 }
 
-impl<'a, T0: ComponentValue, T1: ComponentValue> View<(T0, T1)>
+impl<'a, T0: ComponentValue, T1: ComponentValue> Lift<(T0, T1)>
     for (T0::Borrowed<'a>, T1::Borrowed<'a>)
 {
     fn lift_owned(&self) -> ConvertResult<(T0, T1)> {
@@ -34,7 +34,7 @@ impl<'a, T0: ComponentValue, T1: ComponentValue> View<(T0, T1)>
     }
 }
 
-impl<'a, T0: ComponentValue, T1: ComponentValue, T2: ComponentValue> View<(T0, T1, T2)>
+impl<'a, T0: ComponentValue, T1: ComponentValue, T2: ComponentValue> Lift<(T0, T1, T2)>
     for (T0::Borrowed<'a>, T1::Borrowed<'a>, T2::Borrowed<'a>)
 {
     fn lift_owned(&self) -> ConvertResult<(T0, T1, T2)> {

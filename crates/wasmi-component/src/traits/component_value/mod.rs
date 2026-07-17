@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use wasmi::ValType;
 use wasmi_component_parser::ValueType;
 
-use crate::{ConvertResult, View, WasmValue};
+use crate::{ConvertResult, Lift, WasmValue};
 
 mod list;
 mod option;
@@ -12,7 +12,7 @@ mod string;
 mod tuple;
 
 pub trait ComponentValue: Sized + Debug {
-    type Borrowed<'a>: View<Self>;
+    type Borrowed<'a>: Lift<Self>;
 
     fn value_type() -> ValueType;
 
