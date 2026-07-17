@@ -98,4 +98,14 @@ pub fn main_() {
         .unwrap();
     assert_eq!(result, bindings::Data::Text("Hello data".to_string()));
     println!("Result is: {result:?}\n");
+
+    let wrong_type =
+        exports
+            .instance
+            .get_typed_func::<String, String>(&mut store, "additional-exports", "pet");
+    println!("CORRECT error: {:?}", wrong_type);
+    assert!(
+        format!("{}", wrong_type.unwrap_err()).contains("invalid signature"),
+        "function has wrong type"
+    );
 }

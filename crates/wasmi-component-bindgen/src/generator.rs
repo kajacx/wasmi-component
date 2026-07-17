@@ -28,7 +28,7 @@ impl Generator {
                 "use wasmi_component::wasmi::{{AsContext, AsContextMut, errors::LinkerError}};\n",
                 "#[allow(unused)]\n",
                 "use wasmi_component::{{CallResult, Component, ComponentValue, HostResult, ",
-                "Linker, ListAccessor, LowerValue, StoreData, TypedFunc}};\n",
+                "Instance, Linker, ListAccessor, LowerValue, StoreData, TypedFunc}};\n",
             ),
         )
         .unwrap();
@@ -132,10 +132,13 @@ impl Generator {
     }
 
     fn generate_exports_struct(&self, world: &ParsedWorld, output: &mut String) {
-        writeln!(output, "#[allow(unused)]").unwrap();
         writeln!(
             output,
-            "pub struct {}Exports {{",
+            concat!(
+                "#[allow(unused)]\n",
+                "pub struct {}Exports {{\n",
+                "    pub instance: Instance,"
+            ),
             world.name.to_upper_camel_case()
         )
         .unwrap();
@@ -271,7 +274,7 @@ impl Generator {
 
         writeln!(
             output,
-            "    Ok({}Exports {{",
+            "    Ok({}Exports {{\n    instance,",
             world.name.to_upper_camel_case()
         )
         .unwrap();

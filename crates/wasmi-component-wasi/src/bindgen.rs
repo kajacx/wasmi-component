@@ -3,8 +3,8 @@ use wasmi_component::anyhow::Result;
 use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
 #[allow(unused)]
 use wasmi_component::{
-    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerValue, StoreData,
-    TypedFunc,
+    CallResult, Component, ComponentValue, HostResult, Instance, Linker, ListAccessor, LowerValue,
+    StoreData, TypedFunc,
 };
 
 #[allow(unused)]
@@ -74,7 +74,9 @@ pub trait RootImports {
 }
 
 #[allow(unused)]
-pub struct RootExports {}
+pub struct RootExports {
+    pub instance: Instance,
+}
 
 #[allow(unused)]
 impl RootExports {}
@@ -216,5 +218,5 @@ pub fn instantiate_root_world<T>(
 ) -> Result<RootExports> {
     let instance = linker.instantiate(ctx.as_context_mut(), &component)?;
 
-    Ok(RootExports {})
+    Ok(RootExports { instance })
 }

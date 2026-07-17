@@ -86,7 +86,7 @@ impl std::fmt::Display for ValueType {
             Self::Tuple(tuple) => {
                 if tuple.len() == 0 {
                     // Result unused type
-                    return write!(f, "_");
+                    return write!(f, "()");
                 }
                 write!(f, "tuple<")?;
                 for (index, field) in tuple.iter().enumerate() {

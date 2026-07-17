@@ -42,3 +42,22 @@ impl FuncSignature {
         Self { params, result }
     }
 }
+
+impl std::fmt::Display for FuncSignature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(")?;
+
+        if let ValueType::Tuple(tuple) = &self.params {
+            for (index, field) in tuple.iter().enumerate() {
+                if index > 0 {
+                    write!(f, ", ")?;
+                }
+                write!(f, "{}", field)?;
+            }
+        } else {
+            write!(f, "{}", &self.params)?;
+        }
+
+        write!(f, ") -> {}", self.result)
+    }
+}

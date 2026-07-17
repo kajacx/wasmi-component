@@ -3,8 +3,8 @@ use wasmi_component::anyhow::Result;
 use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
 #[allow(unused)]
 use wasmi_component::{
-    CallResult, Component, ComponentValue, HostResult, Linker, ListAccessor, LowerValue, StoreData,
-    TypedFunc,
+    CallResult, Component, ComponentValue, HostResult, Instance, Linker, ListAccessor, LowerValue,
+    StoreData, TypedFunc,
 };
 
 #[allow(unused)]
@@ -40,6 +40,7 @@ pub trait TestExampleImports {
 
 #[allow(unused)]
 pub struct TestExampleExports {
+    pub instance: Instance,
     pub trip_s8: TypedFunc<(i8,), i8>,
     pub trip_s16: TypedFunc<(i16,), i16>,
     pub trip_s32: TypedFunc<(i32,), i32>,
@@ -454,6 +455,7 @@ pub fn instantiate_test_example_world<T>(
     )?;
 
     Ok(TestExampleExports {
+        instance,
         trip_s8,
         trip_s16,
         trip_s32,

@@ -124,7 +124,7 @@ impl FuncStorage {
 
         if existing != signature {
             bail!(
-                "function \"{}\" has invalid signature: host expected {:?}, but component has {:?} instead",
+                "function \"{}\" has invalid signature: host expected {}, but component has {} instead",
                 ident,
                 signature,
                 existing

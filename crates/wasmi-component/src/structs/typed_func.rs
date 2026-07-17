@@ -5,6 +5,7 @@ use wasmi::AsContextMut;
 use crate::pointers::FatPtr;
 use crate::{CallResult, ComponentValue, LowerValue, MemoryAccessPre, StoreData, View, WasmValue};
 
+#[derive(Debug, Clone)]
 pub struct TypedFunc<Params, Results> {
     memory: MemoryAccessPre,
 
