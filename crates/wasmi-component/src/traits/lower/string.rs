@@ -1,9 +1,9 @@
 use std::ops::Range;
 
 use crate::pointers::FatPtr;
-use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess, WasmValue};
+use crate::{ComponentValue, ConvertResult, Lower, MemoryAccess, WasmValue};
 
-impl LowerValue<String> for str {
+impl Lower<String> for str {
     fn lower_args(
         &self,
         args: &mut [WasmValue],
@@ -33,7 +33,7 @@ impl LowerValue<String> for str {
     }
 }
 
-impl LowerValue<String> for String {
+impl Lower<String> for String {
     fn lower_args(
         &self,
         args: &mut [WasmValue],

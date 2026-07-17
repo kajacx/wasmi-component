@@ -3,8 +3,7 @@ use wasmi::{AsContextMut, errors::LinkerError};
 use wasmi_component_parser::FuncIdentifier;
 
 use crate::{
-    Component, ComponentValue, HostResult, Instance, LowerValue, MemoryAccessPre, StoreData,
-    WasmValue,
+    Component, ComponentValue, HostResult, Instance, Lower, MemoryAccessPre, StoreData, WasmValue,
 };
 
 pub struct Linker<T> {
@@ -18,7 +17,7 @@ impl<T> Linker<T> {
         }
     }
 
-    pub fn func_new<Params: ComponentValue, Results: ComponentValue + LowerValue<Results>>(
+    pub fn func_new<Params: ComponentValue, Results: ComponentValue + Lower<Results>>(
         &mut self,
         module: impl Into<String>,
         name: impl Into<String>,

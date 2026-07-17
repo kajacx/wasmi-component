@@ -28,7 +28,7 @@ impl Generator {
                 "use wasmi_component::wasmi::{{AsContext, AsContextMut, errors::LinkerError}};\n",
                 "#[allow(unused)]\n",
                 "use wasmi_component::{{CallResult, Component, ComponentValue, HostResult, ",
-                "Instance, Linker, ListAccessor, LowerValue, StoreData, TypedFunc}};\n",
+                "Instance, Linker, ListAccessor, Lower, StoreData, TypedFunc}};\n",
             ),
         )
         .unwrap();

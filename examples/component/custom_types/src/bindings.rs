@@ -3,7 +3,7 @@ use wasmi_component::anyhow::Result;
 use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
 #[allow(unused)]
 use wasmi_component::{
-    CallResult, Component, ComponentValue, HostResult, Instance, Linker, ListAccessor, LowerValue,
+    CallResult, Component, ComponentValue, HostResult, Instance, Linker, ListAccessor, Lower,
     StoreData, TypedFunc,
 };
 
@@ -75,7 +75,7 @@ impl TestExampleExports {
     pub fn call_init<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        args: impl LowerValue<Vec<String>>,
+        args: impl Lower<Vec<String>>,
     ) -> CallResult<Outcome> {
         self.init.call(ctx, (args,))
     }
@@ -83,7 +83,7 @@ impl TestExampleExports {
     pub fn call_init_with_results<T, R>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        args: impl LowerValue<Vec<String>>,
+        args: impl Lower<Vec<String>>,
         callback: impl FnOnce(&mut T, OutcomeBorrowed) -> R,
     ) -> CallResult<R> {
         self.init.call_with_results(ctx, (args,), callback)
@@ -128,7 +128,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         a: &Person,
         b: i32,
-        c: impl LowerValue<Result<Data, String>>,
+        c: impl Lower<Result<Data, String>>,
     ) -> CallResult<()> {
         self.trip_mixed.call(ctx, (a, b, c))
     }
@@ -138,7 +138,7 @@ impl TestExampleExports {
         ctx: impl AsContextMut<Data = StoreData<T>>,
         a: &Person,
         b: i32,
-        c: impl LowerValue<Result<Data, String>>,
+        c: impl Lower<Result<Data, String>>,
         callback: impl FnOnce(&mut T, ()) -> R,
     ) -> CallResult<R> {
         self.trip_mixed.call_with_results(ctx, (a, b, c), callback)

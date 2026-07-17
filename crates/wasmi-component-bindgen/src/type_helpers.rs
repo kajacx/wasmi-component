@@ -137,14 +137,18 @@ pub fn as_lower(ty: &ValueType) -> String {
 
         ValueType::String => "&str".into(),
 
-        ValueType::Option(ty) => format!("impl LowerValue<Option<{}>>", canonical_name(ty)),
+        ValueType::Option(ty) => format!("impl Lower<Option<{}>>", canonical_name(ty)),
         ValueType::Result(ok, err) => format!(
-            "impl LowerValue<Result<{}, {}>>",
+            "impl Lower<Result<{}, {}>>",
             canonical_name(ok),
             canonical_name(err)
         ),
         ValueType::Tuple(tuple) => {
-            let mut result = String::from("impl LowerValue<(");
+            if tuple.is_empty() {
+                return "()".into();
+            }
+
+            let mut result = String::from("impl Lower<(");
             for ty in tuple {
                 result.push_str(&canonical_name(ty));
                 result.push_str(", ");
@@ -152,7 +156,7 @@ pub fn as_lower(ty: &ValueType) -> String {
             result.push_str(")>");
             result
         }
-        ValueType::List(ty) => format!("impl LowerValue<Vec<{}>>", canonical_name(ty)),
+        ValueType::List(ty) => format!("impl Lower<Vec<{}>>", canonical_name(ty)),
 
         ValueType::Record { name, .. } => format!("&{}", name.to_upper_camel_case()),
         ValueType::Variant { name, .. } => format!("&{}", name.to_upper_camel_case()),

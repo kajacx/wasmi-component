@@ -78,7 +78,7 @@ pub fn derive_component_value(input: proc_macro::TokenStream) -> proc_macro::Tok
             }
         }
 
-        impl wasmi_component::LowerValue<Self> for #type_name {
+        impl wasmi_component::Lower<Self> for #type_name {
             fn lower_args(&self, args: &mut [wasmi_component::WasmValue], memory: &mut impl wasmi_component::MemoryAccess) -> wasmi_component::ConvertResult<()> {
                 #lower_args
             }

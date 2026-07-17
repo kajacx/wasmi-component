@@ -3,7 +3,7 @@ use wasmi_component::anyhow::Result;
 use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
 #[allow(unused)]
 use wasmi_component::{
-    CallResult, Component, ComponentValue, HostResult, Instance, Linker, ListAccessor, LowerValue,
+    CallResult, Component, ComponentValue, HostResult, Instance, Linker, ListAccessor, Lower,
     StoreData, TypedFunc,
 };
 

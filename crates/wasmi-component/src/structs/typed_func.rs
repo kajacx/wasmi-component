@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use wasmi::AsContextMut;
 
 use crate::pointers::FatPtr;
-use crate::{CallResult, ComponentValue, Lift, LowerValue, MemoryAccessPre, StoreData, WasmValue};
+use crate::{CallResult, ComponentValue, Lift, Lower, MemoryAccessPre, StoreData, WasmValue};
 
 #[derive(Debug, Clone)]
 pub struct TypedFunc<Params, Results> {
@@ -34,7 +34,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
     pub fn call<T>(
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
-        params: impl LowerValue<Params>,
+        params: impl Lower<Params>,
     ) -> CallResult<Results> {
         let result = self.call_with_results(ctx, params, |_data, res| res.lift_owned());
         Ok(result??)
@@ -43,7 +43,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
     pub fn call_with_results<T, R>(
         &self,
         mut ctx: impl AsContextMut<Data = StoreData<T>>,
-        params: impl LowerValue<Params>,
+        params: impl Lower<Params>,
         callback: impl FnOnce(&mut T, Results::Borrowed<'_>) -> R,
     ) -> CallResult<R> {
         let params_user = params;

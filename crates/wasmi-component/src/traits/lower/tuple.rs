@@ -1,8 +1,6 @@
-use crate::{
-    ComponentValue, ConvertResult, LowerValue, MemoryAccess, WasmValue, helpers::round_up,
-};
+use crate::{ComponentValue, ConvertResult, Lower, MemoryAccess, WasmValue, helpers::round_up};
 
-impl LowerValue<Self> for () {
+impl Lower<Self> for () {
     fn lower_args(
         &self,
         args: &mut [WasmValue],
@@ -24,7 +22,7 @@ impl LowerValue<Self> for () {
     }
 }
 
-impl<U: ComponentValue, T: LowerValue<U>> LowerValue<(U,)> for (T,) {
+impl<U: ComponentValue, T: Lower<U>> Lower<(U,)> for (T,) {
     fn lower_args(
         &self,
         args: &mut [WasmValue],
@@ -46,8 +44,8 @@ impl<U: ComponentValue, T: LowerValue<U>> LowerValue<(U,)> for (T,) {
     }
 }
 
-impl<U0: ComponentValue, T0: LowerValue<U0>, U1: ComponentValue, T1: LowerValue<U1>>
-    LowerValue<(U0, U1)> for (T0, T1)
+impl<U0: ComponentValue, T0: Lower<U0>, U1: ComponentValue, T1: Lower<U1>> Lower<(U0, U1)>
+    for (T0, T1)
 {
     fn lower_args(
         &self,
@@ -93,12 +91,12 @@ impl<U0: ComponentValue, T0: LowerValue<U0>, U1: ComponentValue, T1: LowerValue<
 
 impl<
     U0: ComponentValue,
-    T0: LowerValue<U0>,
+    T0: Lower<U0>,
     U1: ComponentValue,
-    T1: LowerValue<U1>,
+    T1: Lower<U1>,
     U2: ComponentValue,
-    T2: LowerValue<U2>,
-> LowerValue<(U0, U1, U2)> for (T0, T1, T2)
+    T2: Lower<U2>,
+> Lower<(U0, U1, U2)> for (T0, T1, T2)
 {
     fn lower_args(
         &self,

@@ -9,7 +9,7 @@ mod string;
 mod tuple;
 
 #[blanket::blanket(derive(Ref, Mut, Box, Rc, Arc, Cow))]
-pub trait LowerValue<T: ComponentValue> {
+pub trait Lower<T: ComponentValue> {
     fn lower_args(
         &self,
         args: &mut [WasmValue],

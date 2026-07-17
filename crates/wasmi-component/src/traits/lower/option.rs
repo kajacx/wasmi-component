@@ -1,8 +1,8 @@
 use std::ops::Range;
 
-use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess, Slice, WasmValue};
+use crate::{ComponentValue, ConvertResult, Lower, MemoryAccess, Slice, WasmValue};
 
-impl<T: ComponentValue, TVal: LowerValue<T>> LowerValue<Option<T>> for Option<TVal> {
+impl<T: ComponentValue, TVal: Lower<T>> Lower<Option<T>> for Option<TVal> {
     fn lower_args(
         &self,
         args: &mut [WasmValue],
@@ -57,8 +57,8 @@ impl<T: ComponentValue, TVal: LowerValue<T>> LowerValue<Option<T>> for Option<TV
     }
 }
 
-impl<T: ComponentValue, E: ComponentValue, TVal: LowerValue<T>, EVal: LowerValue<E>>
-    LowerValue<Result<T, E>> for Result<TVal, EVal>
+impl<T: ComponentValue, E: ComponentValue, TVal: Lower<T>, EVal: Lower<E>> Lower<Result<T, E>>
+    for Result<TVal, EVal>
 {
     fn lower_args(
         &self,

@@ -1,9 +1,9 @@
 use std::ops::Range;
 
 use crate::pointers::FatPtr;
-use crate::{ComponentValue, ConvertResult, LowerValue, MemoryAccess, WasmValue};
+use crate::{ComponentValue, ConvertResult, Lower, MemoryAccess, WasmValue};
 
-impl<T: ComponentValue, E: LowerValue<T>> LowerValue<Vec<T>> for [E] {
+impl<T: ComponentValue, E: Lower<T>> Lower<Vec<T>> for [E] {
     fn lower_args(
         &self,
         args: &mut [WasmValue],
@@ -33,7 +33,7 @@ impl<T: ComponentValue, E: LowerValue<T>> LowerValue<Vec<T>> for [E] {
     }
 }
 
-impl<T: ComponentValue, E: LowerValue<T>> LowerValue<Vec<T>> for Vec<E> {
+impl<T: ComponentValue, E: Lower<T>> Lower<Vec<T>> for Vec<E> {
     fn lower_args(
         &self,
         args: &mut [WasmValue],
@@ -51,7 +51,7 @@ impl<T: ComponentValue, E: LowerValue<T>> LowerValue<Vec<T>> for Vec<E> {
     }
 }
 
-impl<T: ComponentValue, E: LowerValue<T>, const N: usize> LowerValue<Vec<T>> for [E; N] {
+impl<T: ComponentValue, E: Lower<T>, const N: usize> Lower<Vec<T>> for [E; N] {
     fn lower_args(
         &self,
         args: &mut [WasmValue],
@@ -70,7 +70,7 @@ impl<T: ComponentValue, E: LowerValue<T>, const N: usize> LowerValue<Vec<T>> for
 }
 
 fn write_contents<T: ComponentValue>(
-    contents: &[impl LowerValue<T>],
+    contents: &[impl Lower<T>],
     memory: &mut impl MemoryAccess,
 ) -> ConvertResult<FatPtr> {
     let len = T::byte_size() * contents.len();
