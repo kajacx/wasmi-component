@@ -136,6 +136,7 @@ impl Generator {
             output,
             concat!(
                 "#[allow(unused)]\n",
+                "#[derive(Clone, Debug)]\n",
                 "pub struct {}Exports {{\n",
                 "    pub instance: Instance,"
             ),
@@ -228,7 +229,7 @@ impl Generator {
                 ),
                 param_types_canon(func),
                 canonical_name(&func.result),
-                func.ident.imported_module_name(),
+                &func.ident.module,
                 &func.ident.name,
                 rust_snake_case(&func.ident.name),
                 params_indexes(func)

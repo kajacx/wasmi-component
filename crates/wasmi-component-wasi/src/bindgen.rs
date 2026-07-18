@@ -74,6 +74,7 @@ pub trait RootImports {
 }
 
 #[allow(unused)]
+#[derive(Clone, Debug)]
 pub struct RootExports {
     pub instance: Instance,
 }

@@ -8,8 +8,6 @@ use crate::{ComponentBuilder, FuncStorage};
 #[derive(Debug, Clone)]
 pub struct Component {
     pub(crate) core_module: wasmi::Module,
-
-    #[allow(unused)] // TODO:
     pub(crate) imported_funcs: FuncStorage,
     pub(crate) exported_funcs: Rc<FuncStorage>,
 }
@@ -19,8 +17,8 @@ impl Component {
         let builder = ComponentBuilder::new(bytes)?;
 
         let core_module = wasmi::Module::new(engine, builder.core_module()?)?;
-        let imported_funcs = builder.imported_funcs()?;
-        let exported_funcs = Rc::new(builder.exported_funcs()?);
+        let imported_funcs = builder.imported_funcs();
+        let exported_funcs = Rc::new(builder.exported_funcs());
 
         Ok(Self {
             core_module,

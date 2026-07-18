@@ -1,19 +1,22 @@
 use anyhow::{Context, Result};
-use wasmi::{AsContextMut, errors::LinkerError};
+use wasmi::AsContextMut;
 use wasmi_component_parser::FuncIdentifier;
 
 use crate::{
-    Component, ComponentValue, HostResult, Instance, Lower, MemoryAccessPre, StoreData, WasmValue,
+    Component, ComponentValue, FuncSignature, FuncStorage, HostResult, Instance, Lower,
+    MemoryAccessPre, StoreData, WasmValue,
 };
 
 pub struct Linker<T> {
     linker: wasmi::Linker<StoreData<T>>,
+    imported_funcs: FuncStorage,
 }
 
 impl<T> Linker<T> {
     pub fn new(engine: &wasmi::Engine) -> Self {
         Self {
             linker: wasmi::Linker::new(engine),
+            imported_funcs: FuncStorage::new(),
         }
     }
 
@@ -22,7 +25,7 @@ impl<T> Linker<T> {
         module: impl Into<String>,
         name: impl Into<String>,
         callback: impl Fn(&mut T, Params::Borrowed<'_>) -> HostResult<Results> + Send + Sync + 'static,
-    ) -> Result<&mut Self, LinkerError> {
+    ) -> Result<&mut Self, wasmi::errors::LinkerError> {
         let ident = FuncIdentifier::new(module.into(), name.into());
 
         let mut params_ty = Params::arg_types();
@@ -85,6 +88,11 @@ impl<T> Linker<T> {
             },
         )?;
 
+        self.imported_funcs.insert(
+            ident,
+            FuncSignature::new(Params::value_type(), Results::value_type()),
+        );
+
         Ok(self)
     }
 
@@ -93,6 +101,10 @@ impl<T> Linker<T> {
         mut ctx: impl AsContextMut<Data = StoreData<T>>,
         component: &Component,
     ) -> Result<Instance> {
+        for (ident, signature) in &component.imported_funcs.data {
+            self.imported_funcs.verify_import(ident, signature)?;
+        }
+
         let memory_index = ctx.as_context_mut().data_mut().next_memory_index();
 
         let instance = self
@@ -117,5 +129,12 @@ impl<T> Linker<T> {
             component.exported_funcs.clone(),
             memory_pre,
         ))
+    }
+
+    /// Enable overriding the same imported function with a new one.
+    /// Disabled by default.
+    pub fn allow_shadowing(&mut self, allow: bool) -> &mut Self {
+        self.linker.allow_shadowing(allow);
+        self
     }
 }

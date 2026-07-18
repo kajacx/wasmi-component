@@ -108,4 +108,17 @@ pub fn main_() {
         format!("{}", wrong_type.unwrap_err()).contains("invalid signature"),
         "function has wrong type"
     );
+
+    linker.allow_shadowing(true);
+    linker
+        .func_new::<String, String>("additional-imports", "price", |_data, message| {
+            Ok(message.to_string())
+        })
+        .unwrap();
+    let wrong_type = bindings::instantiate_test_example_world(&mut store, &linker, &component);
+    println!("CORRECT error: {:?}", wrong_type);
+    assert!(
+        format!("{}", wrong_type.unwrap_err()).contains("invalid signature"),
+        "function has wrong type"
+    );
 }

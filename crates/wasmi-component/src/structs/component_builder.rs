@@ -54,21 +54,22 @@ impl<'a> ComponentBuilder<'a> {
             .context("component doesn't have any core modules")
     }
 
-    pub fn imported_funcs(&self) -> anyhow::Result<FuncStorage> {
+    pub fn imported_funcs(&self) -> FuncStorage {
         let mut storage = FuncStorage::new();
         for func in &self.world.imports {
+            println!("processing WORLD IMPORT {}", func.ident);
             storage.insert(
                 func.ident.clone(),
                 FuncSignature::new(
                     ValueType::Tuple(func.params.iter().map(|(_name, ty)| ty.clone()).collect()),
                     func.result.clone(),
                 ),
-            )?;
+            );
         }
-        Ok(storage)
+        storage
     }
 
-    pub fn exported_funcs(&self) -> anyhow::Result<FuncStorage> {
+    pub fn exported_funcs(&self) -> FuncStorage {
         let mut storage = FuncStorage::new();
         for func in &self.world.exports {
             storage.insert(
@@ -77,15 +78,15 @@ impl<'a> ComponentBuilder<'a> {
                     ValueType::Tuple(func.params.iter().map(|(_name, ty)| ty.clone()).collect()),
                     func.result.clone(),
                 ),
-            )?;
+            );
         }
-        Ok(storage)
+        storage
     }
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct FuncStorage {
-    data: Vec<(FuncIdentifier, FuncSignature)>,
+    pub data: Vec<(FuncIdentifier, FuncSignature)>,
 }
 
 impl FuncStorage {
@@ -93,27 +94,26 @@ impl FuncStorage {
         Self { data: Vec::new() }
     }
 
-    fn insert(&mut self, ident: FuncIdentifier, signature: FuncSignature) -> anyhow::Result<()> {
-        if self.get(&ident).is_some() {
-            bail!("function \"{}\" cannot be re-inserted into storage", ident);
-        }
-
+    pub fn insert(&mut self, ident: FuncIdentifier, signature: FuncSignature) {
+        self.data.retain(|(id, _)| id != &ident);
         self.data.push((ident, signature));
-
-        Ok(())
     }
 
-    fn get(&self, ident: &FuncIdentifier) -> Option<&FuncSignature> {
+    pub fn get(&self, ident: &FuncIdentifier) -> Option<&FuncSignature> {
         self.data
             .iter()
             .find(|(id, _)| id == ident)
             .map(|(_, signature)| signature)
     }
 
-    pub fn verify(&self, ident: &FuncIdentifier, signature: &FuncSignature) -> anyhow::Result<()> {
-        let existing = self.get(ident).with_context(|| {
+    pub fn verify_import(
+        &self,
+        ident: &FuncIdentifier,
+        signature: &FuncSignature,
+    ) -> anyhow::Result<()> {
+        let host_signature = self.get(ident).with_context(|| {
             format!(
-                "requested function \"{}\" is not present, existing functions are: {:?}",
+                "imported function \"{}\" is not present, defined functions are: {:?}",
                 ident,
                 self.data
                     .iter()
@@ -122,12 +122,40 @@ impl FuncStorage {
             )
         })?;
 
-        if existing != signature {
+        if host_signature != signature {
             bail!(
-                "function \"{}\" has invalid signature: host expected {}, but component has {} instead",
+                "imported function \"{}\" has invalid signature: component expected {}, but host has {} instead",
                 ident,
                 signature,
-                existing
+                host_signature
+            );
+        }
+
+        Ok(())
+    }
+
+    pub fn verify_export(
+        &self,
+        ident: &FuncIdentifier,
+        signature: &FuncSignature,
+    ) -> anyhow::Result<()> {
+        let existing_guest = self.get(ident).with_context(|| {
+            format!(
+                "exported function \"{}\" is not present, existing functions are: {:?}",
+                ident,
+                self.data
+                    .iter()
+                    .map(|(ident, _)| ident.to_string())
+                    .collect::<Vec<_>>()
+            )
+        })?;
+
+        if existing_guest != signature {
+            bail!(
+                "exported function \"{}\" has invalid signature: host expected {}, but component has {} instead",
+                ident,
+                signature,
+                existing_guest
             );
         }
 

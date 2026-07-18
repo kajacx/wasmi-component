@@ -6,6 +6,7 @@ use wasmi_component_parser::FuncIdentifier;
 
 use crate::{ComponentValue, FuncSignature, FuncStorage, MemoryAccessPre, TypedFunc};
 
+#[derive(Debug, Clone)]
 pub struct Instance {
     instance: wasmi::Instance,
     exports: Rc<FuncStorage>,
@@ -34,7 +35,7 @@ impl Instance {
         let ident = FuncIdentifier::new(module.into(), name.into());
         let exported_name = ident.exported_name();
 
-        self.exports.verify(
+        self.exports.verify_export(
             &ident,
             &FuncSignature::new(Params::value_type(), Results::value_type()),
         )?;

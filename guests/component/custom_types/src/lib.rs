@@ -57,7 +57,8 @@ impl bindings::exports::additional_exports::Guest for GuestComponent {
         _target: bindings::exports::additional_exports::Animal,
         _pets: u32,
     ) -> Result<(), String> {
-        bindings::log(&format!("[GUEST]: Hello pet"));
+        let price = bindings::additional_imports::price(&[]);
+        bindings::log(&format!("[GUEST]: Hello pet, price is: {price}"));
         Ok(())
     }
 }

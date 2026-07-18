@@ -61,6 +61,7 @@ pub trait TestExampleImports {
 }
 
 #[allow(unused)]
+#[derive(Clone, Debug)]
 pub struct TestExampleExports {
     pub instance: Instance,
     pub init: TypedFunc<(Vec<String>,), Outcome>,
@@ -192,8 +193,7 @@ pub fn add_test_example_to_linker<T: TestExampleImports>(
         |host_data, params| host_data.price(params.0),
     )?;
 
-    linker
-        .func_new::<(String,), ()>("$root", "log", |host_data, params| host_data.log(params.0))?;
+    linker.func_new::<(String,), ()>("", "log", |host_data, params| host_data.log(params.0))?;
 
     Ok(())
 }
