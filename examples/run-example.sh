@@ -68,7 +68,9 @@ cargo run -p "$host" > "$path/output.log" 2> "$path/error.log" || status=$?
 cat "$path/output.log"
 cat "$path/error.log"
 
-if [[ $status -ne 0 ]]; then
+if [[ $status -eq 0 ]]; then
+    echo "Example $path finished successfully"
+else
     echo "Example $path has failed"
 fi
 

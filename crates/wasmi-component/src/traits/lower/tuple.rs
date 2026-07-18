@@ -1,4 +1,5 @@
-use crate::{ComponentValue, ConvertResult, Lower, MemoryAccess, WasmValue, helpers::round_up};
+use crate::lib_structs::{MemoryAccess, WasmValue};
+use crate::{ComponentValue, ConvertResult, Lower, helpers::round_up};
 
 impl Lower<Self> for () {
     fn lower_args(

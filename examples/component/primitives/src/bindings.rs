@@ -39,6 +39,7 @@ pub trait TestExampleImports {
 }
 
 #[allow(unused)]
+#[derive(Clone, Debug)]
 pub struct TestExampleExports {
     pub instance: Instance,
     pub trip_s8: TypedFunc<(i8,), i8>,
@@ -362,8 +363,7 @@ pub fn add_test_example_to_linker<T: TestExampleImports>(
         |host_data, params| host_data.trip_string(params.0),
     )?;
 
-    linker
-        .func_new::<(String,), ()>("$root", "log", |host_data, params| host_data.log(params.0))?;
+    linker.func_new::<(String,), ()>("", "log", |host_data, params| host_data.log(params.0))?;
 
     Ok(())
 }

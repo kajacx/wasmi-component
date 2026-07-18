@@ -1,4 +1,4 @@
-use crate::WasmValue;
+use crate::lib_structs::WasmValue;
 
 pub fn round_up(value: usize, multiple: usize) -> usize {
     (value + multiple - 1) / multiple * multiple

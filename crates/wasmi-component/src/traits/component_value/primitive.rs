@@ -1,7 +1,8 @@
 use wasmi::ValType;
 use wasmi_component_parser::ValueType;
 
-use crate::{ComponentValue, ConvertError, ConvertResult, WasmValue};
+use crate::lib_structs::WasmValue;
+use crate::{ComponentValue, ConvertError, ConvertResult};
 
 macro_rules! impl_component_value_primitive {
     ($main_ty: ty, $wasmi_ty: expr, $wasmi_getter: ident , $value_type: ident) => {

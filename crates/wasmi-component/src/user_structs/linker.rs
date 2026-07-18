@@ -2,10 +2,8 @@ use anyhow::{Context, Result};
 use wasmi::AsContextMut;
 use wasmi_component_parser::FuncIdentifier;
 
-use crate::{
-    Component, ComponentValue, FuncSignature, FuncStorage, HostResult, Instance, Lower,
-    MemoryAccessPre, StoreData, WasmValue,
-};
+use crate::lib_structs::{FuncSignature, FuncStorage, MemoryAccessPre, WasmValue};
+use crate::{Component, ComponentValue, HostResult, Instance, Lower, StoreData};
 
 pub struct Linker<T> {
     linker: wasmi::Linker<StoreData<T>>,

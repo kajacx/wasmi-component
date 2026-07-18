@@ -1,6 +1,7 @@
 use std::ops::Range;
 
-use crate::{ComponentValue, ConvertResult, Lower, MemoryAccess, Slice, WasmValue};
+use crate::lib_structs::{MemoryAccess, Slice, WasmValue};
+use crate::{ComponentValue, ConvertResult, Lower};
 
 impl<T: ComponentValue, TVal: Lower<T>> Lower<Option<T>> for Option<TVal> {
     fn lower_args(

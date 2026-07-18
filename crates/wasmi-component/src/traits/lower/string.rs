@@ -1,7 +1,8 @@
 use std::ops::Range;
 
+use crate::lib_structs::{MemoryAccess, WasmValue};
 use crate::pointers::FatPtr;
-use crate::{ComponentValue, ConvertResult, Lower, MemoryAccess, WasmValue};
+use crate::{ComponentValue, ConvertResult, Lower};
 
 impl Lower<String> for str {
     fn lower_args(

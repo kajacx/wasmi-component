@@ -4,7 +4,8 @@ use anyhow::{Context, ensure};
 use wasmi::AsContext;
 use wasmi_component_parser::FuncIdentifier;
 
-use crate::{ComponentValue, FuncSignature, FuncStorage, MemoryAccessPre, TypedFunc};
+use crate::lib_structs::{FuncSignature, FuncStorage, MemoryAccessPre};
+use crate::{ComponentValue, TypedFunc};
 
 #[derive(Debug, Clone)]
 pub struct Instance {

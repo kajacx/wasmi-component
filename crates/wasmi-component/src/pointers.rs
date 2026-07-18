@@ -1,6 +1,7 @@
 use std::ops::Range;
 
-use crate::{ConvertError, ConvertResult, WasmValue};
+use crate::lib_structs::WasmValue;
+use crate::{ConvertError, ConvertResult};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub(crate) struct FatPtr {

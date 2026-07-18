@@ -3,7 +3,8 @@ use std::fmt::Debug;
 use wasmi::ValType;
 use wasmi_component_parser::ValueType;
 
-use crate::{ConvertResult, Lift, WasmValue};
+use crate::lib_structs::WasmValue;
+use crate::{ConvertResult, Lift};
 
 mod list;
 mod option;

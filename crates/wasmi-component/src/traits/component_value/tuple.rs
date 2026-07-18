@@ -1,7 +1,8 @@
 use wasmi::ValType;
 use wasmi_component_parser::ValueType;
 
-use crate::{ComponentValue, ConvertResult, WasmValue, helpers::round_up};
+use crate::lib_structs::WasmValue;
+use crate::{ComponentValue, ConvertResult, helpers::round_up};
 
 impl ComponentValue for () {
     type Borrowed<'a> = Self;

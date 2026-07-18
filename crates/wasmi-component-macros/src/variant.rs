@@ -95,13 +95,13 @@ impl Generator for VariantGenerator<'_> {
 
             if let Some(ty) = field_ty {
                 output.extend(quote! { Self::#field_name(value) => {
-                    args[0] = wasmi_component::WasmValue::I32(#index);
+                    args[0] = wasmi_component::lib_structs::WasmValue::I32(#index);
                     value.lower_args(&mut args[1..(1 + #ty::arg_count())], memory)?;
                     1 + #ty::arg_count()
                 } });
             } else {
                 output.extend(quote! { Self::#field_name => {
-                    args[0] = wasmi_component::WasmValue::I32(#index);
+                    args[0] = wasmi_component::lib_structs::WasmValue::I32(#index);
                     1
                 } });
             }
@@ -111,7 +111,7 @@ impl Generator for VariantGenerator<'_> {
             let written = match self { #output };
 
             for arg in &mut args[written..] {
-                *arg = wasmi_component::WasmValue::Unused;
+                *arg = wasmi_component::lib_structs::WasmValue::Unused;
             }
 
             Ok(())
@@ -207,7 +207,7 @@ impl Generator for VariantGenerator<'_> {
         }
 
         quote! {
-            use wasmi_component::Slice;
+            use wasmi_component::lib_structs::Slice;
             let offset = Self::byte_align();
             match self { #output }
         }

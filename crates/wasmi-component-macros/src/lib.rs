@@ -48,7 +48,7 @@ pub fn derive_component_value(input: proc_macro::TokenStream) -> proc_macro::Tok
                 #arg_types
             }
 
-            fn lift_args<'a>(args: &[wasmi_component::WasmValue], memory: &'a [u8]) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
+            fn lift_args<'a>(args: &[wasmi_component::lib_structs::WasmValue], memory: &'a [u8]) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
                 #lift_args
             }
 
@@ -79,11 +79,11 @@ pub fn derive_component_value(input: proc_macro::TokenStream) -> proc_macro::Tok
         }
 
         impl wasmi_component::Lower<Self> for #type_name {
-            fn lower_args(&self, args: &mut [wasmi_component::WasmValue], memory: &mut impl wasmi_component::MemoryAccess) -> wasmi_component::ConvertResult<()> {
+            fn lower_args(&self, args: &mut [wasmi_component::lib_structs::WasmValue], memory: &mut impl wasmi_component::lib_structs::MemoryAccess) -> wasmi_component::ConvertResult<()> {
                 #lower_args
             }
 
-            fn lower_bytes(&self, range: std::ops::Range<usize>, memory: &mut impl wasmi_component::MemoryAccess) -> wasmi_component::ConvertResult<()> {
+            fn lower_bytes(&self, range: std::ops::Range<usize>, memory: &mut impl wasmi_component::lib_structs::MemoryAccess) -> wasmi_component::ConvertResult<()> {
                 #lower_bytes
             }
         }

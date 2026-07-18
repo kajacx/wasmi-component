@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, ensure};
 use wasmi::{AsContext, AsContextMut, Engine};
 
-use crate::MemoryAccessPre;
+use crate::lib_structs::MemoryAccessPre;
 
 pub struct Store<T> {
     store: wasmi::Store<StoreData<T>>,

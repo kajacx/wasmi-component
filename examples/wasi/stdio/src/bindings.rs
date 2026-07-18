@@ -11,6 +11,7 @@ use wasmi_component::{
 pub trait TestExampleImports {}
 
 #[allow(unused)]
+#[derive(Clone, Debug)]
 pub struct TestExampleExports {
     pub instance: Instance,
     pub print_stdout: TypedFunc<(String,), ()>,

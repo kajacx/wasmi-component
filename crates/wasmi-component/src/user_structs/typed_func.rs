@@ -2,8 +2,9 @@ use std::marker::PhantomData;
 
 use wasmi::AsContextMut;
 
+use crate::lib_structs::{MemoryAccessPre, WasmValue};
 use crate::pointers::FatPtr;
-use crate::{CallResult, ComponentValue, Lift, Lower, MemoryAccessPre, StoreData, WasmValue};
+use crate::{CallResult, ComponentValue, Lift, Lower, StoreData};
 
 #[derive(Debug, Clone)]
 pub struct TypedFunc<Params, Results> {

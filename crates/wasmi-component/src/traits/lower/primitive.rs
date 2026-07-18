@@ -1,6 +1,7 @@
 use std::ops::Range;
 
-use crate::{ComponentValue, ConvertResult, Lower, MemoryAccess, WasmValue};
+use crate::lib_structs::{MemoryAccess, WasmValue};
+use crate::{ComponentValue, ConvertResult, Lower};
 
 macro_rules! impl_lower_val_primitive {
     ($main_ty: ty) => {

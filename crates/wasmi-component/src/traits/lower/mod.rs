@@ -1,6 +1,7 @@
 use std::ops::Range;
 
-use crate::{ComponentValue, ConvertResult, MemoryAccess, WasmValue};
+use crate::lib_structs::{MemoryAccess, WasmValue};
+use crate::{ComponentValue, ConvertResult};
 
 mod list;
 mod option;
