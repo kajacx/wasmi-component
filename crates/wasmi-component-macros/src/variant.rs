@@ -12,19 +12,22 @@ pub struct VariantGenerator<'a> {
 impl Generator for VariantGenerator<'_> {
     fn value_type(&self) -> TokenStream {
         let mut output = quote! {};
+
         for field in &self.data.variants {
             let field_name = &field.ident.to_string();
             let field_ty = &field
                 .fields
                 .iter()
                 .next()
-                .map_or_else(|| quote! { None }, |ty| quote! {Some(#ty::value_type())});
+                .map_or_else(|| quote! { None }, |ty| quote! { Some(#ty::value_type()) });
 
             output.extend(quote! { (#field_name.to_string(), #field_ty), });
         }
-        quote! { wasmi_component::ValueType::Variant{
-            name: "".to_string(),
-            cases: vec![ #output ],
+
+        let name = self.gen_data.name.to_string();
+        quote! { wasmi_component::ValueType::Variant {
+            name: std::rc::Rc::from(#name),
+            cases: std::rc::Rc::from([ #output ]),
         } }
     }
 

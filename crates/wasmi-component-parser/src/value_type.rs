@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 #[derive(Debug, Clone, Eq, PartialOrd, Ord)]
 pub enum ValueType {
     S8,
@@ -18,24 +20,24 @@ pub enum ValueType {
 
     String,
 
-    Option(Box<ValueType>),
-    Result(Box<ValueType>, Box<ValueType>),
-    Tuple(Vec<ValueType>),
-    List(Box<ValueType>),
+    Option(Rc<ValueType>),
+    Result(Rc<ValueType>, Rc<ValueType>),
+    Tuple(Rc<[ValueType]>),
+    List(Rc<ValueType>),
 
     Record {
-        name: String,
-        fields: Vec<(String, ValueType)>,
+        name: Rc<str>,
+        fields: Rc<[(String, ValueType)]>,
     },
     Variant {
-        name: String,
-        cases: Vec<(String, Option<ValueType>)>,
+        name: Rc<str>,
+        cases: Rc<[(String, Option<ValueType>)]>,
     },
 }
 
 impl ValueType {
     pub fn unit() -> Self {
-        Self::Tuple(vec![])
+        Self::Tuple(Rc::new([]))
     }
 
     pub fn is_unit(&self) -> bool {
@@ -154,6 +156,7 @@ impl PartialEq for ValueType {
             (Self::Tuple(tuple_a), Self::Tuple(tuple_b)) => tuple_a == tuple_b,
             (Self::List(ty_a), Self::List(ty_b)) => ty_a == ty_b,
 
+            // TODO: compare names, but case is different (snake case, etc.)
             (Self::Record { fields: a, .. }, Self::Record { fields: b, .. }) => iters_eq(
                 a.iter().map(|(_name, ty)| ty),
                 b.iter().map(|(_name, ty)| ty),

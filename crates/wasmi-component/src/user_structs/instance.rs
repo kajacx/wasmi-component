@@ -38,7 +38,7 @@ impl Instance {
 
         self.exports.verify_export(
             &ident,
-            &FuncSignature::new_grouped(Params::value_type(), Results::value_type()),
+            &FuncSignature::from_grouped(Params::value_type(), Results::value_type()),
         )?;
 
         let module_func = self

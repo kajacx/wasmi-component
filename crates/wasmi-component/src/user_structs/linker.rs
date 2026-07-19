@@ -88,7 +88,7 @@ impl<T> Linker<T> {
 
         self.imported_funcs.insert(
             ident,
-            FuncSignature::new_grouped(Params::value_type(), Results::value_type()),
+            FuncSignature::from_grouped(Params::value_type(), Results::value_type()),
         );
 
         Ok(self)

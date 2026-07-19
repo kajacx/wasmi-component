@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use wasmi::ValType;
 use wasmi_component_parser::ValueType;
 
@@ -8,7 +10,7 @@ impl<T: ComponentValue> ComponentValue for Option<T> {
     type Borrowed<'a> = Option<T::Borrowed<'a>>;
 
     fn value_type() -> ValueType {
-        ValueType::Option(Box::new(T::value_type()))
+        ValueType::Option(Rc::new(T::value_type()))
     }
 
     fn arg_count() -> usize {
@@ -63,7 +65,7 @@ impl<T: ComponentValue, E: ComponentValue> ComponentValue for Result<T, E> {
     type Borrowed<'a> = Result<T::Borrowed<'a>, E::Borrowed<'a>>;
 
     fn value_type() -> ValueType {
-        ValueType::Result(Box::new(T::value_type()), Box::new(E::value_type()))
+        ValueType::Result(Rc::new(T::value_type()), Rc::new(E::value_type()))
     }
 
     fn arg_count() -> usize {

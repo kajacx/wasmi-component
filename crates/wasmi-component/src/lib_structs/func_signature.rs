@@ -1,22 +1,31 @@
+use std::rc::Rc;
+
 use wasmi_component_parser::ValueType;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct FuncSignature {
-    pub params: Vec<ValueType>,
+    pub params: Rc<[ValueType]>,
     pub result: ValueType,
 }
 
 impl FuncSignature {
-    pub fn new(params: Vec<ValueType>, result: ValueType) -> Self {
+    pub fn new(params: Rc<[ValueType]>, result: ValueType) -> Self {
         Self { params, result }
     }
 
+    pub fn from_vec(params: Vec<ValueType>, result: ValueType) -> Self {
+        Self {
+            params: Rc::from(params),
+            result,
+        }
+    }
+
     /// Tries to unbox arguments if `params` is a tuple, otherwise it just makes a function of one argument.
-    pub fn new_grouped(params: ValueType, result: ValueType) -> Self {
+    pub fn from_grouped(params: ValueType, result: ValueType) -> Self {
         let params = if let ValueType::Tuple(tuple) = params {
             tuple.clone()
         } else {
-            vec![params]
+            Rc::from([params])
         };
 
         Self { params, result }

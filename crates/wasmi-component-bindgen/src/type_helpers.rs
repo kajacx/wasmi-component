@@ -50,7 +50,7 @@ pub fn canonical_name(ty: &ValueType) -> String {
         }
         ValueType::Tuple(tuple) => {
             let mut result = String::from("(");
-            for ty in tuple {
+            for ty in tuple.iter() {
                 result.push_str(&canonical_name(ty));
                 result.push_str(", ");
             }
@@ -97,7 +97,7 @@ pub fn as_lift(ty: &ValueType) -> String {
         }
         ValueType::Tuple(tuple) => {
             let mut result = String::from("(");
-            for ty in tuple {
+            for ty in tuple.iter() {
                 result.push_str(&as_lift(ty));
                 result.push_str(", ");
             }

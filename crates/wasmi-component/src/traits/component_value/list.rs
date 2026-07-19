@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use wasmi::ValType;
 use wasmi_component_parser::ValueType;
 
@@ -9,7 +11,7 @@ impl<T: ComponentValue> ComponentValue for Vec<T> {
     type Borrowed<'a> = ListAccessor<'a, T>;
 
     fn value_type() -> ValueType {
-        ValueType::List(Box::new(T::value_type()))
+        ValueType::List(Rc::new(T::value_type()))
     }
 
     fn arg_count() -> usize {

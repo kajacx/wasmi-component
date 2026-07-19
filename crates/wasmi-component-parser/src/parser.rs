@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use wit_parser::{
     Docs, Function, Interface, Record, Resolve, Result_, Span, Type, TypeDef, TypeDefKind, Variant,
     World, WorldItem, WorldKey,
@@ -181,7 +183,7 @@ impl Parser {
             Type::Id(id) => {
                 let ty = &self.resolve.types[id];
                 match &ty.kind {
-                    TypeDefKind::Option(ty) => ValueType::Option(Box::new(self.convert_type(*ty))),
+                    TypeDefKind::Option(ty) => ValueType::Option(Rc::new(self.convert_type(*ty))),
                     TypeDefKind::Result(res) => self.parse_result(res),
                     TypeDefKind::Tuple(tuple) => ValueType::Tuple(
                         tuple
@@ -190,7 +192,7 @@ impl Parser {
                             .map(|ty| self.convert_type(*ty))
                             .collect(),
                     ),
-                    TypeDefKind::List(ty) => ValueType::List(Box::new(self.convert_type(*ty))),
+                    TypeDefKind::List(ty) => ValueType::List(Rc::new(self.convert_type(*ty))),
 
                     TypeDefKind::Record(record) => {
                         self.parse_record(ty.name.as_ref().expect("name of record"), record)
@@ -215,7 +217,7 @@ impl Parser {
             .err
             .map_or_else(|| ValueType::unit(), |ty| self.convert_type(ty));
 
-        ValueType::Result(Box::new(ok), Box::new(err))
+        ValueType::Result(Rc::new(ok), Rc::new(err))
     }
 
     fn parse_record(&self, name: &str, record: &Record) -> ValueType {
@@ -226,7 +228,7 @@ impl Parser {
             .collect();
 
         ValueType::Record {
-            name: name.to_string(),
+            name: Rc::from(name),
             fields,
         }
     }
@@ -239,7 +241,7 @@ impl Parser {
             .collect();
 
         ValueType::Variant {
-            name: name.to_string(),
+            name: Rc::from(name),
             cases,
         }
     }

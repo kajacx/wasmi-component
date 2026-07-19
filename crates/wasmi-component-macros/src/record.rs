@@ -12,14 +12,17 @@ pub struct RecordGenerator<'a> {
 impl Generator for RecordGenerator<'_> {
     fn value_type(&self) -> TokenStream {
         let mut output = quote! {};
+
         for field in &self.data.fields {
             let field_name = field.ident.as_ref().unwrap().to_string();
             let field_ty = &field.ty;
             output.extend(quote! { (#field_name.to_string(), #field_ty::value_type()), });
         }
-        quote! { wasmi_component::ValueType::Record{
-            name: "".to_string(),
-            fields: vec![ #output ],
+
+        let name = self.gen_data.name.to_string();
+        quote! { wasmi_component::ValueType::Record {
+            name: std::rc::Rc::from(#name),
+            fields: std::rc::Rc::from([ #output ]),
         } }
     }
 

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use wasmi::ValType;
 use wasmi_component_parser::ValueType;
 
@@ -8,7 +10,7 @@ impl ComponentValue for () {
     type Borrowed<'a> = Self;
 
     fn value_type() -> ValueType {
-        ValueType::Tuple(vec![])
+        ValueType::Tuple(Rc::from([]))
     }
 
     fn arg_count() -> usize {
@@ -44,7 +46,7 @@ impl<T: ComponentValue> ComponentValue for (T,) {
     type Borrowed<'a> = (T::Borrowed<'a>,);
 
     fn value_type() -> ValueType {
-        ValueType::Tuple(vec![T::value_type()])
+        ValueType::Tuple(Rc::from([T::value_type()]))
     }
 
     fn arg_count() -> usize {
@@ -80,7 +82,7 @@ impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
     type Borrowed<'a> = (T0::Borrowed<'a>, T1::Borrowed<'a>);
 
     fn value_type() -> ValueType {
-        ValueType::Tuple(vec![T0::value_type(), T1::value_type()])
+        ValueType::Tuple(Rc::from([T0::value_type(), T1::value_type()]))
     }
 
     fn arg_count() -> usize {
@@ -141,7 +143,11 @@ impl<T0: ComponentValue, T1: ComponentValue, T2: ComponentValue> ComponentValue 
     type Borrowed<'a> = (T0::Borrowed<'a>, T1::Borrowed<'a>, T2::Borrowed<'a>);
 
     fn value_type() -> ValueType {
-        ValueType::Tuple(vec![T0::value_type(), T1::value_type(), T2::value_type()])
+        ValueType::Tuple(Rc::from([
+            T0::value_type(),
+            T1::value_type(),
+            T2::value_type(),
+        ]))
     }
 
     fn arg_count() -> usize {
