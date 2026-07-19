@@ -17,7 +17,6 @@ pub enum ValueType {
 
     Bool,
     Char,
-
     String,
 
     Option(Rc<ValueType>),
@@ -27,17 +26,81 @@ pub enum ValueType {
 
     Record {
         name: Rc<str>,
-        fields: Rc<[(String, ValueType)]>,
+        fields: Rc<[(Rc<str>, ValueType)]>,
     },
     Variant {
         name: Rc<str>,
-        cases: Rc<[(String, Option<ValueType>)]>,
+        cases: Rc<[(Rc<str>, Option<ValueType>)]>,
     },
 }
 
 impl ValueType {
-    pub fn unit() -> Self {
-        Self::Tuple(Rc::new([]))
+    pub fn new_option(inner: ValueType) -> Self {
+        Self::Option(Rc::new(inner))
+    }
+
+    pub fn new_result(ok: ValueType, err: ValueType) -> Self {
+        Self::Result(Rc::new(ok), Rc::new(err))
+    }
+
+    pub fn new_tuple(fields: impl IntoIterator<Item = ValueType>) -> Self {
+        Self::Tuple(fields.into_iter().collect())
+    }
+
+    pub fn new_list(inner: ValueType) -> Self {
+        Self::List(Rc::new(inner))
+    }
+
+    pub fn new_unit() -> Self {
+        Self::new_tuple([])
+    }
+
+    /// Returns the INNER type if this is an option type, otherwise returns None.
+    pub fn as_option(&self) -> Option<&ValueType> {
+        match self {
+            Self::Option(ty) => Some(ty),
+            _ => None,
+        }
+    }
+
+    /// Returns the (ok, err) inner types if this is a result type, otherwise returns None.
+    pub fn as_result(&self) -> Option<(&ValueType, &ValueType)> {
+        match self {
+            Self::Result(ok, err) => Some((ok, err)),
+            _ => None,
+        }
+    }
+
+    /// Returns the inner types if this is a tuple type, otherwise returns None.
+    pub fn as_tuple(&self) -> Option<&[ValueType]> {
+        match self {
+            Self::Tuple(types) => Some(types),
+            _ => None,
+        }
+    }
+
+    /// Returns the inner type if this is a list type, otherwise returns None.
+    pub fn as_list(&self) -> Option<&ValueType> {
+        match self {
+            Self::List(ty) => Some(ty),
+            _ => None,
+        }
+    }
+
+    /// Returns the name and fields of a record type, or None if this is not a record type.
+    pub fn as_record(&self) -> Option<(&str, &[(Rc<str>, ValueType)])> {
+        match self {
+            Self::Record { name, fields } => Some((name, fields)),
+            _ => None,
+        }
+    }
+
+    /// Returns the name and cases of a variant type, or None if this is not a variant type.
+    pub fn as_variant(&self) -> Option<(&str, &[(Rc<str>, Option<ValueType>)])> {
+        match self {
+            Self::Variant { name, cases } => Some((name, cases)),
+            _ => None,
+        }
     }
 
     pub fn is_unit(&self) -> bool {
@@ -60,6 +123,129 @@ impl ValueType {
         }
         result
     }
+
+    /// Returns the inner type for a list
+    pub fn list_type(&self) -> Option<&ValueType> {
+        match self {
+            Self::List(ty) => Some(ty),
+            _ => None,
+        }
+    }
+
+    pub fn arg_count(&self) -> usize {
+        match self {
+            Self::S8 => 1,
+            Self::S16 => 1,
+            Self::S32 => 1,
+            Self::S64 => 1,
+
+            Self::U8 => 1,
+            Self::U16 => 1,
+            Self::U32 => 1,
+            Self::U64 => 1,
+
+            Self::F32 => 1,
+            Self::F64 => 1,
+
+            Self::Bool => 1,
+            Self::Char => 1,
+            Self::String => 2,
+
+            Self::Option(ty) => 1 + ty.arg_count(),
+            Self::Result(ok, err) => 1 + std::cmp::max(ok.arg_count(), err.arg_count()),
+            Self::Tuple(fields) => fields.iter().map(|ty| ty.arg_count()).sum(),
+            Self::List(_) => 2,
+
+            Self::Record { fields, .. } => fields.iter().map(|(_name, ty)| ty.arg_count()).sum(),
+            Self::Variant { cases, .. } => {
+                1 + cases
+                    .iter()
+                    .map(|(_name, ty)| ty.as_ref().map_or(0, |ty| ty.arg_count()))
+                    .max()
+                    .unwrap_or(0)
+            }
+        }
+    }
+
+    pub fn byte_align(&self) -> usize {
+        match self {
+            Self::S8 => 1,
+            Self::S16 => 2,
+            Self::S32 => 4,
+            Self::S64 => 8,
+
+            Self::U8 => 1,
+            Self::U16 => 2,
+            Self::U32 => 4,
+            Self::U64 => 8,
+
+            Self::F32 => 4,
+            Self::F64 => 8,
+
+            Self::Bool => 1,
+            Self::Char => 4,
+            Self::String => 4,
+
+            Self::Option(ty) => ty.byte_align(),
+            Self::Result(ok, err) => std::cmp::max(ok.byte_align(), err.byte_align()),
+            Self::Tuple(fields) => fields.iter().map(|ty| ty.byte_align()).max().unwrap_or(1),
+            Self::List(_) => 4,
+
+            Self::Record { fields, .. } => fields
+                .iter()
+                .map(|(_name, ty)| ty.byte_align())
+                .max()
+                .unwrap_or(1),
+            Self::Variant { cases, .. } => {
+                // TODO: variant with more than 256 cases
+                cases
+                    .iter()
+                    .map(|(_name, ty)| ty.as_ref().map_or(1, |ty| ty.byte_align()))
+                    .max()
+                    .unwrap_or(1)
+            }
+        }
+    }
+
+    pub fn byte_size(&self) -> usize {
+        match self {
+            Self::S8 => 1,
+            Self::S16 => 2,
+            Self::S32 => 4,
+            Self::S64 => 8,
+
+            Self::U8 => 1,
+            Self::U16 => 2,
+            Self::U32 => 4,
+            Self::U64 => 8,
+
+            Self::F32 => 4,
+            Self::F64 => 8,
+
+            Self::Bool => 1,
+            Self::Char => 4,
+            Self::String => 8,
+
+            Self::Option(ty) => self.byte_align() + ty.byte_size(),
+            Self::Result(ok, err) => self.byte_align() + ok.byte_size() + err.byte_size(),
+            Self::Tuple(fields) => fields.iter().map(|ty| ty.byte_align()).max().unwrap_or(1),
+            Self::List(_) => 8,
+
+            Self::Record { fields, .. } => fields
+                .iter()
+                .map(|(_name, ty)| ty.byte_align())
+                .max()
+                .unwrap_or(1),
+            Self::Variant { cases, .. } => {
+                // TODO: variant with more than 256 cases
+                cases
+                    .iter()
+                    .map(|(_name, ty)| ty.as_ref().map_or(1, |ty| ty.byte_align()))
+                    .max()
+                    .unwrap_or(1)
+            }
+        }
+    }
 }
 
 impl std::fmt::Display for ValueType {
@@ -80,7 +266,6 @@ impl std::fmt::Display for ValueType {
 
             Self::Bool => write!(f, "bool"),
             Self::Char => write!(f, "char"),
-
             Self::String => write!(f, "string"),
 
             Self::Option(ty) => write!(f, "option<{ty}>"),
@@ -121,7 +306,7 @@ impl std::fmt::Display for ValueType {
 
 impl Default for ValueType {
     fn default() -> Self {
-        Self::unit()
+        Self::new_unit()
     }
 }
 
@@ -146,7 +331,6 @@ impl PartialEq for ValueType {
 
             (Self::Bool, Self::Bool) => true,
             (Self::Char, Self::Char) => true,
-
             (Self::String, Self::String) => true,
 
             (Self::Option(opt_a), Self::Option(opt_b)) => opt_a == opt_b,

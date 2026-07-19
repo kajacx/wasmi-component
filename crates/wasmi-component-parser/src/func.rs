@@ -27,7 +27,7 @@ impl Func {
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FuncIdentifier {
     /// Used for both imported and exported function, can be empty if there is no module.
-    pub module: String,
+    pub module: String, // TODO: Rc<str>?
 
     /// Name of the function. Will have the name after the # for exported functions.
     pub name: String,

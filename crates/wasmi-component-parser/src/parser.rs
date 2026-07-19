@@ -141,7 +141,7 @@ impl Parser {
 
         let result = func
             .result
-            .map_or_else(|| ValueType::unit(), |ty| self.convert_type(ty));
+            .map_or_else(|| ValueType::new_unit(), |ty| self.convert_type(ty));
 
         Func::new(module_name, func.name.clone(), params, result)
     }
@@ -176,8 +176,8 @@ impl Parser {
 
             Type::Bool => ValueType::Bool,
             Type::Char => ValueType::Char,
-
             Type::String => ValueType::String,
+
             Type::ErrorContext => todo!("error context"),
 
             Type::Id(id) => {
@@ -211,11 +211,11 @@ impl Parser {
     fn parse_result(&self, ty: &Result_) -> ValueType {
         let ok = ty
             .ok
-            .map_or_else(|| ValueType::unit(), |ty| self.convert_type(ty));
+            .map_or_else(|| ValueType::new_unit(), |ty| self.convert_type(ty));
 
         let err = ty
             .err
-            .map_or_else(|| ValueType::unit(), |ty| self.convert_type(ty));
+            .map_or_else(|| ValueType::new_unit(), |ty| self.convert_type(ty));
 
         ValueType::Result(Rc::new(ok), Rc::new(err))
     }
@@ -224,7 +224,7 @@ impl Parser {
         let fields = record
             .fields
             .iter()
-            .map(|field| (field.name.clone(), self.convert_type(field.ty)))
+            .map(|field| (Rc::from(field.name.as_ref()), self.convert_type(field.ty)))
             .collect();
 
         ValueType::Record {
@@ -237,7 +237,12 @@ impl Parser {
         let cases = variant
             .cases
             .iter()
-            .map(|field| (field.name.clone(), field.ty.map(|ty| self.convert_type(ty))))
+            .map(|field| {
+                (
+                    Rc::from(field.name.as_ref()),
+                    field.ty.map(|ty| self.convert_type(ty)),
+                )
+            })
             .collect();
 
         ValueType::Variant {

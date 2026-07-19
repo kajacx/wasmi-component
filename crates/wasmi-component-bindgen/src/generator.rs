@@ -10,11 +10,13 @@ use crate::{
     type_helpers::{as_lift, canonical_name, rust_snake_case},
 };
 
-pub struct Generator {}
+pub struct Generator {
+    manual_impl: bool,
+}
 
 impl Generator {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(manual_impl: bool) -> Self {
+        Self { manual_impl }
     }
 
     pub fn generate_wit(&self, wit: ParsedWit) -> String {
@@ -45,40 +47,56 @@ impl Generator {
     }
 
     fn write_type(&self, ty: &ValueType, output: &mut String) {
-        match ty {
+        let component_value_derive = if self.manual_impl {
+            ""
+        } else {
+            ", ComponentValue"
+        };
+
+        let declaration = match ty {
             ValueType::Record { name, fields } => {
-                writeln!(output, "#[allow(unused)]").unwrap();
                 writeln!(
                     output,
-                    "#[derive(Debug, Clone, Default, PartialEq, PartialOrd, ComponentValue)]"
+                    concat!(
+                        "#[allow(unused)]\n",
+                        "#[derive(Debug, Clone, Default, PartialEq, PartialOrd{})]",
+                    ),
+                    component_value_derive
                 )
                 .unwrap();
-                writeln!(output, "pub struct {} {{", name.to_upper_camel_case()).unwrap();
+
+                let mut declaration = String::new();
+                writeln!(declaration, "pub struct {} {{", name.to_upper_camel_case()).unwrap();
 
                 fields.iter().for_each(|(name, ty)| {
                     writeln!(
-                        output,
+                        declaration,
                         "    pub {}: {},",
                         rust_snake_case(name),
                         canonical_name(ty)
                     )
                     .unwrap();
                 });
-
-                writeln!(output, "}}\n").unwrap();
+                writeln!(declaration, "}}\n").unwrap();
+                declaration
             }
             ValueType::Variant { name, cases } => {
-                writeln!(output, "#[allow(unused)]").unwrap();
                 writeln!(
                     output,
-                    "#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]"
+                    concat!(
+                        "#[allow(unused)]\n",
+                        "#[derive(Debug, Clone, PartialEq, PartialOrd{})]",
+                    ),
+                    component_value_derive
                 )
                 .unwrap();
-                writeln!(output, "pub enum {} {{", name.to_upper_camel_case()).unwrap();
+
+                let mut declaration = String::new();
+                writeln!(declaration, "pub enum {} {{", name.to_upper_camel_case()).unwrap();
 
                 cases.iter().for_each(|(name, ty)| {
                     writeln!(
-                        output,
+                        declaration,
                         "    {}{},",
                         name.to_upper_camel_case(),
                         if let Some(ty) = ty {
@@ -90,11 +108,21 @@ impl Generator {
                     .unwrap();
                 });
 
-                writeln!(output, "}}\n").unwrap();
+                writeln!(declaration, "}}\n").unwrap();
+                declaration
             }
             other => {
                 panic!("expected a record or a variant, got {:?} instead", other);
             }
+        };
+
+        writeln!(output, "{}", declaration).unwrap();
+
+        if self.manual_impl {
+            let token_stream =
+                wasmi_component_macros_impl::derive_component_value_str(&declaration);
+
+            writeln!(output, "{}\n", token_stream.to_string()).unwrap();
         }
     }
 

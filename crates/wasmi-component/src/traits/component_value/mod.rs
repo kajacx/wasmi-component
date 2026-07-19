@@ -19,6 +19,7 @@ pub trait ComponentValue: Sized + Debug {
 
     fn arg_count() -> usize;
 
+    // TODO: delete this?
     fn arg_types() -> Vec<ValType>;
 
     fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>>;

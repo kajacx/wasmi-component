@@ -5,7 +5,7 @@ set -e
 
 cd crates/wasmi-component-wasi
 
-cargo run --manifest-path ../../Cargo.toml -p wasmi-component-bindgen -- ./wasi-p2-partial.wit > ./src/bindgen.rs
+cargo run --manifest-path ../../Cargo.toml -p wasmi-component-bindgen -- -m ./wasi-p2-partial.wit > ./src/bindgen.rs
 
 cargo expand bindgen > ./src/expanded.rs
 

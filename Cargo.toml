@@ -4,6 +4,7 @@ members = [
     "crates/wasmi-component",
     "crates/wasmi-component-bindgen",
     "crates/wasmi-component-macros",
+    "crates/wasmi-component-macros-impl",
     "crates/wasmi-component-parser",
     "crates/wasmi-component-wasi",
 

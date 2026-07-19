@@ -8,10 +8,153 @@ use wasmi_component::{
 };
 
 #[allow(unused)]
-#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum StreamError {
     LastOperationFailed(i32),
     Closed,
+}
+
+impl wasmi_component::ComponentValue for StreamError {
+    type Borrowed<'a> = StreamErrorBorrowed<'a>;
+    fn value_type() -> wasmi_component::ValueType {
+        wasmi_component::ValueType::Variant {
+            name: std::rc::Rc::from("StreamError"),
+            cases: std::rc::Rc::from([
+                (
+                    std::rc::Rc::from("LastOperationFailed"),
+                    Some(i32::value_type()),
+                ),
+                (std::rc::Rc::from("Closed"), None),
+            ]),
+        }
+    }
+    fn arg_count() -> usize {
+        let mut max = 0;
+        max = std::cmp::max(max, i32::arg_count());
+        1 + max
+    }
+    fn arg_types() -> Vec<wasmi_component::wasmi::ValType> {
+        wasmi_component::helpers::variant_types([i32::arg_types()])
+    }
+    fn lift_args<'a>(
+        args: &[wasmi_component::lib_structs::WasmValue],
+        memory: &'a [u8],
+    ) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
+        match args[0].i32()? {
+            0i32 => Ok(StreamErrorBorrowed::LastOperationFailed(i32::lift_args(
+                &args[1..(1 + i32::arg_count())],
+                memory,
+            )?)),
+            1i32 => Ok(StreamErrorBorrowed::Closed),
+            other => Err(wasmi_component::ConvertError::new(format!(
+                "invalid determinant {other} in {}::lift_args",
+                "StreamError"
+            ))),
+        }
+    }
+    fn byte_align() -> usize {
+        let mut max = 1;
+        max = std::cmp::max(max, i32::byte_align());
+        max
+    }
+    fn byte_size() -> usize {
+        let mut max = 0;
+        max = std::cmp::max(max, i32::byte_align());
+        Self::byte_align() + max
+    }
+    fn lift_bytes<'a>(
+        bytes: &[u8],
+        memory: &'a [u8],
+    ) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
+        let offset = Self::byte_align();
+        match bytes[0] {
+            0u8 => Ok(StreamErrorBorrowed::LastOperationFailed(i32::lift_bytes(
+                &bytes[offset..(i32::byte_size() + offset)],
+                memory,
+            )?)),
+            1u8 => Ok(StreamErrorBorrowed::Closed),
+            other => Err(wasmi_component::ConvertError::new(format!(
+                "invalid determinant {other} in {}::lift_bytes",
+                "StreamError"
+            ))),
+        }
+    }
+}
+#[derive(Clone, Debug)]
+pub enum StreamErrorBorrowed<'a> {
+    LastOperationFailed(<i32 as wasmi_component::ComponentValue>::Borrowed<'a>),
+    Closed,
+}
+impl wasmi_component::Lift<StreamError> for StreamErrorBorrowed<'_> {
+    fn lift_owned(&self) -> wasmi_component::ConvertResult<StreamError> {
+        Ok(match self {
+            Self::LastOperationFailed(value) => {
+                StreamError::LastOperationFailed(value.lift_owned()?)
+            }
+            Self::Closed => StreamError::Closed,
+        })
+    }
+    fn lift_to(&self, target: &mut StreamError) -> wasmi_component::ConvertResult<()> {
+        match self {
+            Self::LastOperationFailed(self_val) => {
+                if let StreamError::LastOperationFailed(target_val) = target {
+                    self_val.lift_to(target_val)
+                } else {
+                    *target = StreamError::LastOperationFailed(self_val.lift_owned()?);
+                    Ok(())
+                }
+            }
+            Self::Closed => {
+                *target = StreamError::Closed;
+                Ok(())
+            }
+        }
+    }
+}
+impl wasmi_component::Lower<Self> for StreamError {
+    fn lower_args(
+        &self,
+        args: &mut [wasmi_component::lib_structs::WasmValue],
+        memory: &mut impl wasmi_component::lib_structs::MemoryAccess,
+    ) -> wasmi_component::ConvertResult<()> {
+        let written = match self {
+            Self::LastOperationFailed(value) => {
+                args[0] = wasmi_component::lib_structs::WasmValue::I32(0i32);
+                value.lower_args(&mut args[1..(1 + i32::arg_count())], memory)?;
+                1 + i32::arg_count()
+            }
+            Self::Closed => {
+                args[0] = wasmi_component::lib_structs::WasmValue::I32(1i32);
+                1
+            }
+        };
+        for arg in &mut args[written..] {
+            *arg = wasmi_component::lib_structs::WasmValue::Unused;
+        }
+        Ok(())
+    }
+    fn lower_bytes(
+        &self,
+        range: std::ops::Range<usize>,
+        memory: &mut impl wasmi_component::lib_structs::MemoryAccess,
+    ) -> wasmi_component::ConvertResult<()> {
+        use wasmi_component::lib_structs::Slice;
+        let offset = Self::byte_align();
+        match self {
+            Self::LastOperationFailed(value) => {
+                memory
+                    .slice(range.start..(range.start + 1))?
+                    .copy_from_slice(&[0u8]);
+                value.lower_bytes(range.slice(offset..(offset + i32::byte_size())), memory)
+            }
+            Self::Closed => {
+                memory
+                    .slice(range.start..(range.start + 1))?
+                    .copy_from_slice(&[0]);
+                Ok(())
+            }
+        }
+    }
 }
 
 #[allow(unused)]

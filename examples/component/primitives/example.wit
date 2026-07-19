@@ -16,7 +16,6 @@ interface round-trip {
 
     trip-bool: func(value: bool) -> bool;
     trip-char: func(value: char) -> char;
-    
     trip-string: func(value: string) -> string;
 }
 

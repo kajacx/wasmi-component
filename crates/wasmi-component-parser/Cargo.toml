@@ -5,4 +5,4 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-wit-parser = { version = "0.253.0" }
+wit-parser = { version = "0.254.0" }

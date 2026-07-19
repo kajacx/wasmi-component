@@ -14,6 +14,10 @@ use generator::*;
 struct Args {
     /// Path to the input WIT file.
     wit: PathBuf,
+
+    /// Implement ComponentValue manually instead of using a macro.
+    #[arg(short, long, default_value_t = false)]
+    manual_impl: bool,
 }
 
 fn main() {
@@ -29,7 +33,7 @@ fn main() {
     let parser = Parser::new(resolve);
     let wit = parser.parse_wit();
 
-    let generator = Generator::new();
+    let generator = Generator::new(args.manual_impl);
     let output = generator.generate_wit(wit);
 
     print!("{output}");

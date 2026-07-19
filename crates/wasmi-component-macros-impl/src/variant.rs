@@ -21,7 +21,7 @@ impl Generator for VariantGenerator<'_> {
                 .next()
                 .map_or_else(|| quote! { None }, |ty| quote! { Some(#ty::value_type()) });
 
-            output.extend(quote! { (#field_name.to_string(), #field_ty), });
+            output.extend(quote! { (std::rc::Rc::from(#field_name), #field_ty), });
         }
 
         let name = self.gen_data.name.to_string();

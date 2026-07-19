@@ -41,7 +41,6 @@ pub fn canonical_name(ty: &ValueType) -> String {
 
         ValueType::Bool => "bool".into(),
         ValueType::Char => "char".into(),
-
         ValueType::String => "String".into(),
 
         ValueType::Option(ty) => format!("Option<{}>", canonical_name(ty)),
@@ -88,7 +87,6 @@ pub fn as_lift(ty: &ValueType) -> String {
 
         ValueType::Bool => "bool".into(),
         ValueType::Char => "char".into(),
-
         ValueType::String => "&str".into(),
 
         ValueType::Option(ty) => format!("Option<{}>", as_lift(ty)),
@@ -135,7 +133,6 @@ pub fn as_lower(ty: &ValueType) -> String {
 
         ValueType::Bool => "bool".into(),
         ValueType::Char => "char".into(),
-
         ValueType::String => "&str".into(),
 
         ValueType::Option(_)
