@@ -1,5 +1,5 @@
 use anyhow::{Context, bail};
-use wasmi_component_parser::{ParsedWorld, ValueType};
+use wasmi_component_parser::ParsedWorld;
 use wasmparser::{Parser, Payload};
 use wit_component::{DecodedWasm, decode};
 
@@ -57,11 +57,10 @@ impl<'a> ComponentBuilder<'a> {
     pub fn imported_funcs(&self) -> FuncStorage {
         let mut storage = FuncStorage::new();
         for func in &self.world.imports {
-            println!("processing WORLD IMPORT {}", func.ident);
             storage.insert(
                 func.ident.clone(),
                 FuncSignature::new(
-                    ValueType::Tuple(func.params.iter().map(|(_name, ty)| ty.clone()).collect()),
+                    func.params.iter().map(|(_name, ty)| ty.clone()).collect(),
                     func.result.clone(),
                 ),
             );
@@ -75,7 +74,7 @@ impl<'a> ComponentBuilder<'a> {
             storage.insert(
                 func.ident.clone(),
                 FuncSignature::new(
-                    ValueType::Tuple(func.params.iter().map(|(_name, ty)| ty.clone()).collect()),
+                    func.params.iter().map(|(_name, ty)| ty.clone()).collect(),
                     func.result.clone(),
                 ),
             );
