@@ -1,0 +1,29 @@
+package wasmi-component:component-examples@0.1.0;
+
+interface round-trip {
+    record person {
+        id: u64,
+        name: string,
+        birthday: option<string>,
+    }
+
+    trip-s32: func(value: s32) -> s32;
+    trip-string: func(value: string) -> string;
+    trip-person: func(value: person) -> person;
+
+    list-s32: func(value: list<s32>) -> list<s32>;
+    list-string: func(value: list<string>) -> list<string>;
+    list-person: func(value: list<person>) -> list<person>;
+
+    result-s32: func(value: result<s32, s32>) -> result<s32, s32>;
+    result-string: func(value: result<string, string>) -> result<string, string>;
+    result-person: func(value: result<person, person>) -> result<person, person>;
+}
+
+world test-example {
+    import round-trip;
+
+    export round-trip;
+
+    import log: func(message: string);
+}

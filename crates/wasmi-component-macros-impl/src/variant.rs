@@ -15,11 +15,10 @@ impl Generator for VariantGenerator<'_> {
 
         for field in &self.data.variants {
             let field_name = &field.ident.to_string();
-            let field_ty = &field
-                .fields
-                .iter()
-                .next()
-                .map_or_else(|| quote! { None }, |ty| quote! { Some(#ty::value_type()) });
+            let field_ty = &field.fields.iter().next().map_or_else(
+                || quote! { None },
+                |ty| quote! { Some(<#ty>::value_type()) },
+            );
 
             output.extend(quote! { (std::rc::Rc::from(#field_name), #field_ty), });
         }
@@ -38,7 +37,7 @@ impl Generator for VariantGenerator<'_> {
             let field_ty = &field.fields.iter().next().map(|item| &item.ty);
 
             if let Some(ty) = field_ty {
-                output.extend(quote! { max = std::cmp::max(max, #ty::arg_count()); });
+                output.extend(quote! { max = std::cmp::max(max, <#ty>::arg_count()); });
             }
         }
 
@@ -53,7 +52,7 @@ impl Generator for VariantGenerator<'_> {
             let field_ty = &field.fields.iter().next().map(|item| &item.ty);
 
             if let Some(ty) = field_ty {
-                output.extend(quote! { #ty::arg_types(), });
+                output.extend(quote! { <#ty>::arg_types(), });
             }
         }
 
@@ -70,7 +69,7 @@ impl Generator for VariantGenerator<'_> {
             let field_name = &field.ident;
 
             let value = if let Some(ty) = field_ty {
-                quote! { (#ty::lift_args(&args[1..(1 + #ty::arg_count())], memory)?) }
+                quote! { (<#ty>::lift_args(&args[1..(1 + <#ty>::arg_count())], memory)?) }
             } else {
                 quote! {}
             };
@@ -99,8 +98,8 @@ impl Generator for VariantGenerator<'_> {
             if let Some(ty) = field_ty {
                 output.extend(quote! { Self::#field_name(value) => {
                     args[0] = wasmi_component::lib_structs::WasmValue::I32(#index);
-                    value.lower_args(&mut args[1..(1 + #ty::arg_count())], memory)?;
-                    1 + #ty::arg_count()
+                    value.lower_args(&mut args[1..(1 + <#ty>::arg_count())], memory)?;
+                    1 + <#ty>::arg_count()
                 } });
             } else {
                 output.extend(quote! { Self::#field_name => {
@@ -129,7 +128,7 @@ impl Generator for VariantGenerator<'_> {
             let field_ty = &field.fields.iter().next().map(|item| &item.ty);
 
             if let Some(ty) = field_ty {
-                output.extend(quote! { max = std::cmp::max(max, #ty::byte_align()); });
+                output.extend(quote! { max = std::cmp::max(max, <#ty>::byte_align()); });
             }
         }
 
@@ -144,7 +143,7 @@ impl Generator for VariantGenerator<'_> {
             let field_ty = &field.fields.iter().next().map(|item| &item.ty);
 
             if let Some(ty) = field_ty {
-                output.extend(quote! { max = std::cmp::max(max, #ty::byte_align()); });
+                output.extend(quote! { max = std::cmp::max(max, <#ty>::byte_align()); });
             }
         }
 
@@ -163,7 +162,7 @@ impl Generator for VariantGenerator<'_> {
             let field_name = &field.ident;
 
             let value = if let Some(ty) = field_ty {
-                quote! { (#ty::lift_bytes(&bytes[offset..(#ty::byte_size() + offset)], memory)?) }
+                quote! { (<#ty>::lift_bytes(&bytes[offset..(<#ty>::byte_size() + offset)], memory)?) }
             } else {
                 quote! {}
             };
@@ -196,7 +195,7 @@ impl Generator for VariantGenerator<'_> {
                         .slice(range.start..(range.start + 1))?
                         .copy_from_slice(&[#index]);
 
-                    value.lower_bytes(range.slice(offset..(offset + #ty::byte_size())), memory)
+                    value.lower_bytes(range.slice(offset..(offset + <#ty>::byte_size())), memory)
                 } });
             } else {
                 output.extend(quote! { Self::#field_name => {

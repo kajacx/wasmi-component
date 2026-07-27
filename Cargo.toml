@@ -11,6 +11,7 @@ members = [
     "examples/component/primitives",
     "examples/component/lists",
     "examples/component/custom_types",
+    "examples/component/dynamic",
     "examples/wasi/stdio",
 ]
 exclude = ["guests/"]

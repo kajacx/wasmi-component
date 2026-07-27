@@ -4,7 +4,7 @@ use std::error::Error;
 pub struct ConvertError {
     pub message: String,
     pub additional: Option<String>,
-    pub cause: Option<Box<dyn Error>>,
+    pub cause: Option<Box<dyn Error + Send + Sync + 'static>>,
 }
 
 pub type ConvertResult<T> = Result<T, ConvertError>;
@@ -23,7 +23,7 @@ impl ConvertError {
         self
     }
 
-    pub fn with_cause(mut self, cause: Box<dyn Error>) -> Self {
+    pub fn with_cause(mut self, cause: Box<dyn Error + Send + Sync>) -> Self {
         self.cause = Some(cause);
         self
     }
@@ -49,6 +49,6 @@ impl std::fmt::Display for ConvertError {
 
 impl std::error::Error for ConvertError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        self.cause.as_deref()
+        self.cause.as_ref().map(|e| &**e as _)
     }
 }

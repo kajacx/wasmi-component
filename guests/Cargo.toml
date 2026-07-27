@@ -4,6 +4,7 @@ members = [
     "component/primitives",
     "component/lists",
     "component/custom_types",
+    "component/dynamic",
     "wasi/stdio",
 ]
 

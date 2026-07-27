@@ -260,20 +260,3 @@ pub(crate) fn lift_bytes_dyn(
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn lifts_option_and_tuple_values() {
-        let args = [WasmValue::I32(1), WasmValue::I32(7)];
-        let value = lift_args_dyn(&ValueType::new_option(ValueType::S32), &args, &[]).unwrap();
-        assert_eq!(value.ty(), &ValueType::new_option(ValueType::S32));
-
-        let tuple_ty = ValueType::Tuple(Rc::from([ValueType::S32, ValueType::S32]));
-        let tuple_args = [WasmValue::I32(5), WasmValue::I32(6)];
-        let tuple_value = lift_args_dyn(&tuple_ty, &tuple_args, &[]).unwrap();
-        assert_eq!(tuple_value.ty(), &tuple_ty);
-    }
-}

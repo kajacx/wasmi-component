@@ -16,7 +16,7 @@ impl Generator for RecordGenerator<'_> {
         for field in &self.data.fields {
             let field_name = field.ident.as_ref().unwrap().to_string();
             let field_ty = &field.ty;
-            output.extend(quote! { (std::rc::Rc::from(#field_name), #field_ty::value_type()), });
+            output.extend(quote! { (std::rc::Rc::from(#field_name), <#field_ty>::value_type()), });
         }
 
         let name = self.gen_data.name.to_string();
@@ -30,7 +30,7 @@ impl Generator for RecordGenerator<'_> {
         let mut output = quote! { 0 };
         for field in &self.data.fields {
             let field_ty = &field.ty;
-            output.extend(quote! { + #field_ty::arg_count()});
+            output.extend(quote! { + <#field_ty>::arg_count()});
         }
         output
     }
@@ -39,7 +39,7 @@ impl Generator for RecordGenerator<'_> {
         let mut output = quote! { let mut types = Vec::new(); };
         for field in &self.data.fields {
             let field_ty = &field.ty;
-            output.extend(quote! { types.extend(#field_ty::arg_types()); });
+            output.extend(quote! { types.extend(<#field_ty>::arg_types()); });
         }
         output.extend(quote! { types });
         output
@@ -52,8 +52,8 @@ impl Generator for RecordGenerator<'_> {
         for field in &self.data.fields {
             let field_ty = &field.ty;
             let field_name = field.ident.as_ref().unwrap();
-            output.extend(quote! { let #field_name = #field_ty::lift_args(&args[index .. (index + #field_ty::arg_count())], memory)?; });
-            output.extend(quote! { index += #field_ty::arg_count(); });
+            output.extend(quote! { let #field_name = <#field_ty>::lift_args(&args[index .. (index + <#field_ty>::arg_count())], memory)?; });
+            output.extend(quote! { index += <#field_ty>::arg_count(); });
             result.extend(quote! { #field_name, });
         }
 
@@ -68,8 +68,8 @@ impl Generator for RecordGenerator<'_> {
         for field in &self.data.fields {
             let field_ty = &field.ty;
             let field_name = field.ident.as_ref().unwrap();
-            output.extend(quote! { #field_ty::lower_args(&self.#field_name, &mut args[index .. (index + #field_ty::arg_count())], memory)?; });
-            output.extend(quote! { index += #field_ty::arg_count(); });
+            output.extend(quote! { <#field_ty>::lower_args(&self.#field_name, &mut args[index .. (index + <#field_ty>::arg_count())], memory)?; });
+            output.extend(quote! { index += <#field_ty>::arg_count(); });
         }
 
         output.extend(quote! { Ok(()) });
@@ -80,7 +80,7 @@ impl Generator for RecordGenerator<'_> {
         let mut output = quote! { let mut result = 0; };
         for field in &self.data.fields {
             let field_ty = &field.ty;
-            output.extend(quote! { result = std::cmp::max(result, #field_ty::byte_align()); });
+            output.extend(quote! { result = std::cmp::max(result, <#field_ty>::byte_align()); });
         }
         output.extend(quote! { result });
         output
@@ -91,7 +91,7 @@ impl Generator for RecordGenerator<'_> {
         for field in &self.data.fields {
             let field_ty = &field.ty;
             output.extend(
-                quote! { result += wasmi_component::helpers::round_up(#field_ty::byte_size(), align); },
+                quote! { result += wasmi_component::helpers::round_up(<#field_ty>::byte_size(), align); },
             );
         }
         output.extend(quote! { result });
@@ -105,8 +105,8 @@ impl Generator for RecordGenerator<'_> {
         for field in &self.data.fields {
             let field_ty = &field.ty;
             let field_name = field.ident.as_ref().unwrap();
-            output.extend(quote! { let #field_name = #field_ty::lift_bytes(&bytes[index .. (index + #field_ty::byte_size())], memory)?; });
-            output.extend(quote! { index += wasmi_component::helpers::round_up(#field_ty::byte_size(), align); });
+            output.extend(quote! { let #field_name = <#field_ty>::lift_bytes(&bytes[index .. (index + <#field_ty>::byte_size())], memory)?; });
+            output.extend(quote! { index += wasmi_component::helpers::round_up(<#field_ty>::byte_size(), align); });
             result.extend(quote! { #field_name, });
         }
 
@@ -121,8 +121,8 @@ impl Generator for RecordGenerator<'_> {
         for field in &self.data.fields {
             let field_ty = &field.ty;
             let field_name = field.ident.as_ref().unwrap();
-            output.extend(quote! { #field_ty::lower_bytes(&self.#field_name, index .. (index + #field_ty::byte_size()), memory)?; });
-            output.extend(quote! { index += wasmi_component::helpers::round_up(#field_ty::arg_count(), align); });
+            output.extend(quote! { <#field_ty>::lower_bytes(&self.#field_name, index .. (index + <#field_ty>::byte_size()), memory)?; });
+            output.extend(quote! { index += wasmi_component::helpers::round_up(<#field_ty>::arg_count(), align); });
         }
 
         output.extend(quote! { Ok(()) });

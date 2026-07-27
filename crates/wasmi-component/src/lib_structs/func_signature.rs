@@ -30,6 +30,11 @@ impl FuncSignature {
 
         Self { params, result }
     }
+
+    /// Returns params of this function as a single tuple
+    pub fn params_as_tuple(&self) -> ValueType {
+        ValueType::Tuple(self.params.clone())
+    }
 }
 
 impl std::fmt::Display for FuncSignature {

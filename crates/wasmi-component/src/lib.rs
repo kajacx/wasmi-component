@@ -1,7 +1,7 @@
 pub use anyhow;
 pub use wasmi;
 
-mod dyn_value;
+mod dynamic;
 mod errors;
 pub mod lib_structs; // Types that are more for internal use, but the user can still ue them.
 mod pointers;
@@ -10,7 +10,7 @@ mod user_structs; // Types that user will probably want to use, like `Instance`,
 
 pub mod helpers;
 
-pub use dyn_value::*;
+pub use dynamic::*;
 pub use errors::*;
 pub use traits::*;
 pub use user_structs::*;
