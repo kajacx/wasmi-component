@@ -3,7 +3,8 @@ use std::rc::Rc;
 
 use wasmi_component_parser::ValueType;
 
-use crate::lib_structs::{MemoryAccess, WasmValue};
+use crate::helpers::round_up;
+use crate::lib_structs::{MemoryAccess, Slice, WasmValue};
 use crate::pointers::FatPtr;
 use crate::{ConvertResult, DynValue, Lower};
 
@@ -179,10 +180,121 @@ impl DynInner {
 
     pub fn lower_bytes(
         &self,
-        _ty: &ValueType,
-        _range: Range<usize>,
-        _memory: &mut impl MemoryAccess,
+        ty: &ValueType,
+        range: Range<usize>,
+        memory: &mut impl MemoryAccess,
     ) -> ConvertResult<()> {
-        todo!()
+        match self {
+            DynInner::S8(value) => value.lower_bytes(range, memory),
+            DynInner::S16(value) => value.lower_bytes(range, memory),
+            DynInner::S32(value) => value.lower_bytes(range, memory),
+            DynInner::S64(value) => value.lower_bytes(range, memory),
+
+            DynInner::U8(value) => value.lower_bytes(range, memory),
+            DynInner::U16(value) => value.lower_bytes(range, memory),
+            DynInner::U32(value) => value.lower_bytes(range, memory),
+            DynInner::U64(value) => value.lower_bytes(range, memory),
+
+            DynInner::F32(value) => value.lower_bytes(range, memory),
+            DynInner::F64(value) => value.lower_bytes(range, memory),
+
+            DynInner::Bool(value) => value.lower_bytes(range, memory),
+            DynInner::Char(value) => value.lower_bytes(range, memory),
+            DynInner::String(value) => value.lower_bytes(range, memory),
+
+            DynInner::Option(value) => {
+                let inner_ty = ty.as_option().expect("option type was checked");
+                let offset = ty.byte_align();
+
+                match value {
+                    None => {
+                        memory
+                            .slice(range.start..(range.start + 1))?
+                            .copy_from_slice(&[0]);
+                        Ok(())
+                    }
+                    Some(value) => {
+                        memory
+                            .slice(range.start..(range.start + 1))?
+                            .copy_from_slice(&[1]);
+                        value.lower_bytes(
+                            range.slice(offset..(offset + inner_ty.byte_size())),
+                            memory,
+                        )
+                    }
+                }
+            }
+            DynInner::Result(value) => {
+                let (ok_ty, err_ty) = ty.as_result().expect("result type was checked");
+                let offset = ty.byte_align();
+
+                match value {
+                    Ok(ok) => {
+                        memory
+                            .slice(range.start..(range.start + 1))?
+                            .copy_from_slice(&[0]);
+                        ok.lower_bytes(range.slice(offset..(offset + ok_ty.byte_size())), memory)
+                    }
+                    Err(err) => {
+                        memory
+                            .slice(range.start..(range.start + 1))?
+                            .copy_from_slice(&[1]);
+                        err.lower_bytes(range.slice(offset..(offset + err_ty.byte_size())), memory)
+                    }
+                }
+            }
+            DynInner::Tuple(fields) => {
+                let align = ty.byte_align();
+                let mut index = range.start;
+
+                for value in fields.iter() {
+                    value.lower_bytes(index..(index + value.ty().byte_size()), memory)?;
+                    index += round_up(value.ty().byte_size(), align);
+                }
+
+                Ok(())
+            }
+            DynInner::List(contents) => {
+                let inner_ty = ty.list_type().expect("list type was checked");
+                let len = inner_ty.byte_size() * contents.len();
+                let start = memory.allocate(len, inner_ty.byte_align())?;
+                let mut index = start;
+
+                for item in contents.iter() {
+                    item.lower_bytes(index..(index + inner_ty.byte_size()), memory)?;
+                    index += inner_ty.byte_size();
+                }
+
+                let ptr = FatPtr::new(start, contents.len(), inner_ty.byte_size());
+                ptr.write_to_bytes(memory.slice(range)?);
+                Ok(())
+            }
+
+            DynInner::Record { fields } => {
+                let align = ty.byte_align();
+                let mut index = range.start;
+
+                for field in fields.iter() {
+                    field.lower_bytes(index..(index + field.ty().byte_size()), memory)?;
+                    index += round_up(field.ty().byte_size(), align);
+                }
+
+                Ok(())
+            }
+            DynInner::Variant { determinant, value } => {
+                let offset = ty.byte_align();
+                // TODO: variants with more than 256 cases
+                memory.slice(range.start..(range.start + 1))?[0] = *determinant as u8;
+
+                if let Some(value) = value {
+                    value.lower_bytes(
+                        range.slice(offset..(offset + value.ty().byte_size())),
+                        memory,
+                    )?;
+                }
+
+                Ok(())
+            }
+        }
     }
 }
