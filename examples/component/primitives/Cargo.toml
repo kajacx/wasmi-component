@@ -1,5 +1,5 @@
 [package]
-name = "example-primitives-host"
+name = "example_host_primitives"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

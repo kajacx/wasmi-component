@@ -4,7 +4,7 @@ use wasmi_component::{Component, HostResult, Lift, Linker, ListAccessor, Store};
 mod bindings;
 
 fn get_wasm() -> Vec<u8> {
-    std::fs::read("../guests/target/wasm32-unknown-unknown/debug/example_lists_guest.wasm").unwrap()
+    std::fs::read("../guests/target/wasm32-unknown-unknown/debug/example_guest_lists.wasm").unwrap()
 }
 
 #[derive(Default)]

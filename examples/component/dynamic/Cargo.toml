@@ -1,5 +1,5 @@
 [package]
-name = "example-dynamic-host"
+name = "example_host_dynamic"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

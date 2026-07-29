@@ -1,5 +1,5 @@
 [package]
-name = "example-primitives-guest"
+name = "example_guest_primitives"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,4 +8,4 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-wit-bindgen = { version = "0.59" }
+wit-bindgen = { version = "0.60" }

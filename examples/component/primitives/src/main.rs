@@ -6,7 +6,7 @@ use crate::bindings::add_test_example_to_linker;
 mod bindings;
 
 fn get_wasm() -> Vec<u8> {
-    std::fs::read("../guests/target/wasm32-unknown-unknown/debug/example_primitives_guest.wasm")
+    std::fs::read("../guests/target/wasm32-unknown-unknown/debug/example_guest_primitives.wasm")
         .unwrap()
 }
 

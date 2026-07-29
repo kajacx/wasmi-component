@@ -87,7 +87,7 @@ impl FuncStorage {
             if index > 0 {
                 output.push_str(", ");
             }
-            write!(output, "\"{}\"", func.0);
+            write!(output, "\"{}\"", func.0).unwrap();
         }
         output.push(']');
         output

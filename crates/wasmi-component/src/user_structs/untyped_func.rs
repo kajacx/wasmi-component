@@ -42,7 +42,7 @@ impl UntypedFunc {
         params_user.check_params_signature(self.signature.params.as_ref(), &self.ident)?;
 
         let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unset);
-        let params_len = params_user.arg_count();
+        let params_len = 0; // params_user.arg_count(); // TODO:
 
         let mut memory_access = self.memory.fill(ctx.as_context_mut());
         params_user.lower_args(&mut params_wasm[0..params_len], &mut memory_access)?;

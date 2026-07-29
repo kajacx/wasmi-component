@@ -17,13 +17,30 @@ fi
 path="${path%/}" # remove trailing /
 example="${path#*/}" # get the second part of path, which is the example name
 
-guest="example_${example}_guest"
-host="example_${example}_host"
+guest="example_guest_${example}"
+host="example_host_${example}"
 
 wasm_path="$target/debug/$guest"
 
-guest="${guest//_/-}" # replace _ with -
-host="${host//_/-}" # replace _ with -
+# --- OTHER ARGS ---
+
+skip_build=""
+manual_impl=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -s|--skip-build)
+            skip_build="--skip-build"
+            shift
+            ;;
+        -m|--manual-impl)
+            manual_impl="--manual-impl"
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
 
 # --- GUEST ---
 
@@ -38,7 +55,6 @@ if $wasi; then
     wasm-tools component wit "target/$wasm_path.wasm" >> "$path/example-wasi-p2-partial.wit"
 fi
 
-pwd
 rm -rf "$path/modules" "$path/component.wat"
 mkdir "$path/modules"
 wasm-tools component unbundle -t --module-dir "$path/modules" --threshold 0 "target/$wasm_path.wasm" > "$path/component.wat"
@@ -53,9 +69,13 @@ cd ../../..
 
 cd ../examples
 
-cargo run --manifest-path ../Cargo.toml -p wasmi-component-bindgen -- "$2" "$path/example.wit" > "$path/src/bindings.rs"
+if [[ "manual_impl" == "--manual-impl" ]]; then
+    cargo run --manifest-path ../Cargo.toml -p wasmi-component-bindgen -- --manual-impl "$path/example.wit" > "$path/src/bindings.rs"
+else
+    cargo run --manifest-path ../Cargo.toml -p wasmi-component-bindgen -- "$path/example.wit" > "$path/src/bindings.rs"
+fi
 
-if [[ "$2" != "--skip-build" ]]; then
+if [[ "skip_build" != "--skip-build" ]]; then
     cd ..
     ./build.sh
     cd examples

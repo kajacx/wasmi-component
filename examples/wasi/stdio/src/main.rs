@@ -4,7 +4,7 @@ use wasmi_component::{Component, Linker, Store};
 mod bindings;
 
 fn get_wasm() -> Vec<u8> {
-    std::fs::read("../guests/target/wasm32-wasip2/debug/example_stdio_guest.wasm").unwrap()
+    std::fs::read("../guests/target/wasm32-wasip2/debug/example_guest_stdio.wasm").unwrap()
 }
 
 #[derive(Default)]

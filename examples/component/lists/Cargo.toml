@@ -1,5 +1,5 @@
 [package]
-name = "example-lists-host"
+name = "example_host_lists"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

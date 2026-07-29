@@ -3,10 +3,7 @@ use wasmi::AsContextMut;
 use wasmi_component_parser::FuncIdentifier;
 
 use crate::lib_structs::{FuncSignature, FuncStorage, MemoryAccessPre, WasmValue};
-use crate::{
-    Component, ComponentValue, ConvertError, DynValue, HostResult, Instance, Lower, StoreData,
-    dyn_type_to_wasm_params, lift_args_dyn,
-};
+use crate::{Component, ComponentValue, HostResult, Instance, Lower, StoreData};
 
 pub struct Linker<T> {
     linker: wasmi::Linker<StoreData<T>>,

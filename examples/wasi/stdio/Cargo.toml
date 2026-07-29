@@ -1,5 +1,5 @@
 [package]
-name = "example-stdio-host"
+name = "example_host_stdio"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

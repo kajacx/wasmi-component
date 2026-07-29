@@ -6,7 +6,7 @@ use crate::bindings::Person;
 mod bindings;
 
 fn get_wasm() -> Vec<u8> {
-    std::fs::read("../guests/target/wasm32-unknown-unknown/debug/example_custom_types_guest.wasm")
+    std::fs::read("../guests/target/wasm32-unknown-unknown/debug/example_guest_custom_types.wasm")
         .unwrap()
 }
 

@@ -5,7 +5,7 @@ use wasmi_component_parser::ValueType;
 
 use crate::lib_structs::{MemoryAccess, WasmValue};
 use crate::pointers::FatPtr;
-use crate::{ConvertError, ConvertResult, Lower, RecordFields};
+use crate::{ConvertResult, Lower, RecordFields};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum DynValue {
@@ -123,6 +123,29 @@ impl DynValue {
         }
     }
 
+    pub fn is(&self, ty: &ValueType) -> bool {
+        match ty {
+            ValueType::S8 => matches!(self, Self::S8(_)),
+            ValueType::S16 => matches!(self, Self::S16(_)),
+            ValueType::S32 => matches!(self, Self::S32(_)),
+            ValueType::S64 => matches!(self, Self::S64(_)),
+
+            ValueType::U8 => matches!(self, Self::U8(_)),
+            ValueType::U16 => matches!(self, Self::U16(_)),
+            ValueType::U32 => matches!(self, Self::U32(_)),
+            ValueType::U64 => matches!(self, Self::U64(_)),
+
+            ValueType::F32 => matches!(self, Self::F32(_)),
+            ValueType::F64 => matches!(self, Self::F64(_)),
+
+            ValueType::Bool => matches!(self, Self::F64(_)),
+            ValueType::Char => matches!(self, Self::Char(_)),
+            ValueType::String => matches!(self, Self::String(_)),
+
+            _ => todo!("value is type?"),
+        }
+    }
+
     // TODO: implement the others
     pub fn as_s8(&self) -> Option<i8> {
         match self {
@@ -138,6 +161,7 @@ impl DynValue {
         }
     }
 
+    #[allow(unused)]
     pub(crate) fn lower_args(
         &self,
         ty: &ValueType,
@@ -274,121 +298,122 @@ impl DynValue {
 
     pub fn lower_bytes(
         &self,
-        ty: &ValueType,
-        range: Range<usize>,
-        memory: &mut impl MemoryAccess,
+        _ty: &ValueType,
+        _range: Range<usize>,
+        _memory: &mut impl MemoryAccess,
     ) -> ConvertResult<()> {
-        match self {
-            Self::S8(value) => value.lower_bytes(range, memory),
-            Self::S16(value) => value.lower_bytes(range, memory),
-            Self::S32(value) => value.lower_bytes(range, memory),
-            Self::S64(value) => value.lower_bytes(range, memory),
+        todo!("lower_bytes")
+        //     match self {
+        //         Self::S8(value) => value.lower_bytes(range, memory),
+        //         Self::S16(value) => value.lower_bytes(range, memory),
+        //         Self::S32(value) => value.lower_bytes(range, memory),
+        //         Self::S64(value) => value.lower_bytes(range, memory),
 
-            Self::U8(value) => value.lower_bytes(range, memory),
-            Self::U16(value) => value.lower_bytes(range, memory),
-            Self::U32(value) => value.lower_bytes(range, memory),
-            Self::U64(value) => value.lower_bytes(range, memory),
+        //         Self::U8(value) => value.lower_bytes(range, memory),
+        //         Self::U16(value) => value.lower_bytes(range, memory),
+        //         Self::U32(value) => value.lower_bytes(range, memory),
+        //         Self::U64(value) => value.lower_bytes(range, memory),
 
-            Self::F32(value) => value.lower_bytes(range, memory),
-            Self::F64(value) => value.lower_bytes(range, memory),
+        //         Self::F32(value) => value.lower_bytes(range, memory),
+        //         Self::F64(value) => value.lower_bytes(range, memory),
 
-            Self::Bool(value) => value.lower_bytes(range, memory),
-            Self::Char(value) => value.lower_bytes(range, memory),
-            Self::String(value) => value.lower_bytes(range, memory),
+        //         Self::Bool(value) => value.lower_bytes(range, memory),
+        //         Self::Char(value) => value.lower_bytes(range, memory),
+        //         Self::String(value) => value.lower_bytes(range, memory),
 
-            Self::Option(value) => {
-                let inner_ty = ty.as_option().expect("option type was checked");
-                let offset = ty.byte_align();
+        //         Self::Option(value) => {
+        //             let inner_ty = ty.as_option().expect("option type was checked");
+        //             let offset = ty.byte_align();
 
-                match value {
-                    None => {
-                        memory
-                            .slice(range.start..(range.start + 1))?
-                            .copy_from_slice(&[0]);
-                        Ok(())
-                    }
-                    Some(value) => {
-                        memory
-                            .slice(range.start..(range.start + 1))?
-                            .copy_from_slice(&[1]);
-                        value.lower_bytes(
-                            range.slice(offset..(offset + inner_ty.byte_size())),
-                            memory,
-                        )
-                    }
-                }
-            }
-            Self::Result(value) => {
-                let (ok_ty, err_ty) = ty.as_result().expect("result type was checked");
-                let offset = ty.byte_align();
+        //             match value {
+        //                 None => {
+        //                     memory
+        //                         .slice(range.start..(range.start + 1))?
+        //                         .copy_from_slice(&[0]);
+        //                     Ok(())
+        //                 }
+        //                 Some(value) => {
+        //                     memory
+        //                         .slice(range.start..(range.start + 1))?
+        //                         .copy_from_slice(&[1]);
+        //                     value.lower_bytes(
+        //                         range.slice(offset..(offset + inner_ty.byte_size())),
+        //                         memory,
+        //                     )
+        //                 }
+        //             }
+        //         }
+        //         Self::Result(value) => {
+        //             let (ok_ty, err_ty) = ty.as_result().expect("result type was checked");
+        //             let offset = ty.byte_align();
 
-                match value {
-                    Ok(ok) => {
-                        memory
-                            .slice(range.start..(range.start + 1))?
-                            .copy_from_slice(&[0]);
-                        ok.lower_bytes(range.slice(offset..(offset + ok_ty.byte_size())), memory)
-                    }
-                    Err(err) => {
-                        memory
-                            .slice(range.start..(range.start + 1))?
-                            .copy_from_slice(&[1]);
-                        err.lower_bytes(range.slice(offset..(offset + err_ty.byte_size())), memory)
-                    }
-                }
-            }
-            Self::Tuple(fields) => {
-                let align = ty.byte_align();
-                let mut index = range.start;
+        //             match value {
+        //                 Ok(ok) => {
+        //                     memory
+        //                         .slice(range.start..(range.start + 1))?
+        //                         .copy_from_slice(&[0]);
+        //                     ok.lower_bytes(range.slice(offset..(offset + ok_ty.byte_size())), memory)
+        //                 }
+        //                 Err(err) => {
+        //                     memory
+        //                         .slice(range.start..(range.start + 1))?
+        //                         .copy_from_slice(&[1]);
+        //                     err.lower_bytes(range.slice(offset..(offset + err_ty.byte_size())), memory)
+        //                 }
+        //             }
+        //         }
+        //         Self::Tuple(fields) => {
+        //             let align = ty.byte_align();
+        //             let mut index = range.start;
 
-                for value in fields.iter() {
-                    value.lower_bytes(index..(index + value.ty().byte_size()), memory)?;
-                    index += round_up(value.ty().byte_size(), align);
-                }
+        //             for value in fields.iter() {
+        //                 value.lower_bytes(index..(index + value.ty().byte_size()), memory)?;
+        //                 index += round_up(value.ty().byte_size(), align);
+        //             }
 
-                Ok(())
-            }
-            Self::List(contents) => {
-                let inner_ty = ty.list_type().expect("list type was checked");
-                let len = inner_ty.byte_size() * contents.len();
-                let start = memory.allocate(len, inner_ty.byte_align())?;
-                let mut index = start;
+        //             Ok(())
+        //         }
+        //         Self::List(contents) => {
+        //             let inner_ty = ty.list_type().expect("list type was checked");
+        //             let len = inner_ty.byte_size() * contents.len();
+        //             let start = memory.allocate(len, inner_ty.byte_align())?;
+        //             let mut index = start;
 
-                for item in contents.iter() {
-                    item.lower_bytes(index..(index + inner_ty.byte_size()), memory)?;
-                    index += inner_ty.byte_size();
-                }
+        //             for item in contents.iter() {
+        //                 item.lower_bytes(index..(index + inner_ty.byte_size()), memory)?;
+        //                 index += inner_ty.byte_size();
+        //             }
 
-                let ptr = FatPtr::new(start, contents.len(), inner_ty.byte_size());
-                ptr.write_to_bytes(memory.slice(range)?);
-                Ok(())
-            }
+        //             let ptr = FatPtr::new(start, contents.len(), inner_ty.byte_size());
+        //             ptr.write_to_bytes(memory.slice(range)?);
+        //             Ok(())
+        //         }
 
-            Self::Record { fields } => {
-                let align = ty.byte_align();
-                let mut index = range.start;
+        //         Self::Record { fields } => {
+        //             let align = ty.byte_align();
+        //             let mut index = range.start;
 
-                for field in fields.iter() {
-                    field.lower_bytes(index..(index + field.ty().byte_size()), memory)?;
-                    index += round_up(field.ty().byte_size(), align);
-                }
+        //             for field in fields.iter() {
+        //                 field.lower_bytes(index..(index + field.ty().byte_size()), memory)?;
+        //                 index += round_up(field.ty().byte_size(), align);
+        //             }
 
-                Ok(())
-            }
-            Self::Variant { determinant, value } => {
-                let offset = ty.byte_align();
-                // TODO: variants with more than 256 cases
-                memory.slice(range.start..(range.start + 1))?[0] = *determinant as u8;
+        //             Ok(())
+        //         }
+        //         Self::Variant { determinant, value } => {
+        //             let offset = ty.byte_align();
+        //             // TODO: variants with more than 256 cases
+        //             memory.slice(range.start..(range.start + 1))?[0] = *determinant as u8;
 
-                if let Some(value) = value {
-                    value.lower_bytes(
-                        range.slice(offset..(offset + value.ty().byte_size())),
-                        memory,
-                    )?;
-                }
+        //             if let Some(value) = value {
+        //                 value.lower_bytes(
+        //                     range.slice(offset..(offset + value.ty().byte_size())),
+        //                     memory,
+        //                 )?;
+        //             }
 
-                Ok(())
-            }
-        }
+        //             Ok(())
+        //         }
+        //     }
     }
 }
