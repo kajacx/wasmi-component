@@ -1,5 +1,5 @@
-use crate::lib_structs::WasmValue;
-use crate::pointers::{FatPtr, PtrView, ptr_start};
+use crate::lib_structs::LiftReader;
+use crate::pointers::{PtrView, ptr_start};
 use crate::{ComponentValue, ConvertError, ConvertResult, ValueType};
 
 impl ComponentValue for String {
@@ -13,13 +13,6 @@ impl ComponentValue for String {
         2
     }
 
-    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(args.len(), Self::arg_count());
-
-        let ptr = FatPtr::from_args(args, 1)?;
-        convert_slice(ptr, memory)
-    }
-
     fn byte_align() -> usize {
         4
     }
@@ -28,19 +21,18 @@ impl ComponentValue for String {
         8
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(bytes.len(), Self::byte_size());
+    fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self::Borrowed<'mem>> {
+        let ptr = reader.read_fat_ptr(1);
+        let memory = reader.memory();
+        let slice = ptr.try_index(memory)?;
 
-        let ptr = FatPtr::from_bytes(bytes, 1)?;
-        convert_slice(ptr, memory)
+        str::from_utf8(slice).map_err(|err| {
+            ConvertError::new(format!("string isn't valid utf-8"))
+                .with_additional(format!(
+                    "byte contents: {:?}",
+                    PtrView::new(slice, ptr_start(memory))
+                ))
+                .with_cause(Box::new(err))
+        })
     }
-}
-
-fn convert_slice<'a>(ptr: FatPtr, memory: &'a [u8]) -> ConvertResult<&'a str> {
-    let slice = ptr.try_index(memory)?;
-    str::from_utf8(slice).map_err(|err| {
-        ConvertError::new(format!("string isn't valid utf-8"))
-            .with_additional(format!("{:?}", PtrView::new(slice, ptr_start(memory))))
-            .with_cause(Box::new(err))
-    })
 }

@@ -45,7 +45,7 @@ impl WasmValue {
             Self::I32(value) => Ok(value),
             Self::I64(value) => Ok(value as i32),
             other => Err(crate::ConvertError::new(format!(
-                "Cannot convert {other:?} to i32"
+                "cannot convert {other:?} to i32"
             ))),
         }
     }
@@ -54,7 +54,7 @@ impl WasmValue {
         match self {
             Self::I64(value) => Ok(value),
             other => Err(crate::ConvertError::new(format!(
-                "Cannot convert {other:?} to i64"
+                "cannot convert {other:?} to i64"
             ))),
         }
     }
@@ -65,7 +65,7 @@ impl WasmValue {
             Self::I64(value) => Ok(f32::from_bits(value as u32)),
             Self::F32(value) => Ok(value),
             other => Err(crate::ConvertError::new(format!(
-                "Cannot convert {other:?} to f32"
+                "cannot convert {other:?} to f32"
             ))),
         }
     }
@@ -75,7 +75,7 @@ impl WasmValue {
             Self::I64(value) => Ok(f64::from_bits(value as u64)),
             Self::F64(value) => Ok(value),
             other => Err(ConvertError::new(format!(
-                "Cannot convert {other:?} to f64"
+                "cannot convert {other:?} to f64"
             ))),
         }
     }

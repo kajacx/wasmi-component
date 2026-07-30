@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::lib_structs::WasmValue;
+use crate::lib_structs::LiftReader;
 use crate::{ConvertResult, Lift, ValueType};
 
 mod list;
@@ -16,11 +16,9 @@ pub trait ComponentValue: Sized + Debug {
 
     fn arg_count() -> usize;
 
-    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>>;
-
     fn byte_align() -> usize;
 
     fn byte_size() -> usize;
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>>;
+    fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self::Borrowed<'mem>>;
 }

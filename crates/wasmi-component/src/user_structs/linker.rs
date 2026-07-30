@@ -2,7 +2,9 @@ use anyhow::{Context, Result};
 use wasmi::AsContextMut;
 use wasmi_component_parser::FuncIdentifier;
 
-use crate::lib_structs::{FuncSignature, FuncStorage, MemoryAccessPre, WasmValue, wasm_args};
+use crate::lib_structs::{
+    FuncSignature, FuncStorage, LiftArgsReader, MemoryAccessPre, WasmValue, wasm_args,
+};
 use crate::{Component, ComponentValue, HostResult, Instance, Lower, StoreData};
 
 pub struct Linker<T> {
@@ -55,16 +57,19 @@ impl<T> Linker<T> {
                     .memory
                     .data_and_store_mut(caller.as_context_mut());
 
+                // TODO: more than 16 flat args
                 let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unset);
                 WasmValue::convert_from_wasmi(
                     &params_wasmi[0..params_len],
                     &mut params_wasm[0..params_len],
                 );
 
-                let user_data = store_data.data_mut();
+                let mut args_reader = LiftArgsReader::new(bytes, &params_wasm[0..params_len]);
+                let params_user = Params::lift(&mut args_reader)?;
 
-                let params_user = Params::lift_args(&params_wasm[0..params_len], bytes)?;
+                let user_data = store_data.data_mut();
                 let results_user = callback(user_data, params_user)?;
+
                 let mut memory_filled = memory_pre.fill(caller);
 
                 if has_external_result {

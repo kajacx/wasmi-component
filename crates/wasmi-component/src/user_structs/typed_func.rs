@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use wasmi::AsContextMut;
 
-use crate::lib_structs::{MemoryAccessPre, WasmValue, wasm_args};
+use crate::lib_structs::{LiftArgsReader, LiftBytesReader, MemoryAccessPre, WasmValue, wasm_args};
 use crate::pointers::FatPtr;
 use crate::{CallResult, ComponentValue, Lift, Lower, StoreData};
 
@@ -57,6 +57,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         params_user.lower_args(&mut params_wasm[0..params_len], &mut memory_access)?;
         drop(memory_access);
 
+        // TODO: more than 16 flat args
         let mut params_wasmi: [_; 16] = std::array::from_fn(|_| wasmi::Val::I32(0));
         WasmValue::convert_to_wasmi(
             &params_wasm[0..params_len],
@@ -98,13 +99,16 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         let results_user = if results_indirect {
             let address = results_wasmi[0].i32().unwrap() as usize;
             let ptr = FatPtr::new(address, Results::byte_size(), 1);
-
             let slice = ptr.try_index(bytes)?;
-            Results::lift_bytes(slice, bytes)?
+
+            let mut byte_reader = LiftBytesReader::new(bytes, slice);
+            Results::lift(&mut byte_reader)?
         } else {
             let mut results_wasm = [WasmValue::Unset];
             WasmValue::convert_from_wasmi(results_slice, &mut results_wasm[0..results_slice.len()]);
-            Results::lift_args(&results_wasm[0..results_slice.len()], bytes)?
+
+            let mut args_reader = LiftArgsReader::new(bytes, &results_wasm[0..results_slice.len()]);
+            Results::lift(&mut args_reader)?
         };
 
         let return_value = callback(store_data.data_mut(), results_user);

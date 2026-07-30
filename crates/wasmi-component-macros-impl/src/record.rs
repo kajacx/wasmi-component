@@ -35,23 +35,6 @@ impl Generator for RecordGenerator<'_> {
         output
     }
 
-    fn lift_args(&self) -> TokenStream {
-        let mut output = quote! { let mut index = 0; };
-        let mut result = quote! {};
-
-        for field in &self.data.fields {
-            let field_ty = &field.ty;
-            let field_name = field.ident.as_ref().unwrap();
-            output.extend(quote! { let #field_name = <#field_ty>::lift_args(&args[index .. (index + <#field_ty>::arg_count())], memory)?; });
-            output.extend(quote! { index += <#field_ty>::arg_count(); });
-            result.extend(quote! { #field_name, });
-        }
-
-        let borrowed_name = &self.gen_data.borrowed_name;
-        output.extend(quote! { Ok( #borrowed_name { #result } ) });
-        output
-    }
-
     fn lower_args(&self) -> TokenStream {
         let mut output = quote! { let mut index = 0; };
 
@@ -88,15 +71,16 @@ impl Generator for RecordGenerator<'_> {
         output
     }
 
-    fn lift_bytes(&self) -> TokenStream {
-        let mut output = quote! { let align = Self::byte_align(); let mut index = 0; };
+    fn lift(&self) -> TokenStream {
+        let mut output = quote! { let align = Self::byte_align(); };
         let mut result = quote! {};
 
         for field in &self.data.fields {
             let field_ty = &field.ty;
             let field_name = field.ident.as_ref().unwrap();
-            output.extend(quote! { let #field_name = <#field_ty>::lift_bytes(&bytes[index .. (index + <#field_ty>::byte_size())], memory)?; });
-            output.extend(quote! { index += wasmi_component::helpers::round_up(<#field_ty>::byte_size(), align); });
+            output.extend(
+                quote! { let #field_name = reader.read_record_field::<#field_ty>(align)?; },
+            );
             result.extend(quote! { #field_name, });
         }
 

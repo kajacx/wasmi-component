@@ -22,13 +22,12 @@ pub fn derive_component_value(input: DeriveInput) -> TokenStream {
     let value_type = generator.value_type();
     let arg_count = generator.arg_count();
 
-    let lift_args = generator.lift_args();
-    let lower_args = generator.lower_args();
-
     let byte_align = generator.byte_align();
     let byte_size = generator.byte_size();
 
-    let lift_bytes = generator.lift_bytes();
+    let lift = generator.lift();
+
+    let lower_args = generator.lower_args();
     let lower_bytes = generator.lower_bytes();
 
     let borrowed_def = generator.borrowed_def();
@@ -48,10 +47,6 @@ pub fn derive_component_value(input: DeriveInput) -> TokenStream {
                 #arg_count
             }
 
-            fn lift_args<'a>(args: &[wasmi_component::lib_structs::WasmValue], memory: &'a [u8]) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
-                #lift_args
-            }
-
             fn byte_align() -> usize {
                 #byte_align
             }
@@ -60,8 +55,10 @@ pub fn derive_component_value(input: DeriveInput) -> TokenStream {
                 #byte_size
             }
 
-            fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
-                #lift_bytes
+            fn lift<'mem>(
+                reader: &mut impl wasmi_component::lib_structs::LiftReader<'mem>
+            ) -> wasmi_component::ConvertResult<Self::Borrowed<'mem>> {
+                #lift
             }
         }
 
@@ -97,13 +94,12 @@ trait Generator {
     fn value_type(&self) -> TokenStream;
     fn arg_count(&self) -> TokenStream;
 
-    fn lift_args(&self) -> TokenStream;
-    fn lower_args(&self) -> TokenStream;
-
     fn byte_align(&self) -> TokenStream;
     fn byte_size(&self) -> TokenStream;
 
-    fn lift_bytes(&self) -> TokenStream;
+    fn lift(&self) -> TokenStream;
+
+    fn lower_args(&self) -> TokenStream;
     fn lower_bytes(&self) -> TokenStream;
 
     fn borrowed_def(&self) -> TokenStream;

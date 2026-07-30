@@ -45,34 +45,6 @@ impl Generator for VariantGenerator<'_> {
         output
     }
 
-    fn lift_args(&self) -> TokenStream {
-        let mut output = quote! {};
-        let borrowed_name = &self.gen_data.borrowed_name;
-
-        for (index, field) in self.data.variants.iter().enumerate() {
-            let index = index as i32;
-            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
-            let field_name = &field.ident;
-
-            let value = if let Some(ty) = field_ty {
-                quote! { (<#ty>::lift_args(&args[1..(1 + <#ty>::arg_count())], memory)?) }
-            } else {
-                quote! {}
-            };
-
-            output.extend(quote! { #index => Ok(#borrowed_name::#field_name #value), });
-        }
-
-        let name = &self.gen_data.name.to_string();
-
-        quote! {
-            match args[0].i32()? {
-                #output
-                other => Err(wasmi_component::ConvertError::new(format!("invalid determinant {other} in {}::lift_args", #name)))
-            }
-        }
-    }
-
     fn lower_args(&self) -> TokenStream {
         let mut output = quote! {};
 
@@ -138,17 +110,16 @@ impl Generator for VariantGenerator<'_> {
         output
     }
 
-    fn lift_bytes(&self) -> TokenStream {
+    fn lift(&self) -> TokenStream {
         let mut output = quote! {};
         let borrowed_name = &self.gen_data.borrowed_name;
 
         for (index, field) in self.data.variants.iter().enumerate() {
-            let index = index as u8; // TODO: more than 256 variants
             let field_ty = &field.fields.iter().next().map(|item| &item.ty);
             let field_name = &field.ident;
 
             let value = if let Some(ty) = field_ty {
-                quote! { (<#ty>::lift_bytes(&bytes[offset..(<#ty>::byte_size() + offset)], memory)?) }
+                quote! { (<#ty>::lift(reader)?) }
             } else {
                 quote! {}
             };
@@ -159,11 +130,12 @@ impl Generator for VariantGenerator<'_> {
         let name = &self.gen_data.name.to_string();
 
         quote! {
-            let offset = Self::byte_align();
-            match bytes[0] {
+            reader.read_variant::<Self>(|reader, determinant| match determinant {
                 #output
-                other => Err(wasmi_component::ConvertError::new(format!("invalid determinant {other} in {}::lift_bytes", #name)))
-            }
+                other => Err(wasmi_component::ConvertError::new(
+                    format!("invalid determinant {other} in {}::lift_bytes", #name)
+                )),
+            })
         }
     }
 

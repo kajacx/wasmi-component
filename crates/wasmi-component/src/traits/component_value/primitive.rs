@@ -1,8 +1,8 @@
-use crate::lib_structs::WasmValue;
+use crate::lib_structs::LiftReader;
 use crate::{ComponentValue, ConvertError, ConvertResult, ValueType};
 
 macro_rules! impl_component_value_primitive {
-    ($main_ty: ty, $wasmi_ty: expr, $wasmi_getter: ident , $value_type: ident) => {
+    ($main_ty: ty, $value_type: ident, $accessor_fn: ident) => {
         impl ComponentValue for $main_ty {
             type Borrowed<'a> = Self;
 
@@ -14,15 +14,6 @@ macro_rules! impl_component_value_primitive {
                 1
             }
 
-            fn lift_args<'a>(
-                args: &[WasmValue],
-                _memory: &'a [u8],
-            ) -> ConvertResult<Self::Borrowed<'a>> {
-                debug_assert_eq!(args.len(), Self::arg_count());
-
-                Ok((args[0].$wasmi_getter()? as Self))
-            }
-
             fn byte_align() -> usize {
                 std::mem::size_of::<Self>()
             }
@@ -31,30 +22,25 @@ macro_rules! impl_component_value_primitive {
                 std::mem::size_of::<Self>()
             }
 
-            fn lift_bytes<'a>(
-                bytes: &[u8],
-                _memory: &'a [u8],
-            ) -> ConvertResult<Self::Borrowed<'a>> {
-                debug_assert_eq!(bytes.len(), Self::byte_size());
-
-                Ok(Self::from_le_bytes(bytes.try_into().unwrap()))
+            fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self> {
+                Ok(reader.$accessor_fn() as _)
             }
         }
     };
 }
 
-impl_component_value_primitive!(i8, ValType::I32, i32, S8);
-impl_component_value_primitive!(i16, ValType::I32, i32, S16);
-impl_component_value_primitive!(i32, ValType::I32, i32, S32);
-impl_component_value_primitive!(i64, ValType::I64, i64, S64);
+impl_component_value_primitive!(i8, S8, read_u8);
+impl_component_value_primitive!(i16, S16, read_u16);
+impl_component_value_primitive!(i32, S32, read_u32);
+impl_component_value_primitive!(i64, S64, read_u64);
 
-impl_component_value_primitive!(u8, ValType::I32, i32, U8);
-impl_component_value_primitive!(u16, ValType::I32, i32, U16);
-impl_component_value_primitive!(u32, ValType::I32, i32, U32);
-impl_component_value_primitive!(u64, ValType::I64, i64, U64);
+impl_component_value_primitive!(u8, U8, read_u8);
+impl_component_value_primitive!(u16, U16, read_u16);
+impl_component_value_primitive!(u32, U32, read_u32);
+impl_component_value_primitive!(u64, U64, read_u64);
 
-impl_component_value_primitive!(f32, ValType::F32, f32, F32);
-impl_component_value_primitive!(f64, ValType::F64, f64, F64);
+impl_component_value_primitive!(f32, F32, read_f32);
+impl_component_value_primitive!(f64, F64, read_f64);
 
 impl ComponentValue for bool {
     type Borrowed<'a> = Self;
@@ -67,16 +53,6 @@ impl ComponentValue for bool {
         1
     }
 
-    fn lift_args<'a>(args: &[WasmValue], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(args.len(), Self::arg_count());
-
-        match args[0].i32()? {
-            0 => Ok(false),
-            1 => Ok(true),
-            other => Err(ConvertError::new(format!("Unexpected bool value: {other}"))),
-        }
-    }
-
     fn byte_align() -> usize {
         std::mem::size_of::<Self>()
     }
@@ -85,13 +61,11 @@ impl ComponentValue for bool {
         std::mem::size_of::<Self>()
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(bytes.len(), Self::byte_size());
-
-        match bytes[0] {
+    fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self> {
+        match reader.read_u8() {
             0 => Ok(false),
             1 => Ok(true),
-            other => Err(ConvertError::new(format!("Unexpected bool value: {other}"))),
+            other => Err(ConvertError::new(format!("unexpected bool value {other}"))),
         }
     }
 }
@@ -107,14 +81,6 @@ impl ComponentValue for char {
         1
     }
 
-    fn lift_args<'a>(args: &[WasmValue], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(args.len(), Self::arg_count());
-
-        let value = args[0].i32()? as u32;
-        char::from_u32(value)
-            .ok_or_else(|| ConvertError::new(format!("Invalid char value: 0x{:08x}", value)))
-    }
-
     fn byte_align() -> usize {
         std::mem::size_of::<Self>()
     }
@@ -123,11 +89,9 @@ impl ComponentValue for char {
         std::mem::size_of::<Self>()
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(bytes.len(), Self::byte_size());
-
-        let value = u32::from_le_bytes(bytes.try_into().unwrap());
+    fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self> {
+        let value = reader.read_u32();
         char::from_u32(value)
-            .ok_or_else(|| ConvertError::new(format!("Invalid char value: 0x{:08x}", value)))
+            .ok_or_else(|| ConvertError::new(format!("invalid char value 0x{:08x}", value)))
     }
 }

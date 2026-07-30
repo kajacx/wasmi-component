@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::lib_structs::WasmValue;
+use crate::lib_structs::LiftReader;
 use crate::{ComponentValue, ConvertResult, ValueType, helpers::round_up};
 
 impl ComponentValue for () {
@@ -14,12 +14,6 @@ impl ComponentValue for () {
         0
     }
 
-    fn lift_args<'a>(args: &[WasmValue], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(args.len(), Self::arg_count());
-
-        Ok(())
-    }
-
     fn byte_align() -> usize {
         1
     }
@@ -28,9 +22,7 @@ impl ComponentValue for () {
         0
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(bytes.len(), Self::byte_size());
-
+    fn lift<'mem>(_reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self::Borrowed<'mem>> {
         Ok(())
     }
 }
@@ -46,12 +38,6 @@ impl<T: ComponentValue> ComponentValue for (T,) {
         T::arg_count()
     }
 
-    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(args.len(), Self::arg_count());
-
-        Ok((T::lift_args(args, memory)?,))
-    }
-
     fn byte_align() -> usize {
         T::byte_align()
     }
@@ -60,10 +46,8 @@ impl<T: ComponentValue> ComponentValue for (T,) {
         T::byte_size()
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(bytes.len(), Self::byte_size());
-
-        Ok((T::lift_bytes(bytes, memory)?,))
+    fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self::Borrowed<'mem>> {
+        Ok((T::lift(reader)?,))
     }
 }
 
@@ -78,22 +62,6 @@ impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
         T0::arg_count() + T1::arg_count()
     }
 
-    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(args.len(), Self::arg_count());
-
-        let mut index = 0;
-
-        let val0 = T0::lift_args(&args[index..(index + T0::arg_count())], memory)?;
-        index += T0::arg_count();
-
-        let val1 = T1::lift_args(&args[index..(index + T1::arg_count())], memory)?;
-        index += T1::arg_count();
-
-        debug_assert_eq!(index, Self::arg_count());
-
-        Ok((val0, val1))
-    }
-
     fn byte_align() -> usize {
         std::cmp::max(T0::byte_align(), T1::byte_size())
     }
@@ -103,21 +71,12 @@ impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
         round_up(T0::byte_size(), align) + round_up(T1::byte_size(), align)
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(bytes.len(), Self::byte_size());
-
+    fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self::Borrowed<'mem>> {
         let align = Self::byte_align();
-        let mut index = 0;
-
-        let val0 = T0::lift_bytes(&bytes[index..(index + T0::byte_size())], memory)?;
-        index += round_up(T0::byte_size(), align);
-
-        let val1 = T1::lift_bytes(&bytes[index..(index + T1::byte_size())], memory)?;
-        index += round_up(T1::byte_size(), align);
-
-        debug_assert_eq!(index, Self::byte_size());
-
-        Ok((val0, val1))
+        Ok((
+            reader.read_record_field::<T0>(align)?,
+            reader.read_record_field::<T1>(align)?,
+        ))
     }
 }
 
@@ -136,25 +95,6 @@ impl<T0: ComponentValue, T1: ComponentValue, T2: ComponentValue> ComponentValue 
         T0::arg_count() + T1::arg_count() + T2::arg_count()
     }
 
-    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(args.len(), Self::arg_count());
-
-        let mut index = 0;
-
-        let val0 = T0::lift_args(&args[index..(index + T0::arg_count())], memory)?;
-        index += T0::arg_count();
-
-        let val1 = T1::lift_args(&args[index..(index + T1::arg_count())], memory)?;
-        index += T1::arg_count();
-
-        let val2 = T2::lift_args(&args[index..(index + T2::arg_count())], memory)?;
-        index += T2::arg_count();
-
-        debug_assert_eq!(index, Self::arg_count());
-
-        Ok((val0, val1, val2))
-    }
-
     fn byte_align() -> usize {
         let mut max = 0;
         max = std::cmp::max(max, T0::byte_align());
@@ -170,23 +110,12 @@ impl<T0: ComponentValue, T1: ComponentValue, T2: ComponentValue> ComponentValue 
             + round_up(T2::byte_size(), align)
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(bytes.len(), Self::byte_size());
-
+    fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self::Borrowed<'mem>> {
         let align = Self::byte_align();
-        let mut index = 0;
-
-        let val0 = T0::lift_bytes(&bytes[index..(index + T0::byte_size())], memory)?;
-        index += round_up(T0::byte_size(), align);
-
-        let val1 = T1::lift_bytes(&bytes[index..(index + T1::byte_size())], memory)?;
-        index += round_up(T1::byte_size(), align);
-
-        let val2 = T2::lift_bytes(&bytes[index..(index + T2::byte_size())], memory)?;
-        index += round_up(T2::byte_size(), align);
-
-        debug_assert_eq!(index, Self::byte_size());
-
-        Ok((val0, val1, val2))
+        Ok((
+            reader.read_record_field::<T0>(align)?,
+            reader.read_record_field::<T1>(align)?,
+            reader.read_record_field::<T2>(align)?,
+        ))
     }
 }

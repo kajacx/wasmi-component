@@ -4,7 +4,7 @@ use crate::lib_structs::WasmValue;
 use crate::{ConvertError, ConvertResult};
 
 #[derive(Debug, Clone, Copy, Default)]
-pub(crate) struct FatPtr {
+pub struct FatPtr {
     /// Address where the memory starts
     pub start: usize,
 
@@ -24,24 +24,6 @@ impl AsRef<FatPtr> for &FatPtr {
 impl FatPtr {
     pub fn new(start: usize, count: usize, size: usize) -> Self {
         Self { start, count, size }
-    }
-
-    pub fn from_args(args: &[WasmValue], size: usize) -> ConvertResult<Self> {
-        debug_assert_eq!(args.len(), 2);
-
-        let start = args[0].i32()? as usize;
-        let count = args[1].i32()? as usize;
-
-        Ok(Self { start, count, size })
-    }
-
-    pub fn from_bytes(bytes: &[u8], size: usize) -> ConvertResult<Self> {
-        debug_assert_eq!(bytes.len(), 8);
-
-        let start = u32::from_le_bytes(bytes[0..4].try_into().unwrap()) as usize;
-        let count = u32::from_le_bytes(bytes[4..8].try_into().unwrap()) as usize;
-
-        Ok(Self { start, count, size })
     }
 
     pub fn as_range(&self) -> Range<usize> {

@@ -1,10 +1,13 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use crate::lib_structs::LiftBytesReader;
 use crate::pointers::{PtrView, ptr_start};
 use crate::{ComponentValue, ConvertError, ConvertResult, LeBytesU8, Lift};
 
-/// T is the canonical type
+/// T is the canonical type.
+///
+/// ListAccessor existing guarantees that `slice` has the correct size.
 #[derive(Clone, Copy)]
 pub struct ListAccessor<'a, T> {
     /// Byte slice containing exactly the data in the list
@@ -60,7 +63,9 @@ impl<'a, T> ListAccessor<'a, T> {
 
         let start = index * T::byte_size();
 
-        T::lift_bytes(&self.slice[start..(start + T::byte_size())], self.memory)
+        let mut reader =
+            LiftBytesReader::new(self.memory, &self.slice[start..(start + T::byte_size())]);
+        T::lift(&mut reader)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = ConvertResult<T::Borrowed<'a>>>

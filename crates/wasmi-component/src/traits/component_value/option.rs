@@ -1,4 +1,4 @@
-use crate::lib_structs::WasmValue;
+use crate::lib_structs::LiftReader;
 use crate::{ComponentValue, ConvertError, ConvertResult, ValueType};
 
 impl<T: ComponentValue> ComponentValue for Option<T> {
@@ -12,18 +12,6 @@ impl<T: ComponentValue> ComponentValue for Option<T> {
         1 + T::arg_count()
     }
 
-    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(args.len(), Self::arg_count());
-
-        match args[0].i32()? {
-            0 => Ok(None),
-            1 => Ok(Some(T::lift_args(args, memory)?)),
-            other => Err(ConvertError::new(format!(
-                "invalid determinant {other} in Option::lift_args",
-            ))),
-        }
-    }
-
     fn byte_align() -> usize {
         T::byte_align()
     }
@@ -32,21 +20,14 @@ impl<T: ComponentValue> ComponentValue for Option<T> {
         Self::byte_align() + T::byte_size()
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(bytes.len(), Self::byte_size());
-
-        let offset = Self::byte_align();
-
-        match bytes[0] {
+    fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self::Borrowed<'mem>> {
+        reader.read_variant::<Self>(|reader, determinant| match determinant {
             0 => Ok(None),
-            1 => Ok(Some(T::lift_bytes(
-                &bytes[offset..(offset + T::byte_size())],
-                memory,
-            )?)),
+            1 => Ok(Some(T::lift(reader)?)),
             other => Err(ConvertError::new(format!(
-                "invalid determinant {other} in Option::lift_bytes"
+                "invalid determinant {other} in Option::lift"
             ))),
-        }
+        })
     }
 }
 
@@ -61,18 +42,6 @@ impl<T: ComponentValue, E: ComponentValue> ComponentValue for Result<T, E> {
         1 + std::cmp::max(T::arg_count(), E::arg_count())
     }
 
-    fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(args.len(), Self::arg_count());
-
-        match args[0].i32()? {
-            0 => Ok(Ok(T::lift_args(&args[1..(T::arg_count() + 1)], memory)?)),
-            1 => Ok(Err(E::lift_args(&args[1..(E::arg_count() + 1)], memory)?)),
-            other => Err(ConvertError::new(format!(
-                "invalid determinant {other} in Result::lift_args"
-            ))),
-        }
-    }
-
     fn byte_align() -> usize {
         std::cmp::max(T::byte_align(), E::byte_align())
     }
@@ -81,23 +50,13 @@ impl<T: ComponentValue, E: ComponentValue> ComponentValue for Result<T, E> {
         Self::byte_align() + std::cmp::max(T::byte_size(), E::byte_size())
     }
 
-    fn lift_bytes<'a>(bytes: &[u8], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
-        debug_assert_eq!(bytes.len(), Self::byte_size());
-
-        let offset = Self::byte_align();
-
-        match bytes[0] {
-            0 => Ok(Ok(T::lift_bytes(
-                &bytes[offset..(T::byte_size() + offset)],
-                memory,
-            )?)),
-            1 => Ok(Err(E::lift_bytes(
-                &bytes[offset..(E::arg_count() + offset)],
-                memory,
-            )?)),
+    fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self::Borrowed<'mem>> {
+        reader.read_variant::<Self>(|reader, determinant| match determinant {
+            0 => Ok(Ok(T::lift(reader)?)),
+            1 => Ok(Err(E::lift(reader)?)),
             other => Err(ConvertError::new(format!(
-                "invalid determinant {other} in Result::lift_bytes"
+                "invalid determinant {other} in Result::lift"
             ))),
-        }
+        })
     }
 }

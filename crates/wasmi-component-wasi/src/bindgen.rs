@@ -33,22 +33,6 @@ impl wasmi_component::ComponentValue for StreamError {
         max = std::cmp::max(max, <i32>::arg_count());
         1 + max
     }
-    fn lift_args<'a>(
-        args: &[wasmi_component::lib_structs::WasmValue],
-        memory: &'a [u8],
-    ) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
-        match args[0].i32()? {
-            0i32 => Ok(StreamErrorBorrowed::LastOperationFailed(<i32>::lift_args(
-                &args[1..(1 + <i32>::arg_count())],
-                memory,
-            )?)),
-            1i32 => Ok(StreamErrorBorrowed::Closed),
-            other => Err(wasmi_component::ConvertError::new(format!(
-                "invalid determinant {other} in {}::lift_args",
-                "StreamError"
-            ))),
-        }
-    }
     fn byte_align() -> usize {
         let mut max = 1;
         max = std::cmp::max(max, <i32>::byte_align());
@@ -59,22 +43,19 @@ impl wasmi_component::ComponentValue for StreamError {
         max = std::cmp::max(max, <i32>::byte_align());
         Self::byte_align() + max
     }
-    fn lift_bytes<'a>(
-        bytes: &[u8],
-        memory: &'a [u8],
-    ) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
-        let offset = Self::byte_align();
-        match bytes[0] {
-            0u8 => Ok(StreamErrorBorrowed::LastOperationFailed(<i32>::lift_bytes(
-                &bytes[offset..(<i32>::byte_size() + offset)],
-                memory,
+    fn lift<'mem>(
+        reader: &mut impl wasmi_component::lib_structs::LiftReader<'mem>,
+    ) -> wasmi_component::ConvertResult<Self::Borrowed<'mem>> {
+        reader.read_variant::<Self>(|reader, determinant| match determinant {
+            0usize => Ok(StreamErrorBorrowed::LastOperationFailed(<i32>::lift(
+                reader,
             )?)),
-            1u8 => Ok(StreamErrorBorrowed::Closed),
+            1usize => Ok(StreamErrorBorrowed::Closed),
             other => Err(wasmi_component::ConvertError::new(format!(
                 "invalid determinant {other} in {}::lift_bytes",
                 "StreamError"
             ))),
-        }
+        })
     }
 }
 #[derive(Clone, Debug)]
