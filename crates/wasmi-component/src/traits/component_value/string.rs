@@ -1,9 +1,6 @@
-use wasmi::ValType;
-use wasmi_component_parser::ValueType;
-
 use crate::lib_structs::WasmValue;
 use crate::pointers::{FatPtr, PtrView, ptr_start};
-use crate::{ComponentValue, ConvertError, ConvertResult};
+use crate::{ComponentValue, ConvertError, ConvertResult, ValueType};
 
 impl ComponentValue for String {
     type Borrowed<'a> = &'a str;
@@ -14,10 +11,6 @@ impl ComponentValue for String {
 
     fn arg_count() -> usize {
         2
-    }
-
-    fn arg_types() -> Vec<ValType> {
-        vec![ValType::I32, ValType::I32]
     }
 
     fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {

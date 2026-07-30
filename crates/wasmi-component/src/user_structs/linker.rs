@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use wasmi::AsContextMut;
 use wasmi_component_parser::FuncIdentifier;
 
-use crate::lib_structs::{FuncSignature, FuncStorage, MemoryAccessPre, WasmValue};
+use crate::lib_structs::{FuncSignature, FuncStorage, MemoryAccessPre, WasmValue, wasm_args};
 use crate::{Component, ComponentValue, HostResult, Instance, Lower, StoreData};
 
 pub struct Linker<T> {
@@ -26,8 +26,8 @@ impl<T> Linker<T> {
     ) -> Result<&mut Self, wasmi::errors::LinkerError> {
         let ident = FuncIdentifier::new(module.into(), name.into());
 
-        let mut params_ty = Params::arg_types();
-        let mut results_ty = Results::arg_types();
+        let mut params_ty = wasm_args(&Params::value_type());
+        let mut results_ty = wasm_args(&Results::value_type());
 
         let results_ty_original = results_ty.clone();
 

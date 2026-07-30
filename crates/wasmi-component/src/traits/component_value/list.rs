@@ -1,9 +1,6 @@
-use wasmi::ValType;
-use wasmi_component_parser::ValueType;
-
 use crate::lib_structs::WasmValue;
 use crate::pointers::FatPtr;
-use crate::{ComponentValue, ConvertResult, ListAccessor};
+use crate::{ComponentValue, ConvertResult, ListAccessor, ValueType};
 
 impl<T: ComponentValue> ComponentValue for Vec<T> {
     type Borrowed<'a> = ListAccessor<'a, T>;
@@ -14,10 +11,6 @@ impl<T: ComponentValue> ComponentValue for Vec<T> {
 
     fn arg_count() -> usize {
         2
-    }
-
-    fn arg_types() -> Vec<ValType> {
-        vec![ValType::I32, ValType::I32]
     }
 
     fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {

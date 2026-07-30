@@ -4,6 +4,7 @@ pub fn round_up(value: usize, multiple: usize) -> usize {
     (value + multiple - 1) / multiple * multiple
 }
 
+/// Resolves variant argument types on the wasmi level, including the determinant
 pub fn variant_types(cases: impl IntoIterator<Item = Vec<wasmi::ValType>>) -> Vec<wasmi::ValType> {
     let mut result = vec![wasmi::ValType::I32];
 

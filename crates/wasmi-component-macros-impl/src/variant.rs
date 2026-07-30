@@ -45,20 +45,6 @@ impl Generator for VariantGenerator<'_> {
         output
     }
 
-    fn arg_types(&self) -> TokenStream {
-        let mut output = quote! {};
-
-        for field in &self.data.variants {
-            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
-
-            if let Some(ty) = field_ty {
-                output.extend(quote! { <#ty>::arg_types(), });
-            }
-        }
-
-        quote! { wasmi_component::helpers::variant_types([#output]) }
-    }
-
     fn lift_args(&self) -> TokenStream {
         let mut output = quote! {};
         let borrowed_name = &self.gen_data.borrowed_name;

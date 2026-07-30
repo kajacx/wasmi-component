@@ -33,9 +33,6 @@ impl wasmi_component::ComponentValue for StreamError {
         max = std::cmp::max(max, <i32>::arg_count());
         1 + max
     }
-    fn arg_types() -> Vec<wasmi_component::wasmi::ValType> {
-        wasmi_component::helpers::variant_types([<i32>::arg_types()])
-    }
     fn lift_args<'a>(
         args: &[wasmi_component::lib_structs::WasmValue],
         memory: &'a [u8],

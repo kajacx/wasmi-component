@@ -1,10 +1,7 @@
 use std::fmt::Debug;
 
-use wasmi::ValType;
-use wasmi_component_parser::ValueType;
-
 use crate::lib_structs::WasmValue;
-use crate::{ConvertResult, Lift};
+use crate::{ConvertResult, Lift, ValueType};
 
 mod list;
 mod option;
@@ -18,9 +15,6 @@ pub trait ComponentValue: Sized + Debug {
     fn value_type() -> ValueType;
 
     fn arg_count() -> usize;
-
-    // TODO: delete this?
-    fn arg_types() -> Vec<ValType>;
 
     fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>>;
 

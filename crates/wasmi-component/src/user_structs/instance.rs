@@ -4,7 +4,7 @@ use anyhow::{Context, ensure};
 use wasmi::AsContext;
 use wasmi_component_parser::FuncIdentifier;
 
-use crate::lib_structs::{FuncSignature, FuncStorage, MemoryAccessPre};
+use crate::lib_structs::{FuncSignature, FuncStorage, MemoryAccessPre, wasm_args};
 use crate::{ComponentValue, TypedFunc, UntypedFunc};
 
 #[derive(Debug, Clone)]
@@ -41,6 +41,13 @@ impl Instance {
             &FuncSignature::from_grouped(Params::value_type(), Results::value_type()),
         )?;
 
+        let param_types = wasm_args(&Params::value_type());
+        let mut result_types = wasm_args(&Results::value_type());
+        if result_types.len() > 1 {
+            result_types.clear();
+            result_types.push(wasmi::ValType::I32);
+        }
+
         let module_func = self
             .instance
             .get_func(ctx.as_context(), &exported_name)
@@ -48,20 +55,16 @@ impl Instance {
 
         let ty = module_func.ty(ctx.as_context());
 
-        let mut result_types = Results::arg_types();
-        if result_types.len() > 1 {
-            result_types.clear();
-            result_types.push(wasmi::ValType::I32);
-        }
-
         ensure!(
-            ty.params() == Params::arg_types() && ty.results() == result_types,
-            "Incorrect signature for exported function {}, expected {:?} -> {:?}, but got {:?} -> {:?} instead",
-            exported_name,
-            Params::arg_types(),
-            result_types,
-            ty.params(),
-            ty.results()
+            ty.params() == param_types && ty.results() == result_types,
+            format!(
+                "Type mismatch for exported function {} on wasmi level, module provided {:?} -> {:?}, but host asked for {:?} -> {:?}",
+                ident,
+                ty.params(),
+                ty.results(),
+                param_types,
+                result_types
+            )
         );
 
         let cleanup_func = self
@@ -71,8 +74,8 @@ impl Instance {
 
         if cleanup_func.is_some() {
             ensure!(
-                ty.params() != &[wasmi::ValType::I32],
-                "exported function {} has a cleanup function, but doesn't take a single i32",
+                ty.results() == &[wasmi::ValType::I32],
+                "exported function {} has a cleanup function, but it doesn't return a single i32",
                 ident
             );
         }

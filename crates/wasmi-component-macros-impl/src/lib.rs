@@ -18,10 +18,9 @@ pub fn derive_component_value(input: DeriveInput) -> TokenStream {
     let borrowed_name = Ident::new(&format!("{}Borrowed", type_name), type_name.span());
 
     let generator = get_generator(&input, type_name, &borrowed_name);
-    let value_type = generator.value_type();
 
+    let value_type = generator.value_type();
     let arg_count = generator.arg_count();
-    let arg_types = generator.arg_types();
 
     let lift_args = generator.lift_args();
     let lower_args = generator.lower_args();
@@ -47,10 +46,6 @@ pub fn derive_component_value(input: DeriveInput) -> TokenStream {
 
             fn arg_count() -> usize {
                 #arg_count
-            }
-
-            fn arg_types() -> Vec<wasmi_component::wasmi::ValType>{
-                #arg_types
             }
 
             fn lift_args<'a>(args: &[wasmi_component::lib_structs::WasmValue], memory: &'a [u8]) -> wasmi_component::ConvertResult<Self::Borrowed<'a>> {
@@ -100,9 +95,7 @@ pub fn derive_component_value(input: DeriveInput) -> TokenStream {
 #[blanket::blanket(derive(Box))]
 trait Generator {
     fn value_type(&self) -> TokenStream;
-
     fn arg_count(&self) -> TokenStream;
-    fn arg_types(&self) -> TokenStream;
 
     fn lift_args(&self) -> TokenStream;
     fn lower_args(&self) -> TokenStream;

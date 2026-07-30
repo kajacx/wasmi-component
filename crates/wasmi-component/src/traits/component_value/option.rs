@@ -1,8 +1,5 @@
-use wasmi::ValType;
-use wasmi_component_parser::ValueType;
-
 use crate::lib_structs::WasmValue;
-use crate::{ComponentValue, ConvertError, ConvertResult, helpers};
+use crate::{ComponentValue, ConvertError, ConvertResult, ValueType};
 
 impl<T: ComponentValue> ComponentValue for Option<T> {
     type Borrowed<'a> = Option<T::Borrowed<'a>>;
@@ -13,12 +10,6 @@ impl<T: ComponentValue> ComponentValue for Option<T> {
 
     fn arg_count() -> usize {
         1 + T::arg_count()
-    }
-
-    fn arg_types() -> Vec<ValType> {
-        let mut types = vec![ValType::I32];
-        types.extend(T::arg_types());
-        types
     }
 
     fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
@@ -68,10 +59,6 @@ impl<T: ComponentValue, E: ComponentValue> ComponentValue for Result<T, E> {
 
     fn arg_count() -> usize {
         1 + std::cmp::max(T::arg_count(), E::arg_count())
-    }
-
-    fn arg_types() -> Vec<ValType> {
-        helpers::variant_types([T::arg_types(), E::arg_types()])
     }
 
     fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {

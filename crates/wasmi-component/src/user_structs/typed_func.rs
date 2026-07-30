@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use wasmi::AsContextMut;
 
-use crate::lib_structs::{MemoryAccessPre, WasmValue};
+use crate::lib_structs::{MemoryAccessPre, WasmValue, wasm_args};
 use crate::pointers::FatPtr;
 use crate::{CallResult, ComponentValue, Lift, Lower, StoreData};
 
@@ -27,7 +27,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
             memory,
             inner,
             post_return,
-            param_types: Params::arg_types(),
+            param_types: wasm_args(&Params::value_type()),
             _signature: PhantomData,
         }
     }
@@ -112,7 +112,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         if let Some(post_return) = self.post_return {
             let address = results_wasmi[0]
                 .i32()
-                .expect("function should return an i32 if it has a post return fn"); // TODO: misbehaving component
+                .expect("function with cleanup returning a single i32 was checked");
             post_return.call(ctx, address)?;
         }
 

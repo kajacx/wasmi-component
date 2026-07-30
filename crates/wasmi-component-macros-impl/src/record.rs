@@ -35,16 +35,6 @@ impl Generator for RecordGenerator<'_> {
         output
     }
 
-    fn arg_types(&self) -> TokenStream {
-        let mut output = quote! { let mut types = Vec::new(); };
-        for field in &self.data.fields {
-            let field_ty = &field.ty;
-            output.extend(quote! { types.extend(<#field_ty>::arg_types()); });
-        }
-        output.extend(quote! { types });
-        output
-    }
-
     fn lift_args(&self) -> TokenStream {
         let mut output = quote! { let mut index = 0; };
         let mut result = quote! {};

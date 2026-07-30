@@ -1,10 +1,7 @@
 use std::rc::Rc;
 
-use wasmi::ValType;
-use wasmi_component_parser::ValueType;
-
 use crate::lib_structs::WasmValue;
-use crate::{ComponentValue, ConvertResult, helpers::round_up};
+use crate::{ComponentValue, ConvertResult, ValueType, helpers::round_up};
 
 impl ComponentValue for () {
     type Borrowed<'a> = Self;
@@ -15,10 +12,6 @@ impl ComponentValue for () {
 
     fn arg_count() -> usize {
         0
-    }
-
-    fn arg_types() -> Vec<ValType> {
-        vec![]
     }
 
     fn lift_args<'a>(args: &[WasmValue], _memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
@@ -53,10 +46,6 @@ impl<T: ComponentValue> ComponentValue for (T,) {
         T::arg_count()
     }
 
-    fn arg_types() -> Vec<ValType> {
-        T::arg_types()
-    }
-
     fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
         debug_assert_eq!(args.len(), Self::arg_count());
 
@@ -87,13 +76,6 @@ impl<T0: ComponentValue, T1: ComponentValue> ComponentValue for (T0, T1) {
 
     fn arg_count() -> usize {
         T0::arg_count() + T1::arg_count()
-    }
-
-    fn arg_types() -> Vec<ValType> {
-        let mut params = vec![];
-        params.extend(T0::arg_types());
-        params.extend(T1::arg_types());
-        params
     }
 
     fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {
@@ -152,14 +134,6 @@ impl<T0: ComponentValue, T1: ComponentValue, T2: ComponentValue> ComponentValue 
 
     fn arg_count() -> usize {
         T0::arg_count() + T1::arg_count() + T2::arg_count()
-    }
-
-    fn arg_types() -> Vec<ValType> {
-        let mut params = vec![];
-        params.extend(T0::arg_types());
-        params.extend(T1::arg_types());
-        params.extend(T2::arg_types());
-        params
     }
 
     fn lift_args<'a>(args: &[WasmValue], memory: &'a [u8]) -> ConvertResult<Self::Borrowed<'a>> {

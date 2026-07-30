@@ -81,6 +81,7 @@ impl FuncStorage {
         Ok(())
     }
 
+    // TODO: replace with "ListDisplay"
     pub fn existing_fn_names(&self) -> String {
         let mut output = String::from("[");
         for (index, func) in self.data.iter().enumerate() {
