@@ -51,7 +51,7 @@ impl ValueType {
         Self::List(Rc::new(inner))
     }
 
-    pub fn new_unit() -> Self {
+    pub fn unit() -> Self {
         Self::new_tuple([])
     }
 
@@ -306,7 +306,7 @@ impl std::fmt::Display for ValueType {
 
 impl Default for ValueType {
     fn default() -> Self {
-        Self::new_unit()
+        Self::unit()
     }
 }
 

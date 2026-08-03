@@ -1,6 +1,8 @@
+use wasmi_component_parser::ValueType;
+
 use crate::helpers::round_up;
 use crate::lib_structs::{MemoryAccess, WasmValue};
-use crate::{ComponentValue, ConvertResult, Lower};
+use crate::{ComponentValue, ConvertResult, DynValue, Lower, dyn_lower};
 
 pub trait LowerWriter {
     fn write_u8(&mut self, value: u8);
@@ -17,10 +19,24 @@ pub trait LowerWriter {
         align: usize,
     ) -> ConvertResult<()>;
 
+    fn write_dyn_field(
+        &mut self,
+        ty: &ValueType,
+        value: &DynValue,
+        align: usize,
+    ) -> ConvertResult<()>;
+
     fn write_variant<T: ComponentValue, C: ComponentValue>(
         &mut self,
         determinant: usize,
         value: impl Lower<C>,
+    ) -> ConvertResult<()>;
+
+    fn write_dyn_variant(
+        &mut self,
+        variant_ty: &ValueType,
+        determinant: usize,
+        value: Option<(&ValueType, &DynValue)>,
     ) -> ConvertResult<()>;
 
     fn memory(&mut self) -> &mut impl MemoryAccess;
@@ -81,6 +97,15 @@ impl<'a, M: MemoryAccess> LowerWriter for LowerArgsWriter<'a, M> {
         value.lower(self)
     }
 
+    fn write_dyn_field(
+        &mut self,
+        ty: &ValueType,
+        value: &DynValue,
+        _align: usize,
+    ) -> ConvertResult<()> {
+        dyn_lower(ty, value, self)
+    }
+
     fn write_variant<T: ComponentValue, C: ComponentValue>(
         &mut self,
         determinant: usize,
@@ -93,6 +118,23 @@ impl<'a, M: MemoryAccess> LowerWriter for LowerArgsWriter<'a, M> {
 
         self.index = final_index;
         Ok(result)
+    }
+
+    fn write_dyn_variant(
+        &mut self,
+        variant_ty: &ValueType,
+        determinant: usize,
+        value: Option<(&ValueType, &DynValue)>,
+    ) -> ConvertResult<()> {
+        let final_index = self.index + variant_ty.arg_count();
+
+        self.write_u8(determinant as _); // TODO: variants with more than 256 cases
+        if let Some((ty, value)) = value {
+            dyn_lower(ty, value, self)?;
+        }
+
+        self.index = final_index;
+        Ok(())
     }
 
     fn memory(&mut self) -> &mut impl MemoryAccess {
@@ -173,6 +215,17 @@ impl<M: MemoryAccess> LowerWriter for LowerBytesWriter<M> {
         Ok(())
     }
 
+    fn write_dyn_field(
+        &mut self,
+        ty: &ValueType,
+        value: &DynValue,
+        align: usize,
+    ) -> ConvertResult<()> {
+        dyn_lower(ty, value, self)?;
+        self.index = round_up(self.index, align);
+        Ok(())
+    }
+
     fn write_variant<T: ComponentValue, C: ComponentValue>(
         &mut self,
         determinant: usize,
@@ -183,6 +236,23 @@ impl<M: MemoryAccess> LowerWriter for LowerBytesWriter<M> {
         // TODO: variants with more than 256 cases
         self.write_record_field(determinant as u8, T::byte_align())?;
         value.lower(self)?;
+
+        self.index = final_index;
+        Ok(())
+    }
+
+    fn write_dyn_variant(
+        &mut self,
+        variant_ty: &ValueType,
+        determinant: usize,
+        value: Option<(&ValueType, &DynValue)>,
+    ) -> ConvertResult<()> {
+        let final_index = self.index + variant_ty.byte_size();
+
+        self.write_record_field(determinant as u8, variant_ty.byte_align())?; // TODO: variants with more than 256 cases
+        if let Some((ty, value)) = value {
+            dyn_lower(ty, value, self)?;
+        }
 
         self.index = final_index;
         Ok(())

@@ -1,10 +1,8 @@
-use std::ops::Range;
 use std::rc::Rc;
 
 use wasmi_component_parser::ValueType;
 
-use crate::lib_structs::{MemoryAccess, WasmValue};
-use crate::{ConvertResult, RecordFields};
+use crate::RecordFields;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum DynValue {
@@ -23,7 +21,6 @@ pub enum DynValue {
 
     Bool(bool),
     Char(char),
-
     String(Rc<str>),
 
     Option(Option<Rc<DynValue>>),
@@ -41,6 +38,10 @@ pub enum DynValue {
 }
 
 impl DynValue {
+    pub fn unit() -> Self {
+        Self::new_tuple([])
+    }
+
     pub fn new_s8(value: i8) -> Self {
         Self::S8(value)
     }
@@ -123,29 +124,54 @@ impl DynValue {
     }
 
     pub fn is(&self, ty: &ValueType) -> bool {
-        match ty {
-            ValueType::S8 => matches!(self, Self::S8(_)),
-            ValueType::S16 => matches!(self, Self::S16(_)),
-            ValueType::S32 => matches!(self, Self::S32(_)),
-            ValueType::S64 => matches!(self, Self::S64(_)),
+        match (self, ty) {
+            (Self::S8(_), ValueType::S8) => true,
+            (Self::S16(_), ValueType::S16) => true,
+            (Self::S32(_), ValueType::S32) => true,
+            (Self::S64(_), ValueType::S64) => true,
 
-            ValueType::U8 => matches!(self, Self::U8(_)),
-            ValueType::U16 => matches!(self, Self::U16(_)),
-            ValueType::U32 => matches!(self, Self::U32(_)),
-            ValueType::U64 => matches!(self, Self::U64(_)),
+            (Self::U8(_), ValueType::U8) => true,
+            (Self::U16(_), ValueType::U16) => true,
+            (Self::U32(_), ValueType::U32) => true,
+            (Self::U64(_), ValueType::U64) => true,
 
-            ValueType::F32 => matches!(self, Self::F32(_)),
-            ValueType::F64 => matches!(self, Self::F64(_)),
+            (Self::F32(_), ValueType::F32) => true,
+            (Self::F64(_), ValueType::F64) => true,
 
-            ValueType::Bool => matches!(self, Self::F64(_)),
-            ValueType::Char => matches!(self, Self::Char(_)),
-            ValueType::String => matches!(self, Self::String(_)),
+            (Self::Bool(_), ValueType::Bool) => true,
+            (Self::Char(_), ValueType::Char) => true,
+            (Self::String(_), ValueType::String) => true,
 
-            _ => todo!("value is type?"),
+            (Self::Option(None), ValueType::Option(_)) => true,
+            (Self::Option(Some(value)), ValueType::Option(ty)) => value.is(ty),
+            (Self::Result(Ok(value)), ValueType::Result(ty, _)) => value.is(ty),
+            (Self::Result(Err(value)), ValueType::Result(_, ty)) => value.is(ty),
+            (Self::Tuple(values), ValueType::Tuple(types)) => {
+                values.len() == types.len()
+                    && values
+                        .iter()
+                        .zip(types.iter())
+                        .all(|(value, ty)| value.is(ty))
+            }
+            (Self::List(values), ValueType::List(ty)) => values.iter().all(|value| value.is(ty)),
+
+            (Self::Record { fields }, ValueType::Record { fields: types, .. }) => types
+                .iter()
+                .all(|(name, ty)| fields.get_field(name).is_some_and(|value| value.is(ty))),
+
+            (Self::Variant { determinant, value }, ValueType::Variant { cases, .. }) => cases
+                .iter()
+                .find(|(name, _)| name == determinant)
+                .is_some_and(|(_, ty)| match (value, ty) {
+                    (None, None) => true,
+                    (Some(value), Some(ty)) => value.is(ty),
+                    _ => false,
+                }),
+
+            _ => false,
         }
     }
 
-    // TODO: implement the others
     pub fn as_s8(&self) -> Option<i8> {
         match self {
             Self::S8(value) => Some(*value),
@@ -153,267 +179,138 @@ impl DynValue {
         }
     }
 
-    pub fn as_tuple(&self) -> Option<&Rc<[DynValue]>> {
+    pub fn as_s16(&self) -> Option<i16> {
         match self {
-            Self::Tuple(value) => Some(value),
+            Self::S16(value) => Some(*value),
             _ => None,
         }
     }
 
-    #[allow(unused)]
-    pub(crate) fn lower_args(
-        &self,
-        ty: &ValueType,
-        args: &mut [WasmValue],
-        memory: &mut impl MemoryAccess,
-    ) -> ConvertResult<()> {
-        todo!()
-        // match self {
-        //     Self::S8(value) => value.lower_args(args, memory),
-        //     Self::S16(value) => value.lower_args(args, memory),
-        //     Self::S32(value) => value.lower_args(args, memory),
-        //     Self::S64(value) => value.lower_args(args, memory),
-
-        //     Self::U8(value) => value.lower_args(args, memory),
-        //     Self::U16(value) => value.lower_args(args, memory),
-        //     Self::U32(value) => value.lower_args(args, memory),
-        //     Self::U64(value) => value.lower_args(args, memory),
-
-        //     Self::F32(value) => value.lower_args(args, memory),
-        //     Self::F64(value) => value.lower_args(args, memory),
-
-        //     Self::Bool(value) => value.lower_args(args, memory),
-        //     Self::Char(value) => value.lower_args(args, memory),
-        //     Self::String(value) => value.lower_args(args, memory),
-
-        //     Self::Option(value) => {
-        //         let inner_ty = ty.as_option().expect("type was checked before");
-        //         let written = match value {
-        //             None => {
-        //                 args[0] = WasmValue::I32(0);
-        //                 1
-        //             }
-        //             Some(value) => {
-        //                 args[0] = WasmValue::I32(1);
-        //                 value.lower_args(
-        //                     inner_ty,
-        //                     &mut args[1..(1 + inner_ty.arg_count())],
-        //                     memory,
-        //                 )?;
-        //                 1 + inner_ty.arg_count()
-        //             }
-        //         };
-
-        //         for arg in &mut args[written..] {
-        //             *arg = WasmValue::Unused;
-        //         }
-
-        //         Ok(())
-        //     }
-        //     Self::Result(value) => {
-        //         let (ok_ty, err_ty) = ty.as_result().expect("type was checked before");
-        //         let written = match value {
-        //             Ok(ok) => {
-        //                 args[0] = WasmValue::I32(0);
-        //                 ok.lower_args(ok_ty, &mut args[1..(1 + ok_ty.arg_count())], memory)?;
-        //                 1 + ok_ty.arg_count()
-        //             }
-        //             Err(err) => {
-        //                 args[1] = WasmValue::I32(1);
-        //                 err.lower_args(err_ty, &mut args[1..(1 + err_ty.arg_count())], memory)?;
-        //                 1 + err_ty.arg_count()
-        //             }
-        //         };
-
-        //         for arg in &mut args[written..] {
-        //             *arg = WasmValue::Unused;
-        //         }
-
-        //         Ok(())
-        //     }
-        //     Self::Tuple(fields) => {
-        //         let mut index = 0;
-        //         let fields_ty = ty.as_tuple().expect("type was checked before");
-        //         for (field_ty, field) in fields_ty.iter().zip(fields.iter()) {
-        //             field.lower_args(
-        //                 field_ty,
-        //                 &mut args[index..(index + field_ty.arg_count())],
-        //                 memory,
-        //             )?;
-        //             index += field_ty.arg_count();
-        //         }
-        //         Ok(())
-        //     }
-        //     Self::List(contents) => {
-        //         let inner_ty = ty.list_type().expect("list type was checked");
-
-        //         let len = inner_ty.byte_size() * contents.len();
-        //         let start = memory.allocate(len, inner_ty.byte_align())?;
-        //         let mut index = start;
-
-        //         for item in contents.iter() {
-        //             item.lower_bytes(inner_ty, index..(index + inner_ty.byte_size()), memory)?;
-        //             index += inner_ty.byte_size();
-        //         }
-
-        //         let ptr = FatPtr::new(start, contents.len(), inner_ty.byte_size());
-        //         ptr.write_to_args(args);
-        //         Ok(())
-        //     }
-
-        //     Self::Record { fields } => {
-        //         let mut index = 0;
-        //         let (_name, fields_ty) = ty.as_record().expect("type was checked before");
-        //         for (name, field_ty) in fields_ty.iter() {
-        //             let field = fields
-        //                 .get_field(name.as_ref())
-        //                 .expect("type was checked before");
-        //             field.lower_args(
-        //                 field_ty,
-        //                 &mut args[index..(index + field_ty.arg_count())],
-        //                 memory,
-        //             )?;
-        //             index += field_ty.arg_count();
-        //         }
-        //         Ok(())
-        //     }
-        //     Self::Variant { determinant, value } => {
-        //         // args[0] = WasmValue::I32(*determinant as i32);
-        //         // let written = match value {
-        //         //     None => 1,
-        //         //     Some(value) => {
-        //         //         value.lower_args(&mut args[1..(1 + value.ty().arg_count())], memory)?;
-        //         //         1 + value.ty().arg_count()
-        //         //     }
-        //         // };
-
-        //         // for arg in &mut args[written..] {
-        //         //     *arg = WasmValue::Unused;
-        //         // }
-
-        //         Ok(())
-        //     }
-        // }
+    pub fn as_s32(&self) -> Option<i32> {
+        match self {
+            Self::S32(value) => Some(*value),
+            _ => None,
+        }
     }
 
-    pub fn lower_bytes(
-        &self,
-        _ty: &ValueType,
-        _range: Range<usize>,
-        _memory: &mut impl MemoryAccess,
-    ) -> ConvertResult<()> {
-        todo!("lower_bytes")
-        //     match self {
-        //         Self::S8(value) => value.lower_bytes(range, memory),
-        //         Self::S16(value) => value.lower_bytes(range, memory),
-        //         Self::S32(value) => value.lower_bytes(range, memory),
-        //         Self::S64(value) => value.lower_bytes(range, memory),
+    pub fn as_s64(&self) -> Option<i64> {
+        match self {
+            Self::S64(value) => Some(*value),
+            _ => None,
+        }
+    }
 
-        //         Self::U8(value) => value.lower_bytes(range, memory),
-        //         Self::U16(value) => value.lower_bytes(range, memory),
-        //         Self::U32(value) => value.lower_bytes(range, memory),
-        //         Self::U64(value) => value.lower_bytes(range, memory),
+    pub fn as_u8(&self) -> Option<u8> {
+        match self {
+            Self::U8(value) => Some(*value),
+            _ => None,
+        }
+    }
 
-        //         Self::F32(value) => value.lower_bytes(range, memory),
-        //         Self::F64(value) => value.lower_bytes(range, memory),
+    pub fn as_u16(&self) -> Option<u16> {
+        match self {
+            Self::U16(value) => Some(*value),
+            _ => None,
+        }
+    }
 
-        //         Self::Bool(value) => value.lower_bytes(range, memory),
-        //         Self::Char(value) => value.lower_bytes(range, memory),
-        //         Self::String(value) => value.lower_bytes(range, memory),
+    pub fn as_u32(&self) -> Option<u32> {
+        match self {
+            Self::U32(value) => Some(*value),
+            _ => None,
+        }
+    }
 
-        //         Self::Option(value) => {
-        //             let inner_ty = ty.as_option().expect("option type was checked");
-        //             let offset = ty.byte_align();
+    pub fn as_u64(&self) -> Option<u64> {
+        match self {
+            Self::U64(value) => Some(*value),
+            _ => None,
+        }
+    }
 
-        //             match value {
-        //                 None => {
-        //                     memory
-        //                         .slice(range.start..(range.start + 1))?
-        //                         .copy_from_slice(&[0]);
-        //                     Ok(())
-        //                 }
-        //                 Some(value) => {
-        //                     memory
-        //                         .slice(range.start..(range.start + 1))?
-        //                         .copy_from_slice(&[1]);
-        //                     value.lower_bytes(
-        //                         range.slice(offset..(offset + inner_ty.byte_size())),
-        //                         memory,
-        //                     )
-        //                 }
-        //             }
-        //         }
-        //         Self::Result(value) => {
-        //             let (ok_ty, err_ty) = ty.as_result().expect("result type was checked");
-        //             let offset = ty.byte_align();
+    pub fn as_f32(&self) -> Option<f32> {
+        match self {
+            Self::F32(value) => Some(*value),
+            _ => None,
+        }
+    }
 
-        //             match value {
-        //                 Ok(ok) => {
-        //                     memory
-        //                         .slice(range.start..(range.start + 1))?
-        //                         .copy_from_slice(&[0]);
-        //                     ok.lower_bytes(range.slice(offset..(offset + ok_ty.byte_size())), memory)
-        //                 }
-        //                 Err(err) => {
-        //                     memory
-        //                         .slice(range.start..(range.start + 1))?
-        //                         .copy_from_slice(&[1]);
-        //                     err.lower_bytes(range.slice(offset..(offset + err_ty.byte_size())), memory)
-        //                 }
-        //             }
-        //         }
-        //         Self::Tuple(fields) => {
-        //             let align = ty.byte_align();
-        //             let mut index = range.start;
+    pub fn as_f64(&self) -> Option<f64> {
+        match self {
+            Self::F64(value) => Some(*value),
+            _ => None,
+        }
+    }
 
-        //             for value in fields.iter() {
-        //                 value.lower_bytes(index..(index + value.ty().byte_size()), memory)?;
-        //                 index += round_up(value.ty().byte_size(), align);
-        //             }
+    pub fn as_bool(&self) -> Option<bool> {
+        match self {
+            Self::Bool(value) => Some(*value),
+            _ => None,
+        }
+    }
 
-        //             Ok(())
-        //         }
-        //         Self::List(contents) => {
-        //             let inner_ty = ty.list_type().expect("list type was checked");
-        //             let len = inner_ty.byte_size() * contents.len();
-        //             let start = memory.allocate(len, inner_ty.byte_align())?;
-        //             let mut index = start;
+    pub fn as_char(&self) -> Option<char> {
+        match self {
+            Self::Char(value) => Some(*value),
+            _ => None,
+        }
+    }
 
-        //             for item in contents.iter() {
-        //                 item.lower_bytes(index..(index + inner_ty.byte_size()), memory)?;
-        //                 index += inner_ty.byte_size();
-        //             }
+    pub fn as_string(&self) -> Option<&str> {
+        match self {
+            Self::String(value) => Some(value.as_ref()),
+            _ => None,
+        }
+    }
 
-        //             let ptr = FatPtr::new(start, contents.len(), inner_ty.byte_size());
-        //             ptr.write_to_bytes(memory.slice(range)?);
-        //             Ok(())
-        //         }
+    pub fn as_option(&self) -> Option<Option<&DynValue>> {
+        match self {
+            Self::Option(value) => Some(value.as_deref()),
+            _ => None,
+        }
+    }
 
-        //         Self::Record { fields } => {
-        //             let align = ty.byte_align();
-        //             let mut index = range.start;
+    pub fn as_result(&self) -> Option<Result<&DynValue, &DynValue>> {
+        match self {
+            Self::Result(value) => Some(value.as_deref().map_err(Rc::as_ref)),
+            _ => None,
+        }
+    }
 
-        //             for field in fields.iter() {
-        //                 field.lower_bytes(index..(index + field.ty().byte_size()), memory)?;
-        //                 index += round_up(field.ty().byte_size(), align);
-        //             }
+    pub fn as_tuple(&self) -> Option<&[DynValue]> {
+        match self {
+            Self::Tuple(value) => Some(value.as_ref()),
+            _ => None,
+        }
+    }
 
-        //             Ok(())
-        //         }
-        //         Self::Variant { determinant, value } => {
-        //             let offset = ty.byte_align();
-        //             // TODO: variants with more than 256 cases
-        //             memory.slice(range.start..(range.start + 1))?[0] = *determinant as u8;
+    pub fn as_list(&self) -> Option<&[DynValue]> {
+        match self {
+            Self::List(value) => Some(value.as_ref()),
+            _ => None,
+        }
+    }
 
-        //             if let Some(value) = value {
-        //                 value.lower_bytes(
-        //                     range.slice(offset..(offset + value.ty().byte_size())),
-        //                     memory,
-        //                 )?;
-        //             }
+    pub fn as_record(&self) -> Option<&RecordFields> {
+        match self {
+            Self::Record { fields } => Some(fields),
+            _ => None,
+        }
+    }
 
-        //             Ok(())
-        //         }
-        //     }
+    pub fn as_variant(&self) -> Option<(&str, Option<&DynValue>)> {
+        match self {
+            Self::Variant { determinant, value } => Some((
+                determinant.as_ref(),
+                value.as_ref().map(|value| value.as_ref()),
+            )),
+            _ => None,
+        }
+    }
+}
+
+impl Default for DynValue {
+    fn default() -> Self {
+        Self::unit()
     }
 }

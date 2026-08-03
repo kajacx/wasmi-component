@@ -1,7 +1,9 @@
+use wasmi_component_parser::ValueType;
+
 use crate::helpers::round_up;
 use crate::lib_structs::WasmValue;
 use crate::pointers::FatPtr;
-use crate::{ComponentValue, ConvertResult};
+use crate::{ComponentValue, ConvertResult, DynValue, dyn_lift};
 
 pub trait LiftReader<'mem>: Sized {
     fn read_u8(&mut self) -> u8;
@@ -22,10 +24,18 @@ pub trait LiftReader<'mem>: Sized {
         align: usize,
     ) -> ConvertResult<T::Borrowed<'mem>>;
 
+    fn read_dyn_field(&mut self, ty: &ValueType, align: usize) -> ConvertResult<DynValue>;
+
     fn read_variant<T: ComponentValue>(
         &mut self,
         cases: impl FnOnce(&mut Self, usize) -> ConvertResult<T::Borrowed<'mem>>,
     ) -> ConvertResult<T::Borrowed<'mem>>;
+
+    fn read_dyn_variant(
+        &mut self,
+        ty: &ValueType,
+        cases: impl FnOnce(&mut Self, usize) -> ConvertResult<DynValue>,
+    ) -> ConvertResult<DynValue>;
 
     fn memory(&self) -> &'mem [u8];
 }
@@ -84,11 +94,29 @@ impl<'mem, 'a> LiftReader<'mem> for LiftArgsReader<'mem, 'a> {
         T::lift(self)
     }
 
+    fn read_dyn_field(&mut self, ty: &ValueType, _align: usize) -> ConvertResult<DynValue> {
+        dyn_lift(ty, self)
+    }
+
     fn read_variant<T: ComponentValue>(
         &mut self,
         cases: impl FnOnce(&mut Self, usize) -> ConvertResult<T::Borrowed<'mem>>,
     ) -> ConvertResult<T::Borrowed<'mem>> {
         let final_index = self.index + T::arg_count();
+        let determinant = self.read_u8(); // TODO: variants with more than 256 cases
+
+        let result = cases(self, determinant as usize)?;
+
+        self.index = final_index;
+        Ok(result)
+    }
+
+    fn read_dyn_variant(
+        &mut self,
+        ty: &ValueType,
+        cases: impl FnOnce(&mut Self, usize) -> ConvertResult<DynValue>,
+    ) -> ConvertResult<DynValue> {
+        let final_index = self.index + ty.arg_count();
         let determinant = self.read_u8(); // TODO: variants with more than 256 cases
 
         let result = cases(self, determinant as usize)?;
@@ -163,6 +191,12 @@ impl<'mem, 'a> LiftReader<'mem> for LiftBytesReader<'mem, 'a> {
         Ok(result)
     }
 
+    fn read_dyn_field(&mut self, ty: &ValueType, align: usize) -> ConvertResult<DynValue> {
+        let result = dyn_lift(ty, self)?;
+        self.index = round_up(self.index, align);
+        Ok(result)
+    }
+
     fn read_variant<T: ComponentValue>(
         &mut self,
         cases: impl FnOnce(&mut Self, usize) -> ConvertResult<T::Borrowed<'mem>>,
@@ -170,6 +204,22 @@ impl<'mem, 'a> LiftReader<'mem> for LiftBytesReader<'mem, 'a> {
         let final_index = self.index + T::byte_size();
         let determinant = self
             .read_record_field::<u8>(T::byte_align()) // TODO: variants with more than 256 cases
+            .expect("reading u8 cannot fail");
+
+        let result = cases(self, determinant as usize)?;
+
+        self.index = final_index;
+        Ok(result)
+    }
+
+    fn read_dyn_variant(
+        &mut self,
+        ty: &ValueType,
+        cases: impl FnOnce(&mut Self, usize) -> ConvertResult<DynValue>,
+    ) -> ConvertResult<DynValue> {
+        let final_index = self.index + ty.byte_align();
+        let determinant = self
+            .read_record_field::<u8>(ty.byte_align()) // TODO: variants with more than 256 cases
             .expect("reading u8 cannot fail");
 
         let result = cases(self, determinant as usize)?;

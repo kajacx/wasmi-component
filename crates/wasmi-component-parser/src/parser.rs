@@ -141,7 +141,7 @@ impl Parser {
 
         let result = func
             .result
-            .map_or_else(|| ValueType::new_unit(), |ty| self.convert_type(ty));
+            .map_or_else(|| ValueType::unit(), |ty| self.convert_type(ty));
 
         Func::new(module_name, func.name.clone(), params, result)
     }
@@ -211,11 +211,11 @@ impl Parser {
     fn parse_result(&self, ty: &Result_) -> ValueType {
         let ok = ty
             .ok
-            .map_or_else(|| ValueType::new_unit(), |ty| self.convert_type(ty));
+            .map_or_else(|| ValueType::unit(), |ty| self.convert_type(ty));
 
         let err = ty
             .err
-            .map_or_else(|| ValueType::new_unit(), |ty| self.convert_type(ty));
+            .map_or_else(|| ValueType::unit(), |ty| self.convert_type(ty));
 
         ValueType::Result(Rc::new(ok), Rc::new(err))
     }
