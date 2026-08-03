@@ -1,15 +1,9 @@
 use crate::{ConvertError, ConvertResult};
 
+// TODO: get rid of this? how to fill empty variant fields then?
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum WasmValue {
-    /// Value has not yet been set. Trying to use it indicated an error in the wasmi-component crate
-    /// and should be reported to the maintainer.
-    Unset,
-
-    /// Value will not be used "down the line" because it is present in a variant case that is not as "long"
-    /// as the entire variant. It will be cast to whatever type will be needed by wasmi.
     Unused,
-
     I32(i32),
     I64(i64),
     F32(f32),
@@ -159,6 +153,6 @@ impl From<wasmi::Val> for WasmValue {
 
 impl Default for WasmValue {
     fn default() -> Self {
-        Self::Unset
+        Self::Unused
     }
 }

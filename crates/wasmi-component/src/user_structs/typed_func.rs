@@ -2,7 +2,9 @@ use std::marker::PhantomData;
 
 use wasmi::AsContextMut;
 
-use crate::lib_structs::{LiftArgsReader, LiftBytesReader, MemoryAccessPre, WasmValue, wasm_args};
+use crate::lib_structs::{
+    LiftArgsReader, LiftBytesReader, LowerArgsWriter, MemoryAccessPre, WasmValue, wasm_args,
+};
 use crate::pointers::FatPtr;
 use crate::{CallResult, ComponentValue, Lift, Lower, StoreData};
 
@@ -49,13 +51,13 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
     ) -> CallResult<R> {
         let params_user = params;
 
-        let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unset);
+        let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unused);
         let params_len = Params::arg_count();
-        debug_assert_eq!(self.param_types.len(), params_len);
 
-        let mut memory_access = self.memory.fill(ctx.as_context_mut());
-        params_user.lower_args(&mut params_wasm[0..params_len], &mut memory_access)?;
-        drop(memory_access);
+        let memory_access = self.memory.fill(ctx.as_context_mut());
+        let mut args_writer = LowerArgsWriter::new(memory_access, &mut params_wasm[0..params_len]);
+
+        params_user.lower(&mut args_writer)?;
 
         // TODO: more than 16 flat args
         let mut params_wasmi: [_; 16] = std::array::from_fn(|_| wasmi::Val::I32(0));
@@ -104,7 +106,7 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
             let mut byte_reader = LiftBytesReader::new(bytes, slice);
             Results::lift(&mut byte_reader)?
         } else {
-            let mut results_wasm = [WasmValue::Unset];
+            let mut results_wasm = [WasmValue::Unused];
             WasmValue::convert_from_wasmi(results_slice, &mut results_wasm[0..results_slice.len()]);
 
             let mut args_reader = LiftArgsReader::new(bytes, &results_wasm[0..results_slice.len()]);

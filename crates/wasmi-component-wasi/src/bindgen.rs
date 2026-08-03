@@ -52,10 +52,23 @@ impl wasmi_component::ComponentValue for StreamError {
             )?)),
             1usize => Ok(StreamErrorBorrowed::Closed),
             other => Err(wasmi_component::ConvertError::new(format!(
-                "invalid determinant {other} in {}::lift_bytes",
+                "invalid determinant {other} in {}::lift",
                 "StreamError"
             ))),
         })
+    }
+}
+impl wasmi_component::Lower<Self> for StreamError {
+    fn lower(
+        &self,
+        writer: &mut impl wasmi_component::lib_structs::LowerWriter,
+    ) -> wasmi_component::ConvertResult<()> {
+        match self {
+            Self::LastOperationFailed(value) => {
+                writer.write_variant::<StreamError, _>(0usize, value)
+            }
+            Self::Closed => writer.write_variant::<StreamError, _>(1usize, ()),
+        }
     }
 }
 #[derive(Clone, Debug)]
@@ -84,51 +97,6 @@ impl wasmi_component::Lift<StreamError> for StreamErrorBorrowed<'_> {
             }
             Self::Closed => {
                 *target = StreamError::Closed;
-                Ok(())
-            }
-        }
-    }
-}
-impl wasmi_component::Lower<Self> for StreamError {
-    fn lower_args(
-        &self,
-        args: &mut [wasmi_component::lib_structs::WasmValue],
-        memory: &mut impl wasmi_component::lib_structs::MemoryAccess,
-    ) -> wasmi_component::ConvertResult<()> {
-        let written = match self {
-            Self::LastOperationFailed(value) => {
-                args[0] = wasmi_component::lib_structs::WasmValue::I32(0i32);
-                value.lower_args(&mut args[1..(1 + <i32>::arg_count())], memory)?;
-                1 + <i32>::arg_count()
-            }
-            Self::Closed => {
-                args[0] = wasmi_component::lib_structs::WasmValue::I32(1i32);
-                1
-            }
-        };
-        for arg in &mut args[written..] {
-            *arg = wasmi_component::lib_structs::WasmValue::Unused;
-        }
-        Ok(())
-    }
-    fn lower_bytes(
-        &self,
-        range: std::ops::Range<usize>,
-        memory: &mut impl wasmi_component::lib_structs::MemoryAccess,
-    ) -> wasmi_component::ConvertResult<()> {
-        use wasmi_component::lib_structs::Slice;
-        let offset = Self::byte_align();
-        match self {
-            Self::LastOperationFailed(value) => {
-                memory
-                    .slice(range.start..(range.start + 1))?
-                    .copy_from_slice(&[0u8]);
-                value.lower_bytes(range.slice(offset..(offset + <i32>::byte_size())), memory)
-            }
-            Self::Closed => {
-                memory
-                    .slice(range.start..(range.start + 1))?
-                    .copy_from_slice(&[0]);
                 Ok(())
             }
         }

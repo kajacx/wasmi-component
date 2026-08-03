@@ -46,6 +46,6 @@ impl<'a> DynValueParams<'a> {
         // value.lower_args(&mut args[index..(index + value.ty.arg_count())], memory)?; TODO:
         // index += value.ty.arg_count();
         //}
-        Ok(())
+        todo!()
     }
 }

@@ -35,20 +35,6 @@ impl Generator for RecordGenerator<'_> {
         output
     }
 
-    fn lower_args(&self) -> TokenStream {
-        let mut output = quote! { let mut index = 0; };
-
-        for field in &self.data.fields {
-            let field_ty = &field.ty;
-            let field_name = field.ident.as_ref().unwrap();
-            output.extend(quote! { <#field_ty>::lower_args(&self.#field_name, &mut args[index .. (index + <#field_ty>::arg_count())], memory)?; });
-            output.extend(quote! { index += <#field_ty>::arg_count(); });
-        }
-
-        output.extend(quote! { Ok(()) });
-        output
-    }
-
     fn byte_align(&self) -> TokenStream {
         let mut output = quote! { let mut result = 0; };
         for field in &self.data.fields {
@@ -89,14 +75,12 @@ impl Generator for RecordGenerator<'_> {
         output
     }
 
-    fn lower_bytes(&self) -> TokenStream {
-        let mut output = quote! { let align = Self::byte_align(); let mut index = range.start; };
+    fn lower(&self) -> TokenStream {
+        let mut output = quote! { let align = Self::byte_align(); };
 
         for field in &self.data.fields {
-            let field_ty = &field.ty;
             let field_name = field.ident.as_ref().unwrap();
-            output.extend(quote! { <#field_ty>::lower_bytes(&self.#field_name, index .. (index + <#field_ty>::byte_size()), memory)?; });
-            output.extend(quote! { index += wasmi_component::helpers::round_up(<#field_ty>::arg_count(), align); });
+            output.extend(quote! { writer.write_record_field(&self.#field_name, align)?; });
         }
 
         output.extend(quote! { Ok(()) });

@@ -4,8 +4,7 @@ use std::rc::Rc;
 use wasmi_component_parser::ValueType;
 
 use crate::lib_structs::{MemoryAccess, WasmValue};
-use crate::pointers::FatPtr;
-use crate::{ConvertResult, Lower, RecordFields};
+use crate::{ConvertResult, RecordFields};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum DynValue {
@@ -168,132 +167,133 @@ impl DynValue {
         args: &mut [WasmValue],
         memory: &mut impl MemoryAccess,
     ) -> ConvertResult<()> {
-        match self {
-            Self::S8(value) => value.lower_args(args, memory),
-            Self::S16(value) => value.lower_args(args, memory),
-            Self::S32(value) => value.lower_args(args, memory),
-            Self::S64(value) => value.lower_args(args, memory),
+        todo!()
+        // match self {
+        //     Self::S8(value) => value.lower_args(args, memory),
+        //     Self::S16(value) => value.lower_args(args, memory),
+        //     Self::S32(value) => value.lower_args(args, memory),
+        //     Self::S64(value) => value.lower_args(args, memory),
 
-            Self::U8(value) => value.lower_args(args, memory),
-            Self::U16(value) => value.lower_args(args, memory),
-            Self::U32(value) => value.lower_args(args, memory),
-            Self::U64(value) => value.lower_args(args, memory),
+        //     Self::U8(value) => value.lower_args(args, memory),
+        //     Self::U16(value) => value.lower_args(args, memory),
+        //     Self::U32(value) => value.lower_args(args, memory),
+        //     Self::U64(value) => value.lower_args(args, memory),
 
-            Self::F32(value) => value.lower_args(args, memory),
-            Self::F64(value) => value.lower_args(args, memory),
+        //     Self::F32(value) => value.lower_args(args, memory),
+        //     Self::F64(value) => value.lower_args(args, memory),
 
-            Self::Bool(value) => value.lower_args(args, memory),
-            Self::Char(value) => value.lower_args(args, memory),
-            Self::String(value) => value.lower_args(args, memory),
+        //     Self::Bool(value) => value.lower_args(args, memory),
+        //     Self::Char(value) => value.lower_args(args, memory),
+        //     Self::String(value) => value.lower_args(args, memory),
 
-            Self::Option(value) => {
-                let inner_ty = ty.as_option().expect("type was checked before");
-                let written = match value {
-                    None => {
-                        args[0] = WasmValue::I32(0);
-                        1
-                    }
-                    Some(value) => {
-                        args[0] = WasmValue::I32(1);
-                        value.lower_args(
-                            inner_ty,
-                            &mut args[1..(1 + inner_ty.arg_count())],
-                            memory,
-                        )?;
-                        1 + inner_ty.arg_count()
-                    }
-                };
+        //     Self::Option(value) => {
+        //         let inner_ty = ty.as_option().expect("type was checked before");
+        //         let written = match value {
+        //             None => {
+        //                 args[0] = WasmValue::I32(0);
+        //                 1
+        //             }
+        //             Some(value) => {
+        //                 args[0] = WasmValue::I32(1);
+        //                 value.lower_args(
+        //                     inner_ty,
+        //                     &mut args[1..(1 + inner_ty.arg_count())],
+        //                     memory,
+        //                 )?;
+        //                 1 + inner_ty.arg_count()
+        //             }
+        //         };
 
-                for arg in &mut args[written..] {
-                    *arg = WasmValue::Unused;
-                }
+        //         for arg in &mut args[written..] {
+        //             *arg = WasmValue::Unused;
+        //         }
 
-                Ok(())
-            }
-            Self::Result(value) => {
-                let (ok_ty, err_ty) = ty.as_result().expect("type was checked before");
-                let written = match value {
-                    Ok(ok) => {
-                        args[0] = WasmValue::I32(0);
-                        ok.lower_args(ok_ty, &mut args[1..(1 + ok_ty.arg_count())], memory)?;
-                        1 + ok_ty.arg_count()
-                    }
-                    Err(err) => {
-                        args[1] = WasmValue::I32(1);
-                        err.lower_args(err_ty, &mut args[1..(1 + err_ty.arg_count())], memory)?;
-                        1 + err_ty.arg_count()
-                    }
-                };
+        //         Ok(())
+        //     }
+        //     Self::Result(value) => {
+        //         let (ok_ty, err_ty) = ty.as_result().expect("type was checked before");
+        //         let written = match value {
+        //             Ok(ok) => {
+        //                 args[0] = WasmValue::I32(0);
+        //                 ok.lower_args(ok_ty, &mut args[1..(1 + ok_ty.arg_count())], memory)?;
+        //                 1 + ok_ty.arg_count()
+        //             }
+        //             Err(err) => {
+        //                 args[1] = WasmValue::I32(1);
+        //                 err.lower_args(err_ty, &mut args[1..(1 + err_ty.arg_count())], memory)?;
+        //                 1 + err_ty.arg_count()
+        //             }
+        //         };
 
-                for arg in &mut args[written..] {
-                    *arg = WasmValue::Unused;
-                }
+        //         for arg in &mut args[written..] {
+        //             *arg = WasmValue::Unused;
+        //         }
 
-                Ok(())
-            }
-            Self::Tuple(fields) => {
-                let mut index = 0;
-                let fields_ty = ty.as_tuple().expect("type was checked before");
-                for (field_ty, field) in fields_ty.iter().zip(fields.iter()) {
-                    field.lower_args(
-                        field_ty,
-                        &mut args[index..(index + field_ty.arg_count())],
-                        memory,
-                    )?;
-                    index += field_ty.arg_count();
-                }
-                Ok(())
-            }
-            Self::List(contents) => {
-                let inner_ty = ty.list_type().expect("list type was checked");
+        //         Ok(())
+        //     }
+        //     Self::Tuple(fields) => {
+        //         let mut index = 0;
+        //         let fields_ty = ty.as_tuple().expect("type was checked before");
+        //         for (field_ty, field) in fields_ty.iter().zip(fields.iter()) {
+        //             field.lower_args(
+        //                 field_ty,
+        //                 &mut args[index..(index + field_ty.arg_count())],
+        //                 memory,
+        //             )?;
+        //             index += field_ty.arg_count();
+        //         }
+        //         Ok(())
+        //     }
+        //     Self::List(contents) => {
+        //         let inner_ty = ty.list_type().expect("list type was checked");
 
-                let len = inner_ty.byte_size() * contents.len();
-                let start = memory.allocate(len, inner_ty.byte_align())?;
-                let mut index = start;
+        //         let len = inner_ty.byte_size() * contents.len();
+        //         let start = memory.allocate(len, inner_ty.byte_align())?;
+        //         let mut index = start;
 
-                for item in contents.iter() {
-                    item.lower_bytes(inner_ty, index..(index + inner_ty.byte_size()), memory)?;
-                    index += inner_ty.byte_size();
-                }
+        //         for item in contents.iter() {
+        //             item.lower_bytes(inner_ty, index..(index + inner_ty.byte_size()), memory)?;
+        //             index += inner_ty.byte_size();
+        //         }
 
-                let ptr = FatPtr::new(start, contents.len(), inner_ty.byte_size());
-                ptr.write_to_args(args);
-                Ok(())
-            }
+        //         let ptr = FatPtr::new(start, contents.len(), inner_ty.byte_size());
+        //         ptr.write_to_args(args);
+        //         Ok(())
+        //     }
 
-            Self::Record { fields } => {
-                let mut index = 0;
-                let (_name, fields_ty) = ty.as_record().expect("type was checked before");
-                for (name, field_ty) in fields_ty.iter() {
-                    let field = fields
-                        .get_field(name.as_ref())
-                        .expect("type was checked before");
-                    field.lower_args(
-                        field_ty,
-                        &mut args[index..(index + field_ty.arg_count())],
-                        memory,
-                    )?;
-                    index += field_ty.arg_count();
-                }
-                Ok(())
-            }
-            Self::Variant { determinant, value } => {
-                // args[0] = WasmValue::I32(*determinant as i32);
-                // let written = match value {
-                //     None => 1,
-                //     Some(value) => {
-                //         value.lower_args(&mut args[1..(1 + value.ty().arg_count())], memory)?;
-                //         1 + value.ty().arg_count()
-                //     }
-                // };
+        //     Self::Record { fields } => {
+        //         let mut index = 0;
+        //         let (_name, fields_ty) = ty.as_record().expect("type was checked before");
+        //         for (name, field_ty) in fields_ty.iter() {
+        //             let field = fields
+        //                 .get_field(name.as_ref())
+        //                 .expect("type was checked before");
+        //             field.lower_args(
+        //                 field_ty,
+        //                 &mut args[index..(index + field_ty.arg_count())],
+        //                 memory,
+        //             )?;
+        //             index += field_ty.arg_count();
+        //         }
+        //         Ok(())
+        //     }
+        //     Self::Variant { determinant, value } => {
+        //         // args[0] = WasmValue::I32(*determinant as i32);
+        //         // let written = match value {
+        //         //     None => 1,
+        //         //     Some(value) => {
+        //         //         value.lower_args(&mut args[1..(1 + value.ty().arg_count())], memory)?;
+        //         //         1 + value.ty().arg_count()
+        //         //     }
+        //         // };
 
-                // for arg in &mut args[written..] {
-                //     *arg = WasmValue::Unused;
-                // }
+        //         // for arg in &mut args[written..] {
+        //         //     *arg = WasmValue::Unused;
+        //         // }
 
-                Ok(())
-            }
-        }
+        //         Ok(())
+        //     }
+        // }
     }
 
     pub fn lower_bytes(

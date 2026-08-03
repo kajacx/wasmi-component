@@ -1,87 +1,29 @@
-use std::ops::Range;
-
-use crate::lib_structs::{MemoryAccess, WasmValue};
-use crate::pointers::FatPtr;
+use crate::lib_structs::{LowerBytesWriter, LowerWriter, MemoryAccess};
 use crate::{ComponentValue, ConvertResult, Lower};
 
-impl<T: ComponentValue, E: Lower<T>> Lower<Vec<T>> for [E] {
-    fn lower_args(
-        &self,
-        args: &mut [WasmValue],
-        memory: &mut impl MemoryAccess,
-    ) -> ConvertResult<()> {
-        debug_assert_eq!(args.len(), Vec::<T>::arg_count());
+impl<T: ComponentValue, L: Lower<T>> Lower<Vec<T>> for [L] {
+    fn lower(&self, writer: &mut impl LowerWriter) -> ConvertResult<()> {
+        let memory = writer.memory();
 
-        let contents = self;
-        let ptr = write_contents(contents, memory)?;
-        ptr.write_to_args(args);
+        let start = memory.allocate(T::byte_size() * self.len(), T::byte_align())?;
 
-        Ok(())
-    }
+        let mut item_writer = LowerBytesWriter::new(memory, start);
+        for item in self {
+            item.lower(&mut item_writer)?;
+        }
 
-    fn lower_bytes(
-        &self,
-        range: Range<usize>,
-        memory: &mut impl MemoryAccess,
-    ) -> ConvertResult<()> {
-        debug_assert_eq!(range.len(), Vec::<T>::byte_size());
-
-        let contents = self;
-        let ptr = write_contents(contents, memory)?;
-        ptr.write_to_bytes(memory.slice(range)?);
-
-        Ok(())
-    }
-}
-
-impl<T: ComponentValue, E: Lower<T>> Lower<Vec<T>> for Vec<E> {
-    fn lower_args(
-        &self,
-        args: &mut [WasmValue],
-        memory: &mut impl MemoryAccess,
-    ) -> ConvertResult<()> {
-        self.as_slice().lower_args(args, memory)
-    }
-
-    fn lower_bytes(
-        &self,
-        range: Range<usize>,
-        memory: &mut impl MemoryAccess,
-    ) -> ConvertResult<()> {
-        self.as_slice().lower_bytes(range, memory)
+        (start as u32, self.len() as u32).lower(writer)
     }
 }
 
 impl<T: ComponentValue, E: Lower<T>, const N: usize> Lower<Vec<T>> for [E; N] {
-    fn lower_args(
-        &self,
-        args: &mut [WasmValue],
-        memory: &mut impl MemoryAccess,
-    ) -> ConvertResult<()> {
-        self.as_slice().lower_args(args, memory)
-    }
-
-    fn lower_bytes(
-        &self,
-        range: Range<usize>,
-        memory: &mut impl MemoryAccess,
-    ) -> ConvertResult<()> {
-        self.as_slice().lower_bytes(range, memory)
+    fn lower(&self, writer: &mut impl LowerWriter) -> ConvertResult<()> {
+        self.as_slice().lower(writer)
     }
 }
 
-fn write_contents<T: ComponentValue>(
-    contents: &[impl Lower<T>],
-    memory: &mut impl MemoryAccess,
-) -> ConvertResult<FatPtr> {
-    let len = T::byte_size() * contents.len();
-    let start = memory.allocate(len, T::byte_align())?;
-    let mut index = start;
-
-    for item in contents {
-        item.lower_bytes(index..(index + T::byte_size()), memory)?;
-        index += T::byte_size();
+impl<T: ComponentValue, E: Lower<T>> Lower<Vec<T>> for Vec<E> {
+    fn lower(&self, writer: &mut impl LowerWriter) -> ConvertResult<()> {
+        self.as_slice().lower(writer)
     }
-
-    Ok(FatPtr::new(start, contents.len(), T::byte_size()))
 }

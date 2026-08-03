@@ -6,6 +6,7 @@ set -e
 # --- PATH ---
 
 path="$1"
+shift
 if [[ "$path" == wasi* ]]; then
     target=wasm32-wasip2
     wasi=true
@@ -69,13 +70,13 @@ cd ../../..
 
 cd ../examples
 
-if [[ "manual_impl" == "--manual-impl" ]]; then
+if [[ "$manual_impl" == "--manual-impl" ]]; then
     cargo run --manifest-path ../Cargo.toml -p wasmi-component-bindgen -- --manual-impl "$path/example.wit" > "$path/src/bindings.rs"
 else
     cargo run --manifest-path ../Cargo.toml -p wasmi-component-bindgen -- "$path/example.wit" > "$path/src/bindings.rs"
 fi
 
-if [[ "skip_build" != "--skip-build" ]]; then
+if [[ "$skip_build" != "--skip-build" ]]; then
     cd ..
     ./build.sh
     cd examples

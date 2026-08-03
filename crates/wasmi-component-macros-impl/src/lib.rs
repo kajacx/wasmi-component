@@ -26,9 +26,7 @@ pub fn derive_component_value(input: DeriveInput) -> TokenStream {
     let byte_size = generator.byte_size();
 
     let lift = generator.lift();
-
-    let lower_args = generator.lower_args();
-    let lower_bytes = generator.lower_bytes();
+    let lower = generator.lower();
 
     let borrowed_def = generator.borrowed_def();
 
@@ -62,6 +60,15 @@ pub fn derive_component_value(input: DeriveInput) -> TokenStream {
             }
         }
 
+        impl wasmi_component::Lower<Self> for #type_name {
+            fn lower(
+                &self,
+                writer: &mut impl wasmi_component::lib_structs::LowerWriter
+            ) -> wasmi_component::ConvertResult<()> {
+                #lower
+            }
+        }
+
         #[derive(Clone, Debug)]
         #borrowed_def
 
@@ -72,16 +79,6 @@ pub fn derive_component_value(input: DeriveInput) -> TokenStream {
 
             fn lift_to(&self, target: &mut #type_name) -> wasmi_component::ConvertResult<()> {
                 #lift_to
-            }
-        }
-
-        impl wasmi_component::Lower<Self> for #type_name {
-            fn lower_args(&self, args: &mut [wasmi_component::lib_structs::WasmValue], memory: &mut impl wasmi_component::lib_structs::MemoryAccess) -> wasmi_component::ConvertResult<()> {
-                #lower_args
-            }
-
-            fn lower_bytes(&self, range: std::ops::Range<usize>, memory: &mut impl wasmi_component::lib_structs::MemoryAccess) -> wasmi_component::ConvertResult<()> {
-                #lower_bytes
             }
         }
     };
@@ -98,9 +95,7 @@ trait Generator {
     fn byte_size(&self) -> TokenStream;
 
     fn lift(&self) -> TokenStream;
-
-    fn lower_args(&self) -> TokenStream;
-    fn lower_bytes(&self) -> TokenStream;
+    fn lower(&self) -> TokenStream;
 
     fn borrowed_def(&self) -> TokenStream;
 

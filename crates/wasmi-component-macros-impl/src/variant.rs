@@ -45,39 +45,6 @@ impl Generator for VariantGenerator<'_> {
         output
     }
 
-    fn lower_args(&self) -> TokenStream {
-        let mut output = quote! {};
-
-        for (index, field) in self.data.variants.iter().enumerate() {
-            let index = index as i32;
-            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
-            let field_name = &field.ident;
-
-            if let Some(ty) = field_ty {
-                output.extend(quote! { Self::#field_name(value) => {
-                    args[0] = wasmi_component::lib_structs::WasmValue::I32(#index);
-                    value.lower_args(&mut args[1..(1 + <#ty>::arg_count())], memory)?;
-                    1 + <#ty>::arg_count()
-                } });
-            } else {
-                output.extend(quote! { Self::#field_name => {
-                    args[0] = wasmi_component::lib_structs::WasmValue::I32(#index);
-                    1
-                } });
-            }
-        }
-
-        quote! {
-            let written = match self { #output };
-
-            for arg in &mut args[written..] {
-                *arg = wasmi_component::lib_structs::WasmValue::Unused;
-            }
-
-            Ok(())
-        }
-    }
-
     fn byte_align(&self) -> TokenStream {
         // TODO: variant with more than 256 cases
         let mut output = quote! { let mut max = 1; };
@@ -133,44 +100,32 @@ impl Generator for VariantGenerator<'_> {
             reader.read_variant::<Self>(|reader, determinant| match determinant {
                 #output
                 other => Err(wasmi_component::ConvertError::new(
-                    format!("invalid determinant {other} in {}::lift_bytes", #name)
+                    format!("invalid determinant {other} in {}::lift", #name)
                 )),
             })
         }
     }
 
-    fn lower_bytes(&self) -> TokenStream {
+    fn lower(&self) -> TokenStream {
+        let main_ty = self.gen_data.name;
         let mut output = quote! {};
 
         for (index, field) in self.data.variants.iter().enumerate() {
-            let index = index as u8; // TODO: more than 256 variants
-            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
             let field_name = &field.ident;
+            let field_ty = &field.fields.iter().next().map(|item| &item.ty);
 
-            if let Some(ty) = field_ty {
+            if let Some(_) = field_ty {
                 output.extend(quote! { Self::#field_name(value) => {
-                    memory
-                        .slice(range.start..(range.start + 1))?
-                        .copy_from_slice(&[#index]);
-
-                    value.lower_bytes(range.slice(offset..(offset + <#ty>::byte_size())), memory)
+                    writer.write_variant::<#main_ty, _>(#index, value)
                 } });
             } else {
                 output.extend(quote! { Self::#field_name => {
-                    memory
-                        .slice(range.start..(range.start + 1))?
-                        .copy_from_slice(&[0]);
-
-                    Ok(())
+                    writer.write_variant::<#main_ty, _>(#index, ())
                 } });
             }
         }
 
-        quote! {
-            use wasmi_component::lib_structs::Slice;
-            let offset = Self::byte_align();
-            match self { #output }
-        }
+        quote! { match self { #output } }
     }
 
     fn borrowed_def(&self) -> TokenStream {

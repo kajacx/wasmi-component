@@ -41,7 +41,7 @@ impl UntypedFunc {
         let params_user = DynValueParams::new(params.as_ref());
         params_user.check_params_signature(self.signature.params.as_ref(), &self.ident)?;
 
-        let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unset);
+        let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unused);
         let params_len = 0; // params_user.arg_count(); // TODO:
 
         let mut memory_access = self.memory.fill(ctx.as_context_mut());
@@ -94,7 +94,7 @@ impl UntypedFunc {
             let slice = ptr.try_index(bytes)?;
             lift_bytes_dyn(result_ty, slice, bytes)?
         } else {
-            let mut results_wasm = [WasmValue::Unset];
+            let mut results_wasm = [WasmValue::Unused];
             WasmValue::convert_from_wasmi(results_slice, &mut results_wasm[0..results_slice.len()]);
             lift_args_dyn(result_ty, &results_wasm[0..results_slice.len()], bytes)?
         };

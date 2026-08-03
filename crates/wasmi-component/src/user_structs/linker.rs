@@ -3,7 +3,8 @@ use wasmi::AsContextMut;
 use wasmi_component_parser::FuncIdentifier;
 
 use crate::lib_structs::{
-    FuncSignature, FuncStorage, LiftArgsReader, MemoryAccessPre, WasmValue, wasm_args,
+    FuncSignature, FuncStorage, LiftArgsReader, LowerArgsWriter, LowerBytesWriter, MemoryAccessPre,
+    WasmValue, wasm_args,
 };
 use crate::{Component, ComponentValue, HostResult, Instance, Lower, StoreData};
 
@@ -58,7 +59,7 @@ impl<T> Linker<T> {
                     .data_and_store_mut(caller.as_context_mut());
 
                 // TODO: more than 16 flat args
-                let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unset);
+                let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unused);
                 WasmValue::convert_from_wasmi(
                     &params_wasmi[0..params_len],
                     &mut params_wasm[0..params_len],
@@ -70,16 +71,23 @@ impl<T> Linker<T> {
                 let user_data = store_data.data_mut();
                 let results_user = callback(user_data, params_user)?;
 
-                let mut memory_filled = memory_pre.fill(caller);
+                let memory_access = memory_pre.fill(caller);
 
                 if has_external_result {
-                    let address = params_wasmi[params_len].i32().unwrap() as usize;
-                    let range = address..(address + Results::byte_size());
-                    results_user.lower_bytes(range, &mut memory_filled)?;
+                    let address = params_wasmi[params_len]
+                        .i32()
+                        .expect("i32 type was manually pushed")
+                        as usize;
+
+                    let mut byte_writer = LowerBytesWriter::new(memory_access, address);
+                    results_user.lower(&mut byte_writer)?;
                 } else {
-                    let mut results_wasm = [WasmValue::Unset];
-                    results_user
-                        .lower_args(&mut results_wasm[0..results_len], &mut memory_filled)?;
+                    let mut results_wasm = [WasmValue::Unused];
+
+                    let mut args_writer =
+                        LowerArgsWriter::new(memory_access, &mut results_wasm[0..results_len]);
+                    results_user.lower(&mut args_writer)?;
+
                     WasmValue::convert_to_wasmi(
                         &results_wasm[0..results_len],
                         &results_ty_original,

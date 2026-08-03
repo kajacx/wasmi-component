@@ -39,8 +39,8 @@ pub(crate) struct LiftArgsReader<'mem, 'a> {
 impl<'mem, 'a> LiftArgsReader<'mem, 'a> {
     pub fn new(memory: &'mem [u8], args: &'a [WasmValue]) -> Self {
         Self {
-            args,
             memory,
+            args,
             index: 0,
         }
     }
