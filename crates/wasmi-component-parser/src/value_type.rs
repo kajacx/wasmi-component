@@ -231,11 +231,7 @@ impl ValueType {
             Self::Tuple(fields) => fields.iter().map(|ty| ty.byte_align()).max().unwrap_or(1),
             Self::List(_) => 8,
 
-            Self::Record { fields, .. } => fields
-                .iter()
-                .map(|(_name, ty)| ty.byte_align())
-                .max()
-                .unwrap_or(1),
+            Self::Record { fields, .. } => fields.iter().map(|(_name, ty)| ty.byte_size()).sum(),
             Self::Variant { cases, .. } => {
                 // TODO: variant with more than 256 cases
                 cases

@@ -5,7 +5,9 @@ use wasmi_component::{DynValue, Linker, Store};
 mod bindings;
 
 fn get_wasm() -> Vec<u8> {
-    std::fs::read("../guests/target/wasm32-unknown-unknown/debug/example_guest_dynamic.wasm")
+    let path = "guests/target/wasm32-unknown-unknown/debug/example_guest_dynamic.wasm";
+    std::fs::read(path)
+        .or_else(|_| std::fs::read(format!("../{path}")))
         .unwrap()
 }
 
@@ -13,7 +15,7 @@ fn get_wasm() -> Vec<u8> {
 struct HostData {}
 
 pub fn main() {
-    let _ = std::thread::Builder::new()
+    std::thread::Builder::new()
         .stack_size(128 * 1024 * 1024)
         .spawn(main_)
         .unwrap()
@@ -103,5 +105,22 @@ pub fn main_() {
         .call(&mut store, [DynValue::new_string("Hello")])
         .unwrap();
     assert_eq!(result, DynValue::new_string("Hello"));
+    println!("Result is: {result:?}\n");
+
+    let person = DynValue::new_record([
+        ("id".into(), DynValue::new_u64(50)),
+        ("name".into(), DynValue::new_string("Tom")),
+        ("birthday".into(), DynValue::new_option(None)),
+    ]);
+    let result = instance
+        .get_dyn_func(
+            &store,
+            "wasmi-component:component-examples/round-trip@0.1.0",
+            "trip-person",
+        )
+        .unwrap()
+        .call(&mut store, [person.clone()])
+        .unwrap();
+    assert_eq!(result, person);
     println!("Result is: {result:?}\n");
 }

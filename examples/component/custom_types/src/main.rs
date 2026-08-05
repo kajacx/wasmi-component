@@ -6,7 +6,9 @@ use crate::bindings::Person;
 mod bindings;
 
 fn get_wasm() -> Vec<u8> {
-    std::fs::read("../guests/target/wasm32-unknown-unknown/debug/example_guest_custom_types.wasm")
+    let path = "guests/target/wasm32-unknown-unknown/debug/example_guest_custom_types.wasm";
+    std::fs::read(path)
+        .or_else(|_| std::fs::read(format!("../{path}")))
         .unwrap()
 }
 
@@ -52,7 +54,7 @@ impl bindings::TestExampleImports for HostData {
 }
 
 pub fn main() {
-    let _ = std::thread::Builder::new()
+    std::thread::Builder::new()
         .stack_size(128 * 1024 * 1024)
         .spawn(main_)
         .unwrap()
