@@ -1,5 +1,8 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{Component, Linker, Store};
+use wasmi_component::{DynValue, Linker, Store};
+
+// Not used here, but the build pipeline gets confused if it's missing
+mod bindings;
 
 fn get_wasm() -> Vec<u8> {
     std::fs::read("../guests/target/wasm32-unknown-unknown/debug/example_guest_dynamic.wasm")
@@ -25,7 +28,80 @@ pub fn main_() {
 
     let mut linker = Linker::<HostData>::new(store.engine());
 
-    let component = Component::new(&engine, &get_wasm()).unwrap();
+    let component = store.new_component(&get_wasm()).unwrap();
+
+    linker.func_dyn(
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-s32",
+        &component,
+        |data, values: &[DynValue]| {
+            println!("[HOST]: Receiving s32 value {:?}", values);
+            let value = values[0].as_s32().unwrap();
+            println!("[HOST]: Returning s32 value {:?}", value);
+            Ok(DynValue::new_s32(value))
+        },
+    );
+
+    linker
+        .func_dyn(
+            "wasmi-component:component-examples/round-trip@0.1.0",
+            "trip-string",
+            &component,
+            |data, values: &[DynValue]| {
+                println!("[HOST]: Receiving string value {:?}", values);
+                let value = values[0].as_string().unwrap();
+                println!("[HOST]: Returning string value {:?}", value);
+                Ok(DynValue::new_string(value))
+            },
+        )
+        .unwrap();
+
+    linker
+        .func_dyn(
+            "wasmi-component:component-examples/round-trip@0.1.0",
+            "trip-person",
+            &component,
+            |data, values: &[DynValue]| {
+                println!("[HOST]: Receiving person value {:?}", values);
+                let value = values[0].as_record().unwrap();
+                println!("[HOST]: Returning person value {:?}", value);
+                Ok(DynValue::new_record(value.fields.iter().cloned()))
+            },
+        )
+        .unwrap();
+
+    linker
+        .func_dyn("", "log", &component, |data, values: &[DynValue]| {
+            println!("{}", values[0].as_string().unwrap());
+            Ok(DynValue::unit())
+        })
+        .unwrap();
+
+    let instance = linker.instantiate(&mut store, &component).unwrap();
 
     println!("Starting host execution\n");
+
+    let result = instance
+        .get_dyn_func(
+            &store,
+            "wasmi-component:component-examples/round-trip@0.1.0",
+            "trip-s32",
+        )
+        .unwrap()
+        .call(&mut store, [DynValue::new_s32(42)])
+        .unwrap();
+    assert_eq!(result, DynValue::new_s32(42));
+    println!("Result is: {result:?}\n");
+
+    let result = instance
+        .get_dyn_func(
+            &store,
+            "wasmi-component:component-examples/round-trip@0.1.0",
+            "trip-string",
+        )
+        .unwrap()
+        .call(&mut store, [DynValue::new_string("Hello")])
+        .unwrap();
+    assert_eq!(result, DynValue::new_string("Hello"));
+    println!("Result is: {result:?}\n");
 }

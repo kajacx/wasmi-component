@@ -33,10 +33,9 @@ impl FuncStorage {
         signature: &FuncSignature,
     ) -> anyhow::Result<()> {
         let host_signature = self.get(ident).ok_or_else(|| {
-            ConvertError::new("dynamic imported function not found in the component")
+            ConvertError::new(format!("imported function {ident} not found in the linker"))
                 .with_additional(format!(
-                    "imported function \"{}\" is not present, defined functions are: {:?}",
-                    ident,
+                    "defined functions are: {}",
                     self.existing_fn_names()
                 ))
         })?;

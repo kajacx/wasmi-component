@@ -2,13 +2,13 @@ use wasmi::AsContextMut;
 use wasmi_component_parser::FuncIdentifier;
 
 use crate::lib_structs::{
-    FuncSignature, LiftArgsReader, LiftBytesReader, MemoryAccessPre, WasmValue,
+    FuncSignature, LiftArgsReader, LiftBytesReader, LowerArgsWriter, MemoryAccessPre, WasmValue,
 };
 use crate::pointers::FatPtr;
 use crate::{CallResult, DynValue, DynValueParams, StoreData, dyn_lift};
 
 #[derive(Debug, Clone)]
-pub struct UntypedFunc {
+pub struct DynFunc {
     memory: MemoryAccessPre,
 
     inner: wasmi::Func,
@@ -18,7 +18,7 @@ pub struct UntypedFunc {
     signature: FuncSignature,
 }
 
-impl UntypedFunc {
+impl DynFunc {
     pub(crate) fn new(
         memory: MemoryAccessPre,
         inner: wasmi::Func,
@@ -44,11 +44,12 @@ impl UntypedFunc {
         params_user.check_params_signature(self.signature.params.as_ref(), &self.ident)?;
 
         let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unused);
-        let params_len = 0; // params_user.arg_count(); // TODO:
+        let params_len = self.signature.params_as_tuple().arg_count();
 
-        let mut memory_access = self.memory.fill(ctx.as_context_mut());
-        params_user.lower_args(&mut params_wasm[0..params_len], &mut memory_access)?;
-        drop(memory_access);
+        let memory_access = self.memory.fill(ctx.as_context_mut());
+
+        let mut args_writer = LowerArgsWriter::new(memory_access, &mut params_wasm[0..params_len]);
+        params_user.lower_args(self.signature.params.as_ref(), &mut args_writer)?;
 
         let mut params_wasmi: [_; 16] = std::array::from_fn(|_| wasmi::Val::I32(0));
         WasmValue::convert_to_wasmi(
@@ -73,12 +74,11 @@ impl UntypedFunc {
             .data_mut()
             .push_call_instance(instance_id);
 
-        // Do not propagate error yet
         let call_result = self.inner.call_resumable(
             ctx.as_context_mut(),
             &params_wasmi[0..params_len],
             results_slice,
-        );
+        ); // Do not propagate error yet
 
         ctx.as_context_mut()
             .data_mut()

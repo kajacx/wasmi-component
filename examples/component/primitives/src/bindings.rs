@@ -285,85 +285,85 @@ impl TestExampleExports {
 pub fn add_test_example_to_linker<T: TestExampleImports>(
     linker: &mut Linker<T>,
 ) -> Result<(), LinkerError> {
-    linker.func_new::<(i8,), i8>(
+    linker.func_typed::<(i8,), i8>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-s8",
         |host_data, params| host_data.trip_s8(params.0),
     )?;
 
-    linker.func_new::<(i16,), i16>(
+    linker.func_typed::<(i16,), i16>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-s16",
         |host_data, params| host_data.trip_s16(params.0),
     )?;
 
-    linker.func_new::<(i32,), i32>(
+    linker.func_typed::<(i32,), i32>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-s32",
         |host_data, params| host_data.trip_s32(params.0),
     )?;
 
-    linker.func_new::<(i64,), i64>(
+    linker.func_typed::<(i64,), i64>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-s64",
         |host_data, params| host_data.trip_s64(params.0),
     )?;
 
-    linker.func_new::<(u8,), u8>(
+    linker.func_typed::<(u8,), u8>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-u8",
         |host_data, params| host_data.trip_u8(params.0),
     )?;
 
-    linker.func_new::<(u16,), u16>(
+    linker.func_typed::<(u16,), u16>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-u16",
         |host_data, params| host_data.trip_u16(params.0),
     )?;
 
-    linker.func_new::<(u32,), u32>(
+    linker.func_typed::<(u32,), u32>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-u32",
         |host_data, params| host_data.trip_u32(params.0),
     )?;
 
-    linker.func_new::<(u64,), u64>(
+    linker.func_typed::<(u64,), u64>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-u64",
         |host_data, params| host_data.trip_u64(params.0),
     )?;
 
-    linker.func_new::<(f32,), f32>(
+    linker.func_typed::<(f32,), f32>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-f32",
         |host_data, params| host_data.trip_f32(params.0),
     )?;
 
-    linker.func_new::<(f64,), f64>(
+    linker.func_typed::<(f64,), f64>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-f64",
         |host_data, params| host_data.trip_f64(params.0),
     )?;
 
-    linker.func_new::<(bool,), bool>(
+    linker.func_typed::<(bool,), bool>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-bool",
         |host_data, params| host_data.trip_bool(params.0),
     )?;
 
-    linker.func_new::<(char,), char>(
+    linker.func_typed::<(char,), char>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-char",
         |host_data, params| host_data.trip_char(params.0),
     )?;
 
-    linker.func_new::<(String,), String>(
+    linker.func_typed::<(String,), String>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-string",
         |host_data, params| host_data.trip_string(params.0),
     )?;
 
-    linker.func_new::<(String,), ()>("", "log", |host_data, params| host_data.log(params.0))?;
+    linker.func_typed::<(String,), ()>("", "log", |host_data, params| host_data.log(params.0))?;
 
     Ok(())
 }

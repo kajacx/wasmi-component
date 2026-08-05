@@ -1,5 +1,5 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{Component, Linker, Store};
+use wasmi_component::{Linker, Store};
 
 mod bindings;
 
@@ -27,7 +27,7 @@ pub fn main_() {
     wasmi_component_wasi::add_wasi_p2_to_linker(&mut linker).unwrap();
     bindings::add_test_example_to_linker(&mut linker).unwrap();
 
-    let component = Component::new(&engine, &get_wasm()).unwrap();
+    let component = store.new_component(&get_wasm()).unwrap();
     let exports =
         bindings::instantiate_test_example_world(&mut store, &linker, &component).unwrap();
 

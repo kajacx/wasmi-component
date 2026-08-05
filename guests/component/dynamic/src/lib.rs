@@ -21,43 +21,46 @@ pub struct Person {
 impl bindings::exports::wasmi_component::component_examples::round_trip::Guest for GuestComponent {
     fn trip_s32(value: i32) -> i32 {
         bindings::log(&format!("[GUEST]: Receiving i32 value {value}"));
-        let result = bindings::wasmi_component::component_examples::round_trip::trip_s32(value);
-        bindings::log(&format!("[GUEST]: Returning i32 value {result}"));
-        result
+        let value = bindings::wasmi_component::component_examples::round_trip::trip_s32(value);
+        bindings::log(&format!("[GUEST]: Returning i32 value {value}"));
+        value
     }
 
     fn trip_string(value: String) -> String {
         bindings::log(&format!("[GUEST]: Receiving string value {value}"));
-        let result = bindings::wasmi_component::component_examples::round_trip::trip_string(&value);
-        bindings::log(&format!("[GUEST]: Returning string value {result}"));
-        result
+        let value = bindings::wasmi_component::component_examples::round_trip::trip_string(&value);
+        bindings::log(&format!("[GUEST]: Returning string value {value}"));
+        value
     }
 
     fn trip_person(value: Person) -> Person {
-        todo!()
+        bindings::log(&format!("[GUEST]: Receiving person value {value:?}"));
+        let value = bindings::wasmi_component::component_examples::round_trip::trip_person(&value);
+        bindings::log(&format!("[GUEST]: Returning person value {value:?}"));
+        value
     }
 
-    fn list_s32(value: Vec<i32>) -> Vec<i32> {
-        todo!()
-    }
+    // fn list_s32(_value: Vec<i32>) -> Vec<i32> {
+    //     todo!()
+    // }
 
-    fn list_string(value: Vec<String>) -> Vec<String> {
-        todo!()
-    }
+    // fn list_string(_value: Vec<String>) -> Vec<String> {
+    //     todo!()
+    // }
 
-    fn list_person(value: Vec<Person>) -> Vec<Person> {
-        todo!()
-    }
+    // fn list_person(_value: Vec<Person>) -> Vec<Person> {
+    //     todo!()
+    // }
 
-    fn result_s32(value: Result<i32, i32>) -> Result<i32, i32> {
-        todo!()
-    }
+    // fn result_s32(_value: Result<i32, i32>) -> Result<i32, i32> {
+    //     todo!()
+    // }
 
-    fn result_string(value: Result<String, String>) -> Result<String, String> {
-        todo!()
-    }
+    // fn result_string(_value: Result<String, String>) -> Result<String, String> {
+    //     todo!()
+    // }
 
-    fn result_person(value: Result<Person, Person>) -> Result<Person, Person> {
-        todo!()
-    }
+    // fn result_person(_value: Result<Person, Person>) -> Result<Person, Person> {
+    //     todo!()
+    // }
 }

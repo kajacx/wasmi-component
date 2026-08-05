@@ -55,8 +55,8 @@ impl<Params: ComponentValue, Results: ComponentValue> TypedFunc<Params, Results>
         let params_len = Params::arg_count();
 
         let memory_access = self.memory.fill(ctx.as_context_mut());
-        let mut args_writer = LowerArgsWriter::new(memory_access, &mut params_wasm[0..params_len]);
 
+        let mut args_writer = LowerArgsWriter::new(memory_access, &mut params_wasm[0..params_len]);
         params_user.lower(&mut args_writer)?;
 
         // TODO: more than 16 flat args

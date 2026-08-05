@@ -1,5 +1,5 @@
 use wasmi_component::wasmi::Engine;
-use wasmi_component::{Component, HostResult, Lift, Linker, Store};
+use wasmi_component::{HostResult, Lift, Linker, Store};
 
 use crate::bindings::add_test_example_to_linker;
 
@@ -103,7 +103,7 @@ pub fn main_() {
     let mut linker = Linker::new(store.engine());
     add_test_example_to_linker(&mut linker).unwrap();
 
-    let component = Component::new(&engine, &get_wasm()).unwrap();
+    let component = store.new_component(&get_wasm()).unwrap();
 
     let exports =
         bindings::instantiate_test_example_world(&mut store, &linker, &component).unwrap();

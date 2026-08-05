@@ -11,13 +11,13 @@ interface round-trip {
     trip-string: func(value: string) -> string;
     trip-person: func(value: person) -> person;
 
-    list-s32: func(value: list<s32>) -> list<s32>;
-    list-string: func(value: list<string>) -> list<string>;
-    list-person: func(value: list<person>) -> list<person>;
+    // list-s32: func(value: list<s32>) -> list<s32>;
+    // list-string: func(value: list<string>) -> list<string>;
+    // list-person: func(value: list<person>) -> list<person>;
 
-    result-s32: func(value: result<s32, s32>) -> result<s32, s32>;
-    result-string: func(value: result<string, string>) -> result<string, string>;
-    result-person: func(value: result<person, person>) -> result<person, person>;
+    // result-s32: func(value: result<s32, s32>) -> result<s32, s32>;
+    // result-string: func(value: result<string, string>) -> result<string, string>;
+    // result-person: func(value: result<person, person>) -> result<person, person>;
 }
 
 world test-example {

@@ -285,85 +285,85 @@ impl TestExampleExports {
 pub fn add_test_example_to_linker<T: TestExampleImports>(
     linker: &mut Linker<T>,
 ) -> Result<(), LinkerError> {
-    linker.func_new::<(Vec<i8>,), Vec<i8>>(
+    linker.func_typed::<(Vec<i8>,), Vec<i8>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-s8",
         |host_data, params| host_data.list_s8(params.0),
     )?;
 
-    linker.func_new::<(Vec<i16>,), Vec<i16>>(
+    linker.func_typed::<(Vec<i16>,), Vec<i16>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-s16",
         |host_data, params| host_data.list_s16(params.0),
     )?;
 
-    linker.func_new::<(Vec<i32>,), Vec<i32>>(
+    linker.func_typed::<(Vec<i32>,), Vec<i32>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-s32",
         |host_data, params| host_data.list_s32(params.0),
     )?;
 
-    linker.func_new::<(Vec<i64>,), Vec<i64>>(
+    linker.func_typed::<(Vec<i64>,), Vec<i64>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-s64",
         |host_data, params| host_data.list_s64(params.0),
     )?;
 
-    linker.func_new::<(Vec<u8>,), Vec<u8>>(
+    linker.func_typed::<(Vec<u8>,), Vec<u8>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-u8",
         |host_data, params| host_data.list_u8(params.0),
     )?;
 
-    linker.func_new::<(Vec<u16>,), Vec<u16>>(
+    linker.func_typed::<(Vec<u16>,), Vec<u16>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-u16",
         |host_data, params| host_data.list_u16(params.0),
     )?;
 
-    linker.func_new::<(Vec<u32>,), Vec<u32>>(
+    linker.func_typed::<(Vec<u32>,), Vec<u32>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-u32",
         |host_data, params| host_data.list_u32(params.0),
     )?;
 
-    linker.func_new::<(Vec<u64>,), Vec<u64>>(
+    linker.func_typed::<(Vec<u64>,), Vec<u64>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-u64",
         |host_data, params| host_data.list_u64(params.0),
     )?;
 
-    linker.func_new::<(Vec<f32>,), Vec<f32>>(
+    linker.func_typed::<(Vec<f32>,), Vec<f32>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-f32",
         |host_data, params| host_data.list_f32(params.0),
     )?;
 
-    linker.func_new::<(Vec<f64>,), Vec<f64>>(
+    linker.func_typed::<(Vec<f64>,), Vec<f64>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-f64",
         |host_data, params| host_data.list_f64(params.0),
     )?;
 
-    linker.func_new::<(Vec<bool>,), Vec<bool>>(
+    linker.func_typed::<(Vec<bool>,), Vec<bool>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-bool",
         |host_data, params| host_data.list_bool(params.0),
     )?;
 
-    linker.func_new::<(Vec<char>,), Vec<char>>(
+    linker.func_typed::<(Vec<char>,), Vec<char>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-char",
         |host_data, params| host_data.list_char(params.0),
     )?;
 
-    linker.func_new::<(Vec<String>,), Vec<String>>(
+    linker.func_typed::<(Vec<String>,), Vec<String>>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "list-string",
         |host_data, params| host_data.list_string(params.0),
     )?;
 
-    linker.func_new::<(String,), ()>("", "log", |host_data, params| host_data.log(params.0))?;
+    linker.func_typed::<(String,), ()>("", "log", |host_data, params| host_data.log(params.0))?;
 
     Ok(())
 }

@@ -1,7 +1,12 @@
+use std::rc::Rc;
+
 use anyhow::{Context, Result, ensure};
 use wasmi::{AsContext, AsContextMut, Engine};
 
-use crate::lib_structs::MemoryAccessPre;
+use crate::{
+    Component,
+    lib_structs::{ComponentBuilder, MemoryAccessPre},
+};
 
 pub struct Store<T> {
     store: wasmi::Store<StoreData<T>>,
@@ -10,6 +15,7 @@ pub struct Store<T> {
 pub struct StoreData<T> {
     data: T,
 
+    pub(crate) components: Vec<Component>,
     memory_table: Vec<MemoryAccessPre>,
 
     instance_call_stack: Vec<usize>,
@@ -19,6 +25,7 @@ impl<T> Store<T> {
     pub fn new(engine: &Engine, data: T) -> Self {
         let store_data = StoreData {
             data,
+            components: Vec::new(),
             memory_table: Vec::new(),
             instance_call_stack: Vec::new(),
         };
@@ -38,6 +45,24 @@ impl<T> Store<T> {
 
     pub fn data_mut(&mut self) -> &mut T {
         &mut self.store.data_mut().data
+    }
+
+    pub fn new_component(&mut self, bytes: &[u8]) -> anyhow::Result<Component> {
+        let builder = ComponentBuilder::new(bytes)?;
+
+        let core_module = wasmi::Module::new(self.engine(), builder.core_module()?)?;
+        let imported_funcs = Rc::new(builder.imported_funcs());
+        let exported_funcs = Rc::new(builder.exported_funcs());
+
+        let component = Component {
+            index: self.store.data().components.len(),
+            core_module,
+            imported_funcs,
+            exported_funcs,
+        };
+
+        self.store.data_mut().components.push(component.clone());
+        Ok(component)
     }
 }
 

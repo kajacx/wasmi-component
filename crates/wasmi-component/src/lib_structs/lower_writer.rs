@@ -138,7 +138,7 @@ impl<'a, M: MemoryAccess> LowerWriter for LowerArgsWriter<'a, M> {
     }
 
     fn memory(&mut self) -> &mut impl MemoryAccess {
-        &mut self.memory_access
+        self.memory_access.re_borrow()
     }
 }
 
@@ -259,6 +259,6 @@ impl<M: MemoryAccess> LowerWriter for LowerBytesWriter<M> {
     }
 
     fn memory(&mut self) -> &mut impl MemoryAccess {
-        &mut self.memory_access
+        self.memory_access.re_borrow()
     }
 }

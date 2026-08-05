@@ -6,7 +6,10 @@ use crate::lib_structs::{
     FuncSignature, FuncStorage, LiftArgsReader, LowerArgsWriter, LowerBytesWriter, MemoryAccessPre,
     WasmValue, wasm_args,
 };
-use crate::{Component, ComponentValue, HostResult, Instance, Lower, StoreData};
+use crate::{
+    Component, ComponentValue, ConvertError, DynValue, HostResult, Instance, Lower, StoreData,
+    dyn_lift, dyn_lower,
+};
 
 pub struct Linker<T> {
     linker: wasmi::Linker<StoreData<T>>,
@@ -21,7 +24,7 @@ impl<T> Linker<T> {
         }
     }
 
-    pub fn func_new<Params: ComponentValue, Results: ComponentValue + Lower<Results>>(
+    pub fn func_typed<Params: ComponentValue, Results: ComponentValue + Lower<Results>>(
         &mut self,
         module: impl Into<String>,
         name: impl Into<String>,
@@ -107,102 +110,125 @@ impl<T> Linker<T> {
         Ok(self)
     }
 
-    // pub fn func_dyn(
-    //     &mut self,
-    //     module: impl Into<String>,
-    //     name: impl Into<String>,
-    //     component: &Component,
-    //     callback: impl Fn(&mut T, &[DynValue]) -> HostResult<DynValue> + Send + Sync + 'static,
-    // ) -> anyhow::Result<&mut Self> {
-    //     let ident = FuncIdentifier::new(module.into(), name.into());
+    pub fn func_dyn(
+        &mut self,
+        module: impl Into<String>,
+        name: impl Into<String>,
+        component: &Component,
+        callback: impl Fn(&mut T, &[DynValue]) -> HostResult<DynValue> + Send + Sync + 'static,
+    ) -> anyhow::Result<&mut Self> {
+        let ident = FuncIdentifier::new(module.into(), name.into());
 
-    //     let declared_func = component.imported_funcs.get(&ident).ok_or_else(|| {
-    //         ConvertError::new("dynamic imported function not found in the component")
-    //             .with_additional(format!(
-    //                 "name: {}, defined functions are: {:?}",
-    //                 ident,
-    //                 component.imported_funcs.existing_fn_names()
-    //             ))
-    //     })?;
+        let declared_func = component.imported_funcs.get(&ident).ok_or_else(|| {
+            ConvertError::new(format!(
+                "dynamic imported function {ident} not found in the component"
+            ))
+            .with_additional(format!(
+                "defined functions are: {}",
+                component.imported_funcs.existing_fn_names()
+            ))
+        })?;
 
-    //     let params_ty = &declared_func.params_as_tuple();
-    //     let result_ty = &declared_func.result;
+        let params_ty = &declared_func.params_as_tuple();
+        let result_ty = &declared_func.result;
 
-    //     let mut params_ty_wasmi = dyn_type_to_wasm_params(params_ty);
-    //     let mut results_ty_wasmi = dyn_type_to_wasm_params(result_ty);
+        let mut params_ty_wasmi = wasm_args(params_ty);
+        let mut results_ty_wasmi = wasm_args(result_ty);
 
-    //     let results_ty_original = results_ty_wasmi.clone();
+        let has_external_result = results_ty_wasmi.len() > 1;
+        if has_external_result {
+            params_ty_wasmi.push(wasmi::ValType::I32);
+            results_ty_wasmi.clear();
+        }
 
-    //     let params_len = params_ty_wasmi.len();
-    //     let results_len = results_ty_wasmi.len();
+        let component_index = component.index;
+        let ident_clone = ident.clone();
 
-    //     let has_external_result = results_ty_wasmi.len() > 1;
-    //     if has_external_result {
-    //         params_ty_wasmi.push(wasmi::ValType::I32);
-    //         results_ty_wasmi.clear();
-    //     }
+        self.linker.func_new(
+            ident.imported_module_name(),
+            &ident.name,
+            wasmi::FuncType::new(params_ty_wasmi, results_ty_wasmi),
+            move |mut caller, params_wasmi, results_wasmi| {
+                let component = &caller.data().components[component_index];
+                let declared_func = component
+                    .imported_funcs
+                    .get(&ident_clone)
+                    .expect("func was fetched successfully before")
+                    .clone();
 
-    //     self.linker.func_new(
-    //         ident.imported_module_name(),
-    //         &ident.name,
-    //         wasmi::FuncType::new(params_ty_wasmi, results_ty_wasmi),
-    //         move |mut caller, params_wasmi, results_wasmi| {
-    //             let instance_id = caller
-    //                 .data()
-    //                 .current_call_instance()
-    //                 .expect("instance call stack should not be empty");
+                let params_ty = &declared_func.params_as_tuple();
+                let result_ty = &declared_func.result;
 
-    //             let memory_pre = *caller.data().get_memory(instance_id);
-    //             let (bytes, store_data) = memory_pre
-    //                 .memory
-    //                 .data_and_store_mut(caller.as_context_mut());
+                let params_ty_wasmi = wasm_args(params_ty);
+                let results_ty_wasmi = wasm_args(result_ty);
 
-    //             let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unset);
-    //             WasmValue::convert_from_wasmi(
-    //                 &params_wasmi[0..params_len],
-    //                 &mut params_wasm[0..params_len],
-    //             );
+                let params_len = params_ty_wasmi.len();
+                let results_len = results_ty_wasmi.len();
 
-    //             let user_data = store_data.data_mut();
+                let instance_id = caller
+                    .data()
+                    .current_call_instance()
+                    .expect("instance call stack should not be empty");
 
-    //             let params_user = lift_args_dyn(params_ty, &params_wasm[0..params_len], bytes)?;
-    //             let results_user = callback(
-    //                 user_data,
-    //                 params_user
-    //                     .as_tuple()
-    //                     .expect("called params_as_tuple on params earlier"),
-    //             )?;
-    //             let mut memory_filled = memory_pre.fill(caller);
+                let memory_pre = *caller.data().get_memory(instance_id);
+                let (bytes, store_data) = memory_pre
+                    .memory
+                    .data_and_store_mut(caller.as_context_mut());
 
-    //             if has_external_result {
-    //                 let address = params_wasmi[params_len].i32().unwrap() as usize;
-    //                 let range = address..(address + result_ty.byte_size());
-    //                 results_user.lower_bytes(range, &mut memory_filled)?;
-    //             } else {
-    //                 let mut results_wasm = [WasmValue::Unset];
-    //                 results_user
-    //                     .lower_args(&mut results_wasm[0..results_len], &mut memory_filled)?;
-    //                 WasmValue::convert_to_wasmi(
-    //                     &results_wasm[0..results_len],
-    //                     &results_ty_original,
-    //                     results_wasmi,
-    //                 )?;
-    //             }
+                let mut params_wasm: [_; 16] = std::array::from_fn(|_| WasmValue::Unused);
+                WasmValue::convert_from_wasmi(
+                    &params_wasmi[0..params_len],
+                    &mut params_wasm[0..params_len],
+                );
 
-    //             Ok(())
-    //         },
-    //     )?;
+                let user_data = store_data.data_mut();
 
-    //     self.imported_funcs.insert(ident, declared_func.clone());
+                let mut args_reader = LiftArgsReader::new(bytes, &params_wasm[0..params_len]);
+                let params_user = dyn_lift(params_ty, &mut args_reader)?;
 
-    //     Ok(self)
-    // }
+                let results_user = callback(
+                    user_data,
+                    params_user
+                        .as_tuple()
+                        .expect("called params_as_tuple on params earlier"),
+                )?;
+
+                let memory_access = memory_pre.fill(caller);
+
+                if has_external_result {
+                    let address = params_wasmi[params_len].i32().unwrap() as usize;
+
+                    let mut byte_writer = LowerBytesWriter::new(memory_access, address);
+                    dyn_lower(result_ty, &results_user, &mut byte_writer)?;
+                } else {
+                    let mut results_wasm = [WasmValue::Unused];
+
+                    let mut args_writer =
+                        LowerArgsWriter::new(memory_access, &mut results_wasm[0..results_len]);
+                    dyn_lower(result_ty, &results_user, &mut args_writer)?;
+
+                    WasmValue::convert_to_wasmi(
+                        &results_wasm[0..results_len],
+                        &results_ty_wasmi,
+                        results_wasmi,
+                    )?;
+                }
+
+                Ok(())
+            },
+        )?;
+
+        self.imported_funcs.insert(ident, declared_func.clone());
+
+        Ok(self)
+    }
 
     pub fn instantiate(
         &self,
         mut ctx: impl AsContextMut<Data = StoreData<T>>,
         component: &Component,
     ) -> Result<Instance> {
+        // TODO: this checks function that the instance might never call, relax?
         for (ident, signature) in &component.imported_funcs.data {
             self.imported_funcs.verify_import(ident, signature)?;
         }

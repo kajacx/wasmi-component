@@ -169,31 +169,31 @@ impl TestExampleExports {
 pub fn add_test_example_to_linker<T: TestExampleImports>(
     linker: &mut Linker<T>,
 ) -> Result<(), LinkerError> {
-    linker.func_new::<(Person,), Person>(
+    linker.func_typed::<(Person,), Person>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-person",
         |host_data, params| host_data.trip_person(params.0),
     )?;
 
-    linker.func_new::<(Data,), Data>(
+    linker.func_typed::<(Data,), Data>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-data",
         |host_data, params| host_data.trip_data(params.0),
     )?;
 
-    linker.func_new::<(Person, i32, Result<Data, String>), ()>(
+    linker.func_typed::<(Person, i32, Result<Data, String>), ()>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-mixed",
         |host_data, params| host_data.trip_mixed(params.0, params.1, params.2),
     )?;
 
-    linker.func_new::<(Vec<(Fruit, u32)>,), f32>(
+    linker.func_typed::<(Vec<(Fruit, u32)>,), f32>(
         "additional-imports",
         "price",
         |host_data, params| host_data.price(params.0),
     )?;
 
-    linker.func_new::<(String,), ()>("", "log", |host_data, params| host_data.log(params.0))?;
+    linker.func_typed::<(String,), ()>("", "log", |host_data, params| host_data.log(params.0))?;
 
     Ok(())
 }

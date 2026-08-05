@@ -57,6 +57,8 @@ pub trait MemoryAccess {
     fn allocate(&mut self, len: usize, align: usize) -> ConvertResult<usize>;
 
     fn slice(&mut self, range: Range<usize>) -> ConvertResult<&mut [u8]>;
+
+    fn re_borrow(&mut self) -> &mut impl MemoryAccess;
 }
 
 impl<T: MemoryAccess> MemoryAccess for &mut T {
@@ -66,6 +68,10 @@ impl<T: MemoryAccess> MemoryAccess for &mut T {
 
     fn slice(&mut self, range: Range<usize>) -> ConvertResult<&mut [u8]> {
         T::slice(*self, range)
+    }
+
+    fn re_borrow(&mut self) -> &mut impl MemoryAccess {
+        *self
     }
 }
 
@@ -98,6 +104,10 @@ impl<'a, C: AsContextMut> MemoryAccess for MemoryAccessFilled<'a, C> {
                 mem_len,
             ))
         })
+    }
+
+    fn re_borrow(&mut self) -> &mut impl MemoryAccess {
+        self
     }
 }
 

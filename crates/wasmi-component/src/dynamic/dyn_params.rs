@@ -1,5 +1,5 @@
-use crate::lib_structs::{MemoryAccess, WasmValue};
-use crate::{ConvertError, ConvertResult, DynValue, ValueType};
+use crate::lib_structs::LowerWriter;
+use crate::{ConvertError, ConvertResult, DynValue, ValueType, dyn_lower};
 
 pub(crate) struct DynValueParams<'a> {
     params: &'a [DynValue],
@@ -38,14 +38,12 @@ impl<'a> DynValueParams<'a> {
 
     pub fn lower_args(
         &self,
-        _args: &mut [WasmValue],
-        _memory: &mut impl MemoryAccess,
+        types: &[ValueType],
+        writer: &mut impl LowerWriter,
     ) -> ConvertResult<()> {
-        //let mut index = 0;
-        //for value in self.params {
-        // value.lower_args(&mut args[index..(index + value.ty.arg_count())], memory)?; TODO:
-        // index += value.ty.arg_count();
-        //}
-        todo!()
+        for (ty, value) in types.iter().zip(self.params.iter()) {
+            dyn_lower(ty, value, writer)?;
+        }
+        Ok(())
     }
 }

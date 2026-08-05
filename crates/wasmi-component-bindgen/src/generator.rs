@@ -252,7 +252,7 @@ impl Generator {
             writeln!(
                 output,
                 concat!(
-                    "    linker.func_new::<({}), {}>",
+                    "    linker.func_typed::<({}), {}>",
                     "(\"{}\", \"{}\", |host_data, params| host_data.{}({}))?;\n"
                 ),
                 param_types_canon(func),

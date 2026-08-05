@@ -5,7 +5,7 @@ use wasmi::AsContext;
 use wasmi_component_parser::FuncIdentifier;
 
 use crate::lib_structs::{FuncSignature, FuncStorage, MemoryAccessPre, wasm_args};
-use crate::{ComponentValue, TypedFunc, UntypedFunc};
+use crate::{ComponentValue, DynFunc, TypedFunc};
 
 #[derive(Debug, Clone)]
 pub struct Instance {
@@ -87,12 +87,12 @@ impl Instance {
         ))
     }
 
-    pub fn get_untyped_func<Params: ComponentValue, Results: ComponentValue>(
+    pub fn get_dyn_func(
         &self,
         ctx: impl AsContext,
         module: impl Into<String>,
         name: impl Into<String>,
-    ) -> anyhow::Result<UntypedFunc> {
+    ) -> anyhow::Result<DynFunc> {
         let ident = FuncIdentifier::new(module.into(), name.into());
         let exported_name = ident.exported_name();
 
@@ -124,7 +124,7 @@ impl Instance {
             );
         }
 
-        Ok(UntypedFunc::new(
+        Ok(DynFunc::new(
             self.memory_pre.clone(),
             module_func,
             cleanup_func,
