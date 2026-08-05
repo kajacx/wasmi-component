@@ -21,7 +21,7 @@ pub trait TestExampleImports {
 
     fn trip_string(&mut self, value: &str) -> HostResult<String>;
 
-    fn trip_person(&mut self, value: PersonBorrowed) -> HostResult<Person>;
+    fn trip_person(&mut self, value: PersonBorrowed<'_>) -> HostResult<Person>;
 
     fn log(&mut self, message: &str) -> HostResult<()>;
 }
@@ -83,7 +83,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: &Person,
-        callback: impl FnOnce(&mut T, PersonBorrowed) -> R,
+        callback: impl FnOnce(&mut T, PersonBorrowed<'_>) -> R,
     ) -> CallResult<R> {
         self.trip_person.call_with_results(ctx, (value,), callback)
     }

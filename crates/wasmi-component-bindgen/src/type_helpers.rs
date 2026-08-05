@@ -102,10 +102,10 @@ pub fn as_lift(ty: &ValueType) -> String {
             result.push(')');
             result.into()
         }
-        ValueType::List(ty) => format!("ListAccessor<{}>", canonical_name(ty)).into(),
+        ValueType::List(ty) => format!("ListAccessor<'_, {}>", canonical_name(ty)).into(),
 
-        ValueType::Record { name, .. } => format!("{}Borrowed", name.to_upper_camel_case()),
-        ValueType::Variant { name, .. } => format!("{}Borrowed", name.to_upper_camel_case()),
+        ValueType::Record { name, .. } => format!("{}Borrowed<'_>", name.to_upper_camel_case()),
+        ValueType::Variant { name, .. } => format!("{}Borrowed<'_>", name.to_upper_camel_case()),
     }
 }
 

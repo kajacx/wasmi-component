@@ -16,91 +16,91 @@ struct HostData {
 }
 
 impl bindings::TestExampleImports for HostData {
-    fn list_s8(&mut self, value: ListAccessor<i8>) -> HostResult<Vec<i8>> {
+    fn list_s8(&mut self, value: ListAccessor<'_, i8>) -> HostResult<Vec<i8>> {
         println!("[HOST]: Receiving ListAccessor<i8> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<i8> value {result:?}");
         Ok(result)
     }
 
-    fn list_s16(&mut self, value: ListAccessor<i16>) -> HostResult<Vec<i16>> {
+    fn list_s16(&mut self, value: ListAccessor<'_, i16>) -> HostResult<Vec<i16>> {
         println!("[HOST]: Receiving ListAccessor<i16> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<i16> value {result:?}");
         Ok(result)
     }
 
-    fn list_s32(&mut self, value: ListAccessor<i32>) -> HostResult<Vec<i32>> {
+    fn list_s32(&mut self, value: ListAccessor<'_, i32>) -> HostResult<Vec<i32>> {
         println!("[HOST]: Receiving ListAccessor<i32> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<i32> value {result:?}");
         Ok(result)
     }
 
-    fn list_s64(&mut self, value: ListAccessor<i64>) -> HostResult<Vec<i64>> {
+    fn list_s64(&mut self, value: ListAccessor<'_, i64>) -> HostResult<Vec<i64>> {
         println!("[HOST]: Receiving ListAccessor<i64> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<i64> value {result:?}");
         Ok(result)
     }
 
-    fn list_u8(&mut self, value: ListAccessor<u8>) -> HostResult<Vec<u8>> {
+    fn list_u8(&mut self, value: ListAccessor<'_, u8>) -> HostResult<Vec<u8>> {
         println!("[HOST]: Receiving ListAccessor<u8> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<u8> value {result:?}");
         Ok(result)
     }
 
-    fn list_u16(&mut self, value: ListAccessor<u16>) -> HostResult<Vec<u16>> {
+    fn list_u16(&mut self, value: ListAccessor<'_, u16>) -> HostResult<Vec<u16>> {
         println!("[HOST]: Receiving ListAccessor<u16> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<u16> value {result:?}");
         Ok(result)
     }
 
-    fn list_u32(&mut self, value: ListAccessor<u32>) -> HostResult<Vec<u32>> {
+    fn list_u32(&mut self, value: ListAccessor<'_, u32>) -> HostResult<Vec<u32>> {
         println!("[HOST]: Receiving ListAccessor<u32> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<u32> value {result:?}");
         Ok(result)
     }
 
-    fn list_u64(&mut self, value: ListAccessor<u64>) -> HostResult<Vec<u64>> {
+    fn list_u64(&mut self, value: ListAccessor<'_, u64>) -> HostResult<Vec<u64>> {
         println!("[HOST]: Receiving ListAccessor<u64> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<u64> value {result:?}");
         Ok(result)
     }
 
-    fn list_f32(&mut self, value: ListAccessor<f32>) -> HostResult<Vec<f32>> {
+    fn list_f32(&mut self, value: ListAccessor<'_, f32>) -> HostResult<Vec<f32>> {
         println!("[HOST]: Receiving ListAccessor<f32> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<f32> value {result:?}");
         Ok(result)
     }
 
-    fn list_f64(&mut self, value: ListAccessor<f64>) -> HostResult<Vec<f64>> {
+    fn list_f64(&mut self, value: ListAccessor<'_, f64>) -> HostResult<Vec<f64>> {
         println!("[HOST]: Receiving ListAccessor<f64> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<f64> value {result:?}");
         Ok(result)
     }
 
-    fn list_bool(&mut self, value: ListAccessor<bool>) -> HostResult<Vec<bool>> {
+    fn list_bool(&mut self, value: ListAccessor<'_, bool>) -> HostResult<Vec<bool>> {
         println!("[HOST]: Receiving ListAccessor<bool> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<bool> value {result:?}");
         Ok(result)
     }
 
-    fn list_char(&mut self, value: ListAccessor<char>) -> HostResult<Vec<char>> {
+    fn list_char(&mut self, value: ListAccessor<'_, char>) -> HostResult<Vec<char>> {
         println!("[HOST]: Receiving ListAccessor<char> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<char> value {result:?}");
         Ok(result)
     }
 
-    fn list_string(&mut self, value: ListAccessor<String>) -> HostResult<Vec<String>> {
+    fn list_string(&mut self, value: ListAccessor<'_, String>) -> HostResult<Vec<String>> {
         println!("[HOST]: Receiving ListAccessor<String> value {value:?}");
         let result = value.lift_owned()?;
         println!("[HOST]: Returning Vec<String> value {result:?}");

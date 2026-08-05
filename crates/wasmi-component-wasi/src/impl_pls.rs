@@ -42,7 +42,7 @@ impl<T> RootImports for T {
     fn method_output_stream_write(
         &mut self,
         self_: i32,
-        contents: ListAccessor<u8>,
+        contents: ListAccessor<'_, u8>,
     ) -> HostResult<Result<(), StreamError>> {
         println!("Calling method_output_stream_write");
 

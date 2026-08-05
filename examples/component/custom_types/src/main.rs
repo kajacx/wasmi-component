@@ -16,14 +16,14 @@ fn get_wasm() -> Vec<u8> {
 struct HostData {}
 
 impl bindings::TestExampleImports for HostData {
-    fn trip_person(&mut self, value: bindings::PersonBorrowed) -> HostResult<bindings::Person> {
+    fn trip_person(&mut self, value: bindings::PersonBorrowed<'_>) -> HostResult<bindings::Person> {
         println!("[HOST]: Receiving Person value {value:?}");
         let value = value.lift_owned()?;
         println!("[HOST]: Returning Person value {value:?}");
         Ok(value)
     }
 
-    fn trip_data(&mut self, value: bindings::DataBorrowed) -> HostResult<bindings::Data> {
+    fn trip_data(&mut self, value: bindings::DataBorrowed<'_>) -> HostResult<bindings::Data> {
         println!("[HOST]: Receiving Data value {value:?}");
         let value = value.lift_owned()?;
         println!("[HOST]: Returning Data value {value:?}");
@@ -32,16 +32,16 @@ impl bindings::TestExampleImports for HostData {
 
     fn trip_mixed(
         &mut self,
-        _a: bindings::PersonBorrowed,
+        _a: bindings::PersonBorrowed<'_>,
         _b: i32,
-        _c: wasmi_component::anyhow::Result<bindings::DataBorrowed, &str>,
+        _c: wasmi_component::anyhow::Result<bindings::DataBorrowed<'_>, &str>,
     ) -> HostResult<()> {
         Ok(())
     }
 
     fn price(
         &mut self,
-        item: wasmi_component::ListAccessor<(bindings::Fruit, u32)>,
+        item: wasmi_component::ListAccessor<'_, (bindings::Fruit, u32)>,
     ) -> HostResult<f32> {
         println!("{item:?}");
         Ok(0.0)

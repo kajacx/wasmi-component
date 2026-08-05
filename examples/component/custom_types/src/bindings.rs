@@ -44,18 +44,18 @@ pub struct Animal {
 
 #[allow(unused)]
 pub trait TestExampleImports {
-    fn trip_person(&mut self, value: PersonBorrowed) -> HostResult<Person>;
+    fn trip_person(&mut self, value: PersonBorrowed<'_>) -> HostResult<Person>;
 
-    fn trip_data(&mut self, value: DataBorrowed) -> HostResult<Data>;
+    fn trip_data(&mut self, value: DataBorrowed<'_>) -> HostResult<Data>;
 
     fn trip_mixed(
         &mut self,
-        a: PersonBorrowed,
+        a: PersonBorrowed<'_>,
         b: i32,
-        c: Result<DataBorrowed, &str>,
+        c: Result<DataBorrowed<'_>, &str>,
     ) -> HostResult<()>;
 
-    fn price(&mut self, item: ListAccessor<(Fruit, u32)>) -> HostResult<f32>;
+    fn price(&mut self, item: ListAccessor<'_, (Fruit, u32)>) -> HostResult<f32>;
 
     fn log(&mut self, message: &str) -> HostResult<()>;
 }
@@ -85,7 +85,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         args: impl Lower<Vec<String>>,
-        callback: impl FnOnce(&mut T, OutcomeBorrowed) -> R,
+        callback: impl FnOnce(&mut T, OutcomeBorrowed<'_>) -> R,
     ) -> CallResult<R> {
         self.init.call_with_results(ctx, (args,), callback)
     }
@@ -102,7 +102,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: &Person,
-        callback: impl FnOnce(&mut T, PersonBorrowed) -> R,
+        callback: impl FnOnce(&mut T, PersonBorrowed<'_>) -> R,
     ) -> CallResult<R> {
         self.trip_person.call_with_results(ctx, (value,), callback)
     }
@@ -119,7 +119,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         value: &Data,
-        callback: impl FnOnce(&mut T, DataBorrowed) -> R,
+        callback: impl FnOnce(&mut T, DataBorrowed<'_>) -> R,
     ) -> CallResult<R> {
         self.trip_data.call_with_results(ctx, (value,), callback)
     }

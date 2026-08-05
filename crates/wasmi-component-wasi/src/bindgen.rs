@@ -127,7 +127,7 @@ pub trait RootImports {
     fn method_output_stream_write(
         &mut self,
         self_: i32,
-        contents: ListAccessor<u8>,
+        contents: ListAccessor<'_, u8>,
     ) -> HostResult<Result<(), StreamError>>;
 
     fn method_output_stream_blocking_flush(
