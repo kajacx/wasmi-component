@@ -5,6 +5,7 @@
     "guests/Cargo.toml",
   ],
   "cSpell.words": [
+    "bytemuck",
     "wasmparser"
   ],
 }

@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use crate::lib_structs::LiftBytesReader;
 use crate::pointers::{PtrView, ptr_start};
-use crate::{ComponentValue, ConvertError, ConvertResult, LeBytesU8, Lift};
+use crate::{ComponentValue, ConvertError, ConvertResult, Lift};
 
 /// T is the canonical type.
 ///
@@ -75,11 +75,11 @@ impl<'a, T> ListAccessor<'a, T> {
         (0..self.len()).map(|index| self.get(index))
     }
 
-    pub fn as_u8_slice(&self) -> &[u8]
+    pub fn as_slice(&self) -> &[T]
     where
-        T: LeBytesU8,
+        T: TransmuteBytes,
     {
-        self.slice
+        T::transmute(self.slice)
     }
 }
 
@@ -121,3 +121,31 @@ impl<T> Debug for ListAccessor<'_, T> {
             .finish()
     }
 }
+
+pub trait TransmuteBytes: Sized {
+    fn transmute(bytes: &[u8]) -> &[Self];
+}
+
+macro_rules! impl_transmute_bytes {
+    ($ty: ty) => {
+        impl TransmuteBytes for $ty {
+            fn transmute(bytes: &[u8]) -> &[Self] {
+                // alignment was checked in list lift
+                bytemuck::cast_slice(bytes)
+            }
+        }
+    };
+}
+
+impl_transmute_bytes!(i8);
+impl_transmute_bytes!(i16);
+impl_transmute_bytes!(i32);
+impl_transmute_bytes!(i64);
+
+impl_transmute_bytes!(u8);
+impl_transmute_bytes!(u16);
+impl_transmute_bytes!(u32);
+impl_transmute_bytes!(u64);
+
+impl_transmute_bytes!(f32);
+impl_transmute_bytes!(f64);

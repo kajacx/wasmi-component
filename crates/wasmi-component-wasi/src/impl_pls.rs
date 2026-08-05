@@ -48,11 +48,11 @@ impl<T> RootImports for T {
 
         if self_ == 0 {
             std::io::stdout()
-                .write_all(contents.as_u8_slice())
+                .write_all(contents.as_slice())
                 .expect("write to stdout");
         } else {
             std::io::stderr()
-                .write_all(contents.as_u8_slice())
+                .write_all(contents.as_slice())
                 .expect("write to stderr");
         }
 
