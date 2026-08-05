@@ -12,6 +12,4 @@ wasmi = { path = "../../../wasmi/crates/wasmi" }
 wasmparser = { version = "0.255.0" }
 wit-component = { version = "0.255.0" }
 anyhow = { version = "1.0" }
-slotmap = { version = "1.0" }
-as-any = { version = "0.3.0" }
 blanket = { version = "0.4.0" }
