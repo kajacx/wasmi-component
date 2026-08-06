@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{ops::Add, rc::Rc};
 
 #[derive(Debug, Clone, Eq, PartialOrd, Ord)]
 pub enum ValueType {
@@ -55,6 +55,45 @@ impl ValueType {
         Self::List(Rc::new(inner))
     }
 
+    pub fn new_record(
+        name: impl AsRef<str>,
+        fields: impl IntoIterator<Item = (impl AsRef<str>, ValueType)>,
+    ) -> Self {
+        Self::Record {
+            name: Rc::from(name.as_ref()),
+            fields: fields
+                .into_iter()
+                .map(|(name, value)| (Rc::from(name.as_ref()), value))
+                .collect(),
+        }
+    }
+
+    pub fn new_variant(
+        name: impl AsRef<str>,
+        cases: impl IntoIterator<Item = (impl AsRef<str>, Option<ValueType>)>,
+    ) -> Self {
+        Self::Variant {
+            name: Rc::from(name.as_ref()),
+            cases: cases
+                .into_iter()
+                .map(|(name, value)| (Rc::from(name.as_ref()), value))
+                .collect(),
+        }
+    }
+
+    pub fn new_enum(
+        name: impl AsRef<str>,
+        cases: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Self {
+        Self::Enum {
+            name: Rc::from(name.as_ref()),
+            cases: cases
+                .into_iter()
+                .map(|name| Rc::from(name.as_ref()))
+                .collect(),
+        }
+    }
+
     pub fn unit() -> Self {
         Self::new_tuple([])
     }
@@ -99,6 +138,14 @@ impl ValueType {
         }
     }
 
+    /// Returns the name and cases of an enum type, or None if this is not an enum type.
+    pub fn as_enum(&self) -> Option<(&str, &[Rc<str>])> {
+        match self {
+            Self::Enum { name, cases } => Some((name, cases)),
+            _ => None,
+        }
+    }
+
     /// Returns the name and cases of a variant type, or None if this is not a variant type.
     pub fn as_variant(&self) -> Option<(&str, &[(Rc<str>, Option<ValueType>)])> {
         match self {
@@ -107,10 +154,13 @@ impl ValueType {
         }
     }
 
-    /// Returns the name and cases of an enum type, or None if this is not an enum type.
-    pub fn as_enum(&self) -> Option<(&str, &[Rc<str>])> {
+    /// Returns the number of cases for variants, enums, option and results, or None if this is not neither of those.
+    pub fn case_count(&self) -> Option<usize> {
         match self {
-            Self::Enum { name, cases } => Some((name, cases)),
+            Self::Option(_) => Some(2),
+            Self::Result(_, _) => Some(2),
+            Self::Enum { cases, .. } => Some(cases.len()),
+            Self::Variant { cases, .. } => Some(cases.len()),
             _ => None,
         }
     }
@@ -209,15 +259,13 @@ impl ValueType {
                 .map(|(_name, ty)| ty.byte_align())
                 .max()
                 .unwrap_or(1),
-            Self::Variant { cases, .. } => {
-                // TODO: variant with more than 256 cases
-                cases
-                    .iter()
-                    .map(|(_name, ty)| ty.as_ref().map_or(1, |ty| ty.byte_align()))
-                    .max()
-                    .unwrap_or(1)
-            }
-            Self::Enum { .. } => 1,
+            Self::Variant { cases, .. } => cases
+                .iter()
+                .map(|(_name, ty)| ty.as_ref().map_or(1, |ty| ty.byte_align()))
+                .max()
+                .unwrap_or(1)
+                .max(enum_determinant_size(cases.len())),
+            Self::Enum { cases, .. } => enum_determinant_size(cases.len()),
         }
     }
 
@@ -246,15 +294,13 @@ impl ValueType {
             Self::List(_) => 8,
 
             Self::Record { fields, .. } => fields.iter().map(|(_name, ty)| ty.byte_size()).sum(),
-            Self::Variant { cases, .. } => {
-                // TODO: variant with more than 256 cases
-                cases
-                    .iter()
-                    .map(|(_name, ty)| ty.as_ref().map_or(1, |ty| ty.byte_align()))
-                    .max()
-                    .unwrap_or(1)
-            }
-            Self::Enum { .. } => 1,
+            Self::Variant { cases, .. } => cases
+                .iter()
+                .map(|(_name, ty)| ty.as_ref().map_or(1, |ty| ty.byte_align()))
+                .max()
+                .unwrap_or(0)
+                .add(self.byte_align()),
+            Self::Enum { cases, .. } => enum_determinant_size(cases.len()),
         }
     }
 }
@@ -365,5 +411,14 @@ impl PartialEq for ValueType {
 
             _ => false,
         }
+    }
+}
+
+fn enum_determinant_size(case_count: usize) -> usize {
+    match case_count {
+        ..0x1_00 => 1,
+        ..0x1_00_00 => 2,
+        ..0x1_00_00_00_00 => 4,
+        _ => unimplemented!("enum has more than 2^32 cases"),
     }
 }

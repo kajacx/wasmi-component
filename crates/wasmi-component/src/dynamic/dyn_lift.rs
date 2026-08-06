@@ -96,6 +96,14 @@ pub(crate) fn dyn_lift<'mem>(
             Ok(DynValue::new_variant(case_name, value))
         }),
 
-        ValueType::Enum { .. } => todo!("dyn lift enum"),
+        ValueType::Enum { name, cases } => {
+            let determinant = reader.read_enum_determinant(cases.len(), 1);
+
+            let case_name = cases.get(determinant).ok_or_else(|| {
+                ConvertError::new(format!("invalid determinant {determinant} in {name}"))
+            })?;
+
+            Ok(DynValue::new_enum(case_name))
+        }
     }
 }

@@ -96,5 +96,15 @@ pub(crate) fn dyn_lower(
                 writer.write_dyn_variant(ty, index, None)
             }
         }
+        DynValue::Enum { determinant } => {
+            let (_name, cases) = ty.as_enum().expect("type was checked before");
+            let index = cases
+                .iter()
+                .position(|name| name == determinant)
+                .expect("type was checked before");
+
+            writer.write_enum_determinant(cases.len(), index, 1);
+            Ok(())
+        }
     }
 }

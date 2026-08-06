@@ -35,6 +35,9 @@ pub enum DynValue {
         determinant: Rc<str>,
         value: Option<Rc<DynValue>>,
     },
+    Enum {
+        determinant: Rc<str>,
+    },
 }
 
 impl DynValue {
@@ -123,6 +126,12 @@ impl DynValue {
         }
     }
 
+    pub fn new_enum(determinant: impl AsRef<str>) -> Self {
+        Self::Enum {
+            determinant: Rc::from(determinant.as_ref()),
+        }
+    }
+
     pub fn is(&self, ty: &ValueType) -> bool {
         match (self, ty) {
             (Self::S8(_), ValueType::S8) => true,
@@ -167,6 +176,10 @@ impl DynValue {
                     (Some(value), Some(ty)) => value.is(ty),
                     _ => false,
                 }),
+
+            (Self::Enum { determinant }, ValueType::Enum { cases, .. }) => {
+                cases.contains(determinant)
+            }
 
             _ => false,
         }

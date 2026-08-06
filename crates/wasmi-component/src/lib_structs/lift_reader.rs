@@ -26,8 +26,18 @@ pub trait LiftReader<'mem>: Sized {
 
     fn read_dyn_field(&mut self, ty: &ValueType, align: usize) -> ConvertResult<DynValue>;
 
+    fn read_enum_determinant<'a>(&mut self, case_count: usize, align: usize) -> usize {
+        match case_count {
+            ..0x1_00 => self.read_record_field::<u8>(align).unwrap() as usize,
+            ..0x1_00_00 => self.read_record_field::<u16>(align).unwrap() as usize,
+            ..0x1_00_00_00_00 => self.read_record_field::<u32>(align).unwrap() as usize,
+            _ => unimplemented!("variant has more than 2^32 cases"),
+        }
+    }
+
     fn read_variant<T: ComponentValue>(
         &mut self,
+        case_count: usize,
         cases: impl FnOnce(&mut Self, usize) -> ConvertResult<T::Borrowed<'mem>>,
     ) -> ConvertResult<T::Borrowed<'mem>>;
 
@@ -100,11 +110,12 @@ impl<'mem, 'a> LiftReader<'mem> for LiftArgsReader<'mem, 'a> {
 
     fn read_variant<T: ComponentValue>(
         &mut self,
+        _case_count: usize,
         cases: impl FnOnce(&mut Self, usize) -> ConvertResult<T::Borrowed<'mem>>,
     ) -> ConvertResult<T::Borrowed<'mem>> {
         let final_index = self.index + T::arg_count();
-        let determinant = self.read_u8(); // TODO: variants with more than 256 cases
 
+        let determinant = self.read_u32() as usize;
         let result = cases(self, determinant as usize)?;
 
         self.index = final_index;
@@ -117,9 +128,9 @@ impl<'mem, 'a> LiftReader<'mem> for LiftArgsReader<'mem, 'a> {
         cases: impl FnOnce(&mut Self, usize) -> ConvertResult<DynValue>,
     ) -> ConvertResult<DynValue> {
         let final_index = self.index + ty.arg_count();
-        let determinant = self.read_u8(); // TODO: variants with more than 256 cases
 
-        let result = cases(self, determinant as usize)?;
+        let determinant = self.read_u32() as usize;
+        let result = cases(self, determinant)?;
 
         self.index = final_index;
         Ok(result)
@@ -199,13 +210,12 @@ impl<'mem, 'a> LiftReader<'mem> for LiftBytesReader<'mem, 'a> {
 
     fn read_variant<T: ComponentValue>(
         &mut self,
+        case_count: usize,
         cases: impl FnOnce(&mut Self, usize) -> ConvertResult<T::Borrowed<'mem>>,
     ) -> ConvertResult<T::Borrowed<'mem>> {
         let final_index = self.index + T::byte_size();
-        let determinant = self
-            .read_record_field::<u8>(T::byte_align()) // TODO: variants with more than 256 cases
-            .expect("reading u8 cannot fail");
 
+        let determinant = self.read_enum_determinant(case_count, T::byte_align());
         let result = cases(self, determinant as usize)?;
 
         self.index = final_index;
@@ -218,10 +228,9 @@ impl<'mem, 'a> LiftReader<'mem> for LiftBytesReader<'mem, 'a> {
         cases: impl FnOnce(&mut Self, usize) -> ConvertResult<DynValue>,
     ) -> ConvertResult<DynValue> {
         let final_index = self.index + ty.byte_align();
-        let determinant = self
-            .read_record_field::<u8>(ty.byte_align()) // TODO: variants with more than 256 cases
-            .expect("reading u8 cannot fail");
 
+        let case_count = ty.case_count().expect("type was checked earlier");
+        let determinant = self.read_enum_determinant(case_count, ty.byte_align());
         let result = cases(self, determinant as usize)?;
 
         self.index = final_index;

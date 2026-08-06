@@ -1,6 +1,9 @@
 pub use anyhow;
 pub use wasmi;
 
+#[cfg(test)]
+mod tests;
+
 mod dynamic;
 mod errors;
 pub mod lib_structs; // Types that are more for internal use, but the user can still use them.

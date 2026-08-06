@@ -47,8 +47,8 @@ impl Generator for VariantGenerator<'_> {
     }
 
     fn byte_align(&self) -> TokenStream {
-        // TODO: variant with more than 256 cases
-        let mut output = quote! { let mut max = 1; };
+        let cases_count = self.data.variants.len();
+        let mut output = quote! { let mut max = wasmi_component::lib_structs::enum_determinant_size(#cases_count); };
 
         for field in &self.data.variants {
             let field_ty = &field.fields.iter().next().map(|item| &item.ty);
@@ -73,7 +73,6 @@ impl Generator for VariantGenerator<'_> {
             }
         }
 
-        // TODO: variant with more than 256 cases
         output.extend(quote! { Self::byte_align() + max });
         output
     }
@@ -96,9 +95,10 @@ impl Generator for VariantGenerator<'_> {
         }
 
         let name = &self.gen_data.name.to_string();
+        let cases_count = self.data.variants.len();
 
         quote! {
-            reader.read_variant::<Self>(|reader, determinant| match determinant {
+            reader.read_variant::<Self>(#cases_count, |reader, determinant| match determinant {
                 #output
                 other => Err(wasmi_component::ConvertError::new(
                     format!("invalid determinant {other} in {}::lift", #name)
@@ -109,6 +109,8 @@ impl Generator for VariantGenerator<'_> {
 
     fn lower(&self) -> TokenStream {
         let main_ty = self.gen_data.name;
+        let cases_count = self.data.variants.len();
+
         let mut output = quote! {};
 
         for (index, field) in self.data.variants.iter().enumerate() {
@@ -117,11 +119,11 @@ impl Generator for VariantGenerator<'_> {
 
             if let Some(_) = field_ty {
                 output.extend(quote! { Self::#field_name(value) => {
-                    writer.write_variant::<#main_ty, _>(#index, value)
+                    writer.write_variant::<#main_ty, _>(#cases_count, #index, value)
                 } });
             } else {
                 output.extend(quote! { Self::#field_name => {
-                    writer.write_variant::<#main_ty, _>(#index, ())
+                    writer.write_variant::<#main_ty, _>(#cases_count, #index, ())
                 } });
             }
         }

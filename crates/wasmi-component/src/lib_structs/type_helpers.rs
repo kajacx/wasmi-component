@@ -36,3 +36,12 @@ pub fn wasm_args(ty: &ValueType) -> Vec<wasmi::ValType> {
         ValueType::Enum { .. } => vec![wasmi::ValType::I32],
     }
 }
+
+pub fn enum_determinant_size(case_count: usize) -> usize {
+    match case_count {
+        ..0x1_00 => 1,
+        ..0x1_00_00 => 2,
+        ..0x1_00_00_00_00 => 4,
+        _ => unimplemented!("enum has more than 2^32 cases"),
+    }
+}

@@ -34,7 +34,7 @@ impl wasmi_component::ComponentValue for StreamError {
         1 + max
     }
     fn byte_align() -> usize {
-        let mut max = 1;
+        let mut max = wasmi_component::lib_structs::enum_determinant_size(2usize);
         max = std::cmp::max(max, <i32>::byte_align());
         max
     }
@@ -46,7 +46,7 @@ impl wasmi_component::ComponentValue for StreamError {
     fn lift<'mem>(
         reader: &mut impl wasmi_component::lib_structs::LiftReader<'mem>,
     ) -> wasmi_component::ConvertResult<Self::Borrowed<'mem>> {
-        reader.read_variant::<Self>(|reader, determinant| match determinant {
+        reader.read_variant::<Self>(2usize, |reader, determinant| match determinant {
             0usize => Ok(StreamErrorBorrowed::LastOperationFailed(<i32>::lift(
                 reader,
             )?)),
@@ -65,9 +65,9 @@ impl wasmi_component::Lower<Self> for StreamError {
     ) -> wasmi_component::ConvertResult<()> {
         match self {
             Self::LastOperationFailed(value) => {
-                writer.write_variant::<StreamError, _>(0usize, value)
+                writer.write_variant::<StreamError, _>(2usize, 0usize, value)
             }
-            Self::Closed => writer.write_variant::<StreamError, _>(1usize, ()),
+            Self::Closed => writer.write_variant::<StreamError, _>(2usize, 1usize, ()),
         }
     }
 }

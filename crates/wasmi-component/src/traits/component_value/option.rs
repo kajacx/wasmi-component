@@ -21,7 +21,7 @@ impl<T: ComponentValue> ComponentValue for Option<T> {
     }
 
     fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self::Borrowed<'mem>> {
-        reader.read_variant::<Self>(|reader, determinant| match determinant {
+        reader.read_variant::<Self>(2, |reader, determinant| match determinant {
             0 => Ok(None),
             1 => Ok(Some(T::lift(reader)?)),
             other => Err(ConvertError::new(format!(
@@ -51,7 +51,7 @@ impl<T: ComponentValue, E: ComponentValue> ComponentValue for Result<T, E> {
     }
 
     fn lift<'mem>(reader: &mut impl LiftReader<'mem>) -> ConvertResult<Self::Borrowed<'mem>> {
-        reader.read_variant::<Self>(|reader, determinant| match determinant {
+        reader.read_variant::<Self>(2, |reader, determinant| match determinant {
             0 => Ok(Ok(T::lift(reader)?)),
             1 => Ok(Err(E::lift(reader)?)),
             other => Err(ConvertError::new(format!(

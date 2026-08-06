@@ -26,8 +26,24 @@ pub trait LowerWriter {
         align: usize,
     ) -> ConvertResult<()>;
 
+    fn write_enum_determinant(&mut self, case_count: usize, determinant: usize, align: usize) {
+        match case_count {
+            ..0x1_00 => self
+                .write_record_field::<u8>(determinant as u8, align)
+                .unwrap(),
+            ..0x1_00_00 => self
+                .write_record_field::<u16>(determinant as u16, align)
+                .unwrap(),
+            ..0x1_00_00_00_00 => self
+                .write_record_field::<u32>(determinant as u32, align)
+                .unwrap(),
+            _ => unimplemented!("variant has more than 2^32 cases"),
+        }
+    }
+
     fn write_variant<T: ComponentValue, C: ComponentValue>(
         &mut self,
+        case_count: usize,
         determinant: usize,
         value: impl Lower<C>,
     ) -> ConvertResult<()>;
@@ -108,12 +124,13 @@ impl<'a, M: MemoryAccess> LowerWriter for LowerArgsWriter<'a, M> {
 
     fn write_variant<T: ComponentValue, C: ComponentValue>(
         &mut self,
+        _case_count: usize,
         determinant: usize,
         value: impl Lower<C>,
     ) -> ConvertResult<()> {
         let final_index = self.index + T::arg_count();
 
-        self.write_u8(determinant as _); // TODO: variants with more than 256 cases
+        self.write_u32(determinant as _);
         let result = value.lower(self)?;
 
         self.index = final_index;
@@ -128,7 +145,7 @@ impl<'a, M: MemoryAccess> LowerWriter for LowerArgsWriter<'a, M> {
     ) -> ConvertResult<()> {
         let final_index = self.index + variant_ty.arg_count();
 
-        self.write_u8(determinant as _); // TODO: variants with more than 256 cases
+        self.write_u32(determinant as _);
         if let Some((ty, value)) = value {
             dyn_lower(ty, value, self)?;
         }
@@ -228,13 +245,13 @@ impl<M: MemoryAccess> LowerWriter for LowerBytesWriter<M> {
 
     fn write_variant<T: ComponentValue, C: ComponentValue>(
         &mut self,
+        case_count: usize,
         determinant: usize,
         value: impl Lower<C>,
     ) -> ConvertResult<()> {
         let final_index = self.index + T::byte_size();
 
-        // TODO: variants with more than 256 cases
-        self.write_record_field(determinant as u8, T::byte_align())?;
+        self.write_enum_determinant(case_count, determinant, T::byte_align());
         value.lower(self)?;
 
         self.index = final_index;
@@ -249,7 +266,8 @@ impl<M: MemoryAccess> LowerWriter for LowerBytesWriter<M> {
     ) -> ConvertResult<()> {
         let final_index = self.index + variant_ty.byte_size();
 
-        self.write_record_field(determinant as u8, variant_ty.byte_align())?; // TODO: variants with more than 256 cases
+        let case_count = variant_ty.case_count().expect("type was checked earlier");
+        self.write_enum_determinant(case_count, determinant, variant_ty.byte_align());
         if let Some((ty, value)) = value {
             dyn_lower(ty, value, self)?;
         }

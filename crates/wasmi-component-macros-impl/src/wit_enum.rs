@@ -31,45 +31,48 @@ impl Generator for EnumGenerator<'_> {
     }
 
     fn byte_align(&self) -> TokenStream {
-        // TODO: enums with more than 256 cases
-        quote! { 1 }
+        let cases_count = self.data.variants.len();
+        quote! { wasmi_component::lib_structs::enum_determinant_size(#cases_count) }
     }
 
     fn byte_size(&self) -> TokenStream {
-        // TODO: enums with more than 256 cases
-        quote! { 1 }
+        let cases_count = self.data.variants.len();
+        quote! { wasmi_component::lib_structs::enum_determinant_size(#cases_count) }
     }
 
     fn lift(&self) -> TokenStream {
         let mut output = quote! {};
+
         for (index, field) in self.data.variants.iter().enumerate() {
             let field_name = &field.ident;
             output.extend(quote! { #index => Ok(Self::#field_name), });
         }
 
         let name = self.gen_data.name.to_string();
+        let cases_count = self.data.variants.len();
+
         quote! {
-            reader.read_variant::<Self>(|_reader, determinant| match determinant {
+            match reader.read_enum_determinant(#cases_count, 1) {
                 #output
                 other => Err(wasmi_component::ConvertError::new(
                     format!("invalid determinant {other} in {}::lift", #name)
                 )),
-            })
+            }
         }
     }
 
     fn lower(&self) -> TokenStream {
-        let main_ty = self.gen_data.name;
+        let cases_count = self.data.variants.len();
         let mut output = quote! {};
 
         for (index, field) in self.data.variants.iter().enumerate() {
             let field_name = &field.ident;
             output.extend(quote! { Self::#field_name => {
-                writer.write_variant::<#main_ty, _>(#index, ())
+                writer.write_enum_determinant(#cases_count, #index, 1)
             } });
         }
 
-        quote! { match self { #output } }
+        quote! { match self { #output }; Ok(()) }
     }
 
     fn borrowed_name(&self) -> Ident {
