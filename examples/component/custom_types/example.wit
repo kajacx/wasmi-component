@@ -11,9 +11,16 @@ interface round-trip {
         text(string),
     }
 
+    enum status {
+        ok,
+        error,
+    }
+
     trip-person: func(value: person) -> person;
 
     trip-data: func(value: data) -> data;
+
+    trip-status: func(value: status) -> status;
 
     trip-mixed: func(a: person, b: s32, c: result<data, string>);
 }

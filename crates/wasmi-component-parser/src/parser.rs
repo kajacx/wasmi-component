@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use wit_parser::{
-    Docs, Function, Interface, Record, Resolve, Result_, Span, Type, TypeDef, TypeDefKind, Variant,
-    World, WorldItem, WorldKey,
+    Docs, Enum, Function, Interface, Record, Resolve, Result_, Span, Type, TypeDef, TypeDefKind,
+    Variant, World, WorldItem, WorldKey,
 };
 
 use crate::{Func, ParsedWit, ParsedWorld, ValueType};
@@ -37,13 +37,13 @@ impl Parser {
     pub fn parse_type(&self, ty: &TypeDef) -> Option<ValueType> {
         match &ty.kind {
             TypeDefKind::Record(record) => {
-                Some(self.parse_record(ty.name.as_ref().expect("name of record"), &record))
+                Some(self.parse_record(ty.name.as_ref().expect("name of record"), record))
             }
             TypeDefKind::Variant(variant) => {
-                Some(self.parse_variant(ty.name.as_ref().expect("name of record"), &variant))
+                Some(self.parse_variant(ty.name.as_ref().expect("name of record"), variant))
             }
-            TypeDefKind::Enum(_enum) => {
-                todo!("enum type")
+            TypeDefKind::Enum(enum_ty) => {
+                Some(self.parse_enum(ty.name.as_ref().expect("name of enum"), enum_ty))
             }
             TypeDefKind::Flags(_flags) => {
                 todo!("flags type")
@@ -202,6 +202,10 @@ impl Parser {
                     }
 
                     TypeDefKind::Handle(_) => ValueType::S32,
+                    TypeDefKind::Type(ty) => self.convert_type(*ty),
+                    TypeDefKind::Enum(enum_ty) => {
+                        self.parse_enum(ty.name.as_ref().expect("name of enum"), enum_ty)
+                    }
                     other => todo!("not yet implemented type: {other:?}"),
                 }
             }
@@ -246,6 +250,19 @@ impl Parser {
             .collect();
 
         ValueType::Variant {
+            name: Rc::from(name),
+            cases,
+        }
+    }
+
+    fn parse_enum(&self, name: &str, enum_ty: &Enum) -> ValueType {
+        let cases = enum_ty
+            .cases
+            .iter()
+            .map(|case| Rc::from(case.name.as_ref()))
+            .collect();
+
+        ValueType::Enum {
             name: Rc::from(name),
             cases,
         }

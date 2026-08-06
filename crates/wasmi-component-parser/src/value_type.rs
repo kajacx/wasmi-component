@@ -32,6 +32,10 @@ pub enum ValueType {
         name: Rc<str>,
         cases: Rc<[(Rc<str>, Option<ValueType>)]>,
     },
+    Enum {
+        name: Rc<str>,
+        cases: Rc<[Rc<str>]>,
+    },
 }
 
 impl ValueType {
@@ -103,6 +107,14 @@ impl ValueType {
         }
     }
 
+    /// Returns the name and cases of an enum type, or None if this is not an enum type.
+    pub fn as_enum(&self) -> Option<(&str, &[Rc<str>])> {
+        match self {
+            Self::Enum { name, cases } => Some((name, cases)),
+            _ => None,
+        }
+    }
+
     pub fn is_unit(&self) -> bool {
         match self {
             Self::Tuple(tuple) => tuple.is_empty(),
@@ -160,10 +172,11 @@ impl ValueType {
             Self::Variant { cases, .. } => {
                 1 + cases
                     .iter()
-                    .map(|(_name, ty)| ty.as_ref().map_or(0, |ty| ty.arg_count()))
+                    .filter_map(|(_name, ty)| ty.as_ref().map(|ty| ty.arg_count()))
                     .max()
                     .unwrap_or(0)
             }
+            Self::Enum { .. } => 1,
         }
     }
 
@@ -204,6 +217,7 @@ impl ValueType {
                     .max()
                     .unwrap_or(1)
             }
+            Self::Enum { .. } => 1,
         }
     }
 
@@ -240,6 +254,7 @@ impl ValueType {
                     .max()
                     .unwrap_or(1)
             }
+            Self::Enum { .. } => 1,
         }
     }
 }
@@ -296,6 +311,13 @@ impl std::fmt::Display for ValueType {
                     write!(f, "{name}")
                 }
             }
+            Self::Enum { name, .. } => {
+                if name.is_empty() {
+                    write!(f, "anonymous enum")
+                } else {
+                    write!(f, "{name}")
+                }
+            }
         }
     }
 }
@@ -336,24 +358,12 @@ impl PartialEq for ValueType {
             (Self::Tuple(tuple_a), Self::Tuple(tuple_b)) => tuple_a == tuple_b,
             (Self::List(ty_a), Self::List(ty_b)) => ty_a == ty_b,
 
-            // TODO: compare names, but case is different (snake case, etc.)
-            (Self::Record { fields: a, .. }, Self::Record { fields: b, .. }) => iters_eq(
-                a.iter().map(|(_name, ty)| ty),
-                b.iter().map(|(_name, ty)| ty),
-            ),
-            (Self::Variant { cases: a, .. }, Self::Variant { cases: b, .. }) => iters_eq(
-                a.iter().map(|(_name, ty)| ty),
-                b.iter().map(|(_name, ty)| ty),
-            ),
+            // both name and order need to match
+            (Self::Record { fields: a, .. }, Self::Record { fields: b, .. }) => a == b,
+            (Self::Variant { cases: a, .. }, Self::Variant { cases: b, .. }) => a == b,
+            (Self::Enum { cases: a, .. }, Self::Enum { cases: b, .. }) => a == b,
 
             _ => false,
         }
     }
-}
-
-fn iters_eq<T: PartialEq<T>>(
-    iter1: impl Iterator<Item = T>,
-    iter2: impl Iterator<Item = T>,
-) -> bool {
-    iter1.eq(iter2)
 }

@@ -20,7 +20,7 @@ pub fn rust_snake_case(name: impl AsRef<str>) -> String {
 /// This will implement `ComponentValue`. Examples:
 /// - `s32` -> `i32`
 /// - `string` -> `String`
-/// - `list<i32>` -> `Bytes<i32>` TODO: actually do this with bytemuck
+/// - `list<s32>` -> `Vec<i32>`
 /// - `list<string>` -> `Vec<String>`
 /// - `option<list<u8>>` -> `Option<Bytes<u8>>`
 /// - `custom-type` -> `CustomType`
@@ -60,16 +60,17 @@ pub fn canonical_name(ty: &ValueType) -> String {
 
         ValueType::Record { name, .. } => name.to_upper_camel_case(),
         ValueType::Variant { name, .. } => name.to_upper_camel_case(),
+        ValueType::Enum { name, .. } => name.to_upper_camel_case(),
     }
 }
 
 /// `Lift` is exported function's result or imported function's arguments. Examples:
 /// - `s32` -> `i32`
 /// - `string` -> `&str`
-/// - `list<i32>` -> `&[i32]` TODO: actually do this with bytemuck
-/// - `list<string>` -> `ListAccessor<String>`
-/// - `option<list<u8>>` -> `Option<&[u8]>`
-/// - `custom-type` -> `CustomTypeBorrowed`
+/// - `list<s32>` -> `ListAccessor<'_, i32>`
+/// - `list<string>` -> `ListAccessor<'_, String>`
+/// - `option<list<u8>>` -> `Option<ListAccessor<'_, u8>>`
+/// - `custom-type` -> `CustomTypeBorrowed<'_>`
 pub fn as_lift(ty: &ValueType) -> String {
     match ty {
         ValueType::S8 => "i8".into(),
@@ -106,6 +107,7 @@ pub fn as_lift(ty: &ValueType) -> String {
 
         ValueType::Record { name, .. } => format!("{}Borrowed<'_>", name.to_upper_camel_case()),
         ValueType::Variant { name, .. } => format!("{}Borrowed<'_>", name.to_upper_camel_case()),
+        ValueType::Enum { name, .. } => name.to_upper_camel_case(),
     }
 }
 
@@ -148,5 +150,6 @@ pub fn as_lower(ty: &ValueType) -> String {
 
         ValueType::Record { name, .. } => format!("&{}", name.to_upper_camel_case()),
         ValueType::Variant { name, .. } => format!("&{}", name.to_upper_camel_case()),
+        ValueType::Enum { name, .. } => name.to_upper_camel_case(),
     }
 }

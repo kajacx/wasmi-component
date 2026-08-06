@@ -3,7 +3,8 @@ mod bindings {
         path: "../../../examples/component/custom_types/example.wit",
         with: {
             "wasmi-component:component-examples/round-trip@0.1.0/person": crate::Person,
-            "wasmi-component:component-examples/round-trip@0.1.0/data": crate::Data
+            "wasmi-component:component-examples/round-trip@0.1.0/data": crate::Data,
+            "wasmi-component:component-examples/round-trip@0.1.0/status": crate::Status
         }
     });
 
@@ -23,20 +24,44 @@ pub enum Data {
     Text(String),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Status {
+    Ok,
+    Error,
+}
+
+impl Status {
+    #[doc(hidden)]
+    pub unsafe fn _lift(val: u8) -> Status {
+        match val {
+            0 => Status::Ok,
+            1 => Status::Error,
+            _ => panic!("invalid enum discriminant"),
+        }
+    }
+}
+
 struct GuestComponent;
 
 impl bindings::exports::wasmi_component::component_examples::round_trip::Guest for GuestComponent {
     fn trip_person(value: Person) -> Person {
-        bindings::log(&format!("[GUEST]: Receiving Person value {value:?}"));
+        bindings::log(&format!("[GUEST]: Receiving person value {value:?}"));
         let value = bindings::wasmi_component::component_examples::round_trip::trip_person(&value);
-        bindings::log(&format!("[GUEST]: Returning Person value {value:?}"));
+        bindings::log(&format!("[GUEST]: Returning person value {value:?}"));
         value
     }
 
     fn trip_data(value: Data) -> Data {
-        bindings::log(&format!("[GUEST]: Receiving Data value {value:?}"));
+        bindings::log(&format!("[GUEST]: Receiving data value {value:?}"));
         let value = bindings::wasmi_component::component_examples::round_trip::trip_data(&value);
-        bindings::log(&format!("[GUEST]: Returning Data value {value:?}"));
+        bindings::log(&format!("[GUEST]: Returning data value {value:?}"));
+        value
+    }
+
+    fn trip_status(value: Status) -> Status {
+        bindings::log(&format!("[GUEST]: Receiving status value {value:?}"));
+        let value = bindings::wasmi_component::component_examples::round_trip::trip_status(value);
+        bindings::log(&format!("[GUEST]: Returning status value {value:?}"));
         value
     }
 

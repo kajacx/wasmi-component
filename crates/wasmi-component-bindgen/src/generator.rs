@@ -111,8 +111,32 @@ impl Generator {
                 writeln!(declaration, "}}\n").unwrap();
                 declaration
             }
+            ValueType::Enum { name, cases } => {
+                writeln!(
+                    output,
+                    concat!(
+                        "#[allow(unused)]\n",
+                        "#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash{})]",
+                    ),
+                    component_value_derive
+                )
+                .unwrap();
+
+                let mut declaration = String::new();
+                writeln!(declaration, "pub enum {} {{", name.to_upper_camel_case()).unwrap();
+
+                cases.iter().for_each(|name| {
+                    writeln!(declaration, "    {},", name.to_upper_camel_case()).unwrap();
+                });
+
+                writeln!(declaration, "}}\n").unwrap();
+                declaration
+            }
             other => {
-                panic!("expected a record or a variant, got {:?} instead", other);
+                panic!(
+                    "expected a record, variant or an enum, got {:?} instead",
+                    other
+                );
             }
         };
 

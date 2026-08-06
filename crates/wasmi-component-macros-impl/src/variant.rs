@@ -1,6 +1,7 @@
+use heck::ToKebabCase;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::DataEnum;
+use syn::{DataEnum, Ident};
 
 use crate::{Generator, GeneratorData};
 
@@ -14,7 +15,7 @@ impl Generator for VariantGenerator<'_> {
         let mut output = quote! {};
 
         for field in &self.data.variants {
-            let field_name = &field.ident.to_string();
+            let field_name = &field.ident.to_string().to_kebab_case();
             let field_ty = &field.fields.iter().next().map_or_else(
                 || quote! { None },
                 |ty| quote! { Some(<#ty>::value_type()) },
@@ -23,7 +24,7 @@ impl Generator for VariantGenerator<'_> {
             output.extend(quote! { (std::rc::Rc::from(#field_name), #field_ty), });
         }
 
-        let name = self.gen_data.name.to_string();
+        let name = self.gen_data.name.to_string().to_kebab_case();
         quote! { wasmi_component::ValueType::Variant {
             name: std::rc::Rc::from(#name),
             cases: std::rc::Rc::from([ #output ]),
@@ -79,19 +80,19 @@ impl Generator for VariantGenerator<'_> {
 
     fn lift(&self) -> TokenStream {
         let mut output = quote! {};
-        let borrowed_name = &self.gen_data.borrowed_name;
 
         for (index, field) in self.data.variants.iter().enumerate() {
             let field_ty = &field.fields.iter().next().map(|item| &item.ty);
             let field_name = &field.ident;
+            let borrowed_name = &self.borrowed_name();
 
-            let value = if let Some(ty) = field_ty {
-                quote! { (<#ty>::lift(reader)?) }
+            if let Some(ty) = field_ty {
+                output.extend(
+                    quote! { #index => Ok(#borrowed_name::#field_name(<#ty>::lift(reader)?)), },
+                );
             } else {
-                quote! {}
-            };
-
-            output.extend(quote! { #index => Ok(#borrowed_name::#field_name #value), });
+                output.extend(quote! { #index => Ok(#borrowed_name::#field_name), });
+            }
         }
 
         let name = &self.gen_data.name.to_string();
@@ -128,6 +129,13 @@ impl Generator for VariantGenerator<'_> {
         quote! { match self { #output } }
     }
 
+    fn borrowed_name(&self) -> Ident {
+        Ident::new(
+            &format!("{}Borrowed", self.gen_data.name),
+            self.gen_data.name.span(),
+        )
+    }
+
     fn borrowed_def(&self) -> TokenStream {
         let mut output = quote! {};
 
@@ -144,8 +152,12 @@ impl Generator for VariantGenerator<'_> {
         }
 
         let vis = &self.gen_data.vis;
-        let borrowed_name = &self.gen_data.borrowed_name;
-        quote! { #vis enum #borrowed_name<'a> { #output } }
+        let borrowed_name = &self.borrowed_name();
+
+        quote! {
+            #[derive(Clone, Debug)]
+            #vis enum #borrowed_name<'a> { #output }
+        }
     }
 
     fn lift_owned(&self) -> TokenStream {

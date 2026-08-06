@@ -33,5 +33,6 @@ pub fn wasm_args(ty: &ValueType) -> Vec<wasmi::ValType> {
                 .iter()
                 .filter_map(|(_name, ty)| ty.as_ref().map(wasm_args)),
         ),
+        ValueType::Enum { .. } => vec![wasmi::ValType::I32],
     }
 }

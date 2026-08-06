@@ -22,6 +22,13 @@ pub enum Data {
 }
 
 #[allow(unused)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ComponentValue)]
+pub enum Status {
+    Ok,
+    Error,
+}
+
+#[allow(unused)]
 #[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
 pub enum Outcome {
     Ok,
@@ -48,6 +55,8 @@ pub trait TestExampleImports {
 
     fn trip_data(&mut self, value: DataBorrowed<'_>) -> HostResult<Data>;
 
+    fn trip_status(&mut self, value: Status) -> HostResult<Status>;
+
     fn trip_mixed(
         &mut self,
         a: PersonBorrowed<'_>,
@@ -67,6 +76,7 @@ pub struct TestExampleExports {
     pub init: TypedFunc<(Vec<String>,), Outcome>,
     pub trip_person: TypedFunc<(Person,), Person>,
     pub trip_data: TypedFunc<(Data,), Data>,
+    pub trip_status: TypedFunc<(Status,), Status>,
     pub trip_mixed: TypedFunc<(Person, i32, Result<Data, String>), ()>,
     pub pet: TypedFunc<(Animal, u32), Result<(), String>>,
 }
@@ -122,6 +132,23 @@ impl TestExampleExports {
         callback: impl FnOnce(&mut T, DataBorrowed<'_>) -> R,
     ) -> CallResult<R> {
         self.trip_data.call_with_results(ctx, (value,), callback)
+    }
+
+    pub fn call_trip_status<T>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        value: Status,
+    ) -> CallResult<Status> {
+        self.trip_status.call(ctx, (value,))
+    }
+
+    pub fn call_trip_status_with_results<T, R>(
+        &self,
+        ctx: impl AsContextMut<Data = StoreData<T>>,
+        value: Status,
+        callback: impl FnOnce(&mut T, Status) -> R,
+    ) -> CallResult<R> {
+        self.trip_status.call_with_results(ctx, (value,), callback)
     }
 
     pub fn call_trip_mixed<T>(
@@ -181,6 +208,12 @@ pub fn add_test_example_to_linker<T: TestExampleImports>(
         |host_data, params| host_data.trip_data(params.0),
     )?;
 
+    linker.func_typed::<(Status,), Status>(
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-status",
+        |host_data, params| host_data.trip_status(params.0),
+    )?;
+
     linker.func_typed::<(Person, i32, Result<Data, String>), ()>(
         "wasmi-component:component-examples/round-trip@0.1.0",
         "trip-mixed",
@@ -220,6 +253,12 @@ pub fn instantiate_test_example_world<T>(
         "trip-data",
     )?;
 
+    let trip_status = instance.get_typed_func(
+        ctx.as_context(),
+        "wasmi-component:component-examples/round-trip@0.1.0",
+        "trip-status",
+    )?;
+
     let trip_mixed = instance.get_typed_func(
         ctx.as_context(),
         "wasmi-component:component-examples/round-trip@0.1.0",
@@ -233,6 +272,7 @@ pub fn instantiate_test_example_world<T>(
         init,
         trip_person,
         trip_data,
+        trip_status,
         trip_mixed,
         pet,
     })

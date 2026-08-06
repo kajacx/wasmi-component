@@ -17,16 +17,23 @@ struct HostData {}
 
 impl bindings::TestExampleImports for HostData {
     fn trip_person(&mut self, value: bindings::PersonBorrowed<'_>) -> HostResult<bindings::Person> {
-        println!("[HOST]: Receiving Person value {value:?}");
+        println!("[HOST]: Receiving person value {value:?}");
         let value = value.lift_owned()?;
-        println!("[HOST]: Returning Person value {value:?}");
+        println!("[HOST]: Returning person value {value:?}");
         Ok(value)
     }
 
     fn trip_data(&mut self, value: bindings::DataBorrowed<'_>) -> HostResult<bindings::Data> {
-        println!("[HOST]: Receiving Data value {value:?}");
+        println!("[HOST]: Receiving data value {value:?}");
         let value = value.lift_owned()?;
-        println!("[HOST]: Returning Data value {value:?}");
+        println!("[HOST]: Returning data value {value:?}");
+        Ok(value)
+    }
+
+    fn trip_status(&mut self, value: bindings::Status) -> HostResult<bindings::Status> {
+        println!("[HOST]: Receiving status value {value:?}");
+        let value = value.lift_owned()?;
+        println!("[HOST]: Returning status value {value:?}");
         Ok(value)
     }
 
@@ -100,6 +107,12 @@ pub fn main_() {
         .unwrap();
     assert_eq!(result, bindings::Data::Text("Hello data".to_string()));
     println!("Result is: {result:?}\n");
+
+    let result = exports
+        .call_trip_status(&mut store, bindings::Status::Error)
+        .unwrap();
+    assert_eq!(result, bindings::Status::Error);
+    println!("Result is (should be Error): {result:?}\n");
 
     let wrong_type =
         exports

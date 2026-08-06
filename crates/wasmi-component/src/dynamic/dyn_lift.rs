@@ -95,5 +95,7 @@ pub(crate) fn dyn_lift<'mem>(
 
             Ok(DynValue::new_variant(case_name, value))
         }),
+
+        ValueType::Enum { .. } => todo!("dyn lift enum"),
     }
 }

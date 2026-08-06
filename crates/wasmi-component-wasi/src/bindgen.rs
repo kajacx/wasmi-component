@@ -18,13 +18,13 @@ impl wasmi_component::ComponentValue for StreamError {
     type Borrowed<'a> = StreamErrorBorrowed<'a>;
     fn value_type() -> wasmi_component::ValueType {
         wasmi_component::ValueType::Variant {
-            name: std::rc::Rc::from("StreamError"),
+            name: std::rc::Rc::from("stream-error"),
             cases: std::rc::Rc::from([
                 (
-                    std::rc::Rc::from("LastOperationFailed"),
+                    std::rc::Rc::from("last-operation-failed"),
                     Some(<i32>::value_type()),
                 ),
-                (std::rc::Rc::from("Closed"), None),
+                (std::rc::Rc::from("closed"), None),
             ]),
         }
     }

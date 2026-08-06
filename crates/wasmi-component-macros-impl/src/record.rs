@@ -1,6 +1,7 @@
+use heck::ToKebabCase;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::DataStruct;
+use syn::{DataStruct, Ident};
 
 use crate::{Generator, GeneratorData};
 
@@ -14,12 +15,12 @@ impl Generator for RecordGenerator<'_> {
         let mut output = quote! {};
 
         for field in &self.data.fields {
-            let field_name = field.ident.as_ref().unwrap().to_string();
+            let field_name = field.ident.as_ref().unwrap().to_string().to_kebab_case();
             let field_ty = &field.ty;
             output.extend(quote! { (std::rc::Rc::from(#field_name), <#field_ty>::value_type()), });
         }
 
-        let name = self.gen_data.name.to_string();
+        let name = self.gen_data.name.to_string().to_kebab_case();
         quote! { wasmi_component::ValueType::Record {
             name: std::rc::Rc::from(#name),
             fields: std::rc::Rc::from([ #output ]),
@@ -70,7 +71,7 @@ impl Generator for RecordGenerator<'_> {
             result.extend(quote! { #field_name, });
         }
 
-        let borrowed_name = &self.gen_data.borrowed_name;
+        let borrowed_name = &self.borrowed_name();
         output.extend(quote! { Ok( #borrowed_name { #result } ) });
         output
     }
@@ -87,6 +88,13 @@ impl Generator for RecordGenerator<'_> {
         output
     }
 
+    fn borrowed_name(&self) -> Ident {
+        Ident::new(
+            &format!("{}Borrowed", self.gen_data.name),
+            self.gen_data.name.span(),
+        )
+    }
+
     fn borrowed_def(&self) -> TokenStream {
         let mut output = quote! {};
 
@@ -98,8 +106,11 @@ impl Generator for RecordGenerator<'_> {
         }
 
         let vis = &self.gen_data.vis;
-        let borrowed_name = &self.gen_data.borrowed_name;
-        quote! { #vis struct #borrowed_name<'a> { #output } }
+        let borrowed_name = &self.borrowed_name();
+        quote! {
+            #[derive(Clone, Debug)]
+            #vis struct #borrowed_name<'a> { #output }
+        }
     }
 
     fn lift_owned(&self) -> TokenStream {
