@@ -1,3 +1,4 @@
+#[allow(unused)]
 use wasmi_component::anyhow::Result;
 #[allow(unused)]
 use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
@@ -23,13 +24,15 @@ pub enum Data {
 
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ComponentValue)]
+#[component_value_attrs(copy)]
 pub enum Status {
     Ok,
     Error,
 }
 
 #[allow(unused)]
-#[derive(Debug, Clone, PartialEq, PartialOrd, ComponentValue)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, ComponentValue)]
+#[component_value_attrs(copy)]
 pub enum Outcome {
     Ok,
     Error(i32),
@@ -95,7 +98,7 @@ impl TestExampleExports {
         &self,
         ctx: impl AsContextMut<Data = StoreData<T>>,
         args: impl Lower<Vec<String>>,
-        callback: impl FnOnce(&mut T, OutcomeBorrowed<'_>) -> R,
+        callback: impl FnOnce(&mut T, Outcome) -> R,
     ) -> CallResult<R> {
         self.init.call_with_results(ctx, (args,), callback)
     }

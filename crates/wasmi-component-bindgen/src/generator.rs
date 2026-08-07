@@ -25,6 +25,7 @@ impl Generator {
         writeln!(
             output,
             concat!(
+                "#[allow(unused)]\n",
                 "use wasmi_component::anyhow::Result;\n",
                 "#[allow(unused)]\n",
                 "use wasmi_component::wasmi::{{AsContext, AsContextMut, errors::LinkerError}};\n",
@@ -47,25 +48,31 @@ impl Generator {
     }
 
     fn write_type(&self, ty: &ValueType, output: &mut String) {
+        let (copy_derive, copy_attr) = if ty.is_copy() {
+            (", Copy", "\n#[component_value_attrs(copy)]")
+        } else {
+            ("", "")
+        };
+
         let component_value_derive = if self.manual_impl {
             ""
         } else {
             ", ComponentValue"
         };
 
-        let declaration = match ty {
+        let mut declaration = String::new();
+        match ty {
             ValueType::Record { name, fields } => {
                 writeln!(
-                    output,
+                    declaration,
                     concat!(
                         "#[allow(unused)]\n",
-                        "#[derive(Debug, Clone, Default, PartialEq, PartialOrd{})]",
+                        "#[derive(Debug, Clone{}, Default, PartialEq, PartialOrd{})]{}",
                     ),
-                    component_value_derive
+                    copy_derive, component_value_derive, copy_attr
                 )
                 .unwrap();
 
-                let mut declaration = String::new();
                 writeln!(declaration, "pub struct {} {{", name.to_upper_camel_case()).unwrap();
 
                 fields.iter().for_each(|(name, ty)| {
@@ -78,20 +85,18 @@ impl Generator {
                     .unwrap();
                 });
                 writeln!(declaration, "}}\n").unwrap();
-                declaration
             }
             ValueType::Variant { name, cases } => {
                 writeln!(
-                    output,
+                    declaration,
                     concat!(
                         "#[allow(unused)]\n",
-                        "#[derive(Debug, Clone, PartialEq, PartialOrd{})]",
+                        "#[derive(Debug, Clone{}, PartialEq, PartialOrd{})]{}",
                     ),
-                    component_value_derive
+                    copy_derive, component_value_derive, copy_attr
                 )
                 .unwrap();
 
-                let mut declaration = String::new();
                 writeln!(declaration, "pub enum {} {{", name.to_upper_camel_case()).unwrap();
 
                 cases.iter().for_each(|(name, ty)| {
@@ -109,20 +114,19 @@ impl Generator {
                 });
 
                 writeln!(declaration, "}}\n").unwrap();
-                declaration
             }
             ValueType::Enum { name, cases } => {
                 writeln!(
-                    output,
+                    declaration,
                     concat!(
                         "#[allow(unused)]\n",
-                        "#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash{})]",
+                        "#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash{})]\n",
+                        "#[component_value_attrs(copy)]"
                     ),
                     component_value_derive
                 )
                 .unwrap();
 
-                let mut declaration = String::new();
                 writeln!(declaration, "pub enum {} {{", name.to_upper_camel_case()).unwrap();
 
                 cases.iter().for_each(|name| {
@@ -130,7 +134,6 @@ impl Generator {
                 });
 
                 writeln!(declaration, "}}\n").unwrap();
-                declaration
             }
             other => {
                 panic!(
@@ -140,13 +143,22 @@ impl Generator {
             }
         };
 
-        writeln!(output, "{}", declaration).unwrap();
-
         if self.manual_impl {
+            // Remove the copy attribute if present, it causes a compile error
+            // if the ComponentValue derive macro isn't there.
+            writeln!(
+                output,
+                "{}",
+                declaration.replace("#[component_value_attrs(copy)]\n", "")
+            )
+            .unwrap();
+
             let token_stream =
                 wasmi_component_macros_impl::derive_component_value_str(&declaration);
 
             writeln!(output, "{}\n", token_stream.to_string()).unwrap();
+        } else {
+            writeln!(output, "{}", declaration).unwrap();
         }
     }
 

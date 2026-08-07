@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use super::bindgen::{RootImports, StreamError};
-use wasmi_component::{ComponentValue, HostResult, ListAccessor};
+use wasmi_component::{HostResult, ListAccessor};
 
 #[allow(unused)]
 impl<T> RootImports for T {
@@ -86,7 +86,7 @@ impl<T> RootImports for T {
         todo!();
     }
 
-    fn exit(&mut self, status: <Result<(), ()> as ComponentValue>::Borrowed<'_>) -> HostResult<()> {
+    fn exit(&mut self, status: Result<(), ()>) -> HostResult<()> {
         todo!()
     }
 

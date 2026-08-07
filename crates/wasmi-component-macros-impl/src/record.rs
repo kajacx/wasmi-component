@@ -1,7 +1,7 @@
 use heck::ToKebabCase;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{DataStruct, Ident};
+use syn::DataStruct;
 
 use crate::{Generator, GeneratorData};
 
@@ -71,7 +71,7 @@ impl Generator for RecordGenerator<'_> {
             result.extend(quote! { #field_name, });
         }
 
-        let borrowed_name = &self.borrowed_name();
+        let borrowed_name = &self.gen_data.borrowed_name;
         output.extend(quote! { Ok( #borrowed_name { #result } ) });
         output
     }
@@ -88,14 +88,11 @@ impl Generator for RecordGenerator<'_> {
         output
     }
 
-    fn borrowed_name(&self) -> Ident {
-        Ident::new(
-            &format!("{}Borrowed", self.gen_data.name),
-            self.gen_data.name.span(),
-        )
-    }
-
     fn borrowed_def(&self) -> TokenStream {
+        if self.gen_data.is_copy {
+            return quote! {};
+        }
+
         let mut output = quote! {};
 
         for field in &self.data.fields {
@@ -106,7 +103,7 @@ impl Generator for RecordGenerator<'_> {
         }
 
         let vis = &self.gen_data.vis;
-        let borrowed_name = &self.borrowed_name();
+        let borrowed_name = &self.gen_data.borrowed_name;
         quote! {
             #[derive(Clone, Debug)]
             #vis struct #borrowed_name<'a> { #output }

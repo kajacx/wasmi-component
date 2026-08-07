@@ -105,8 +105,13 @@ pub fn as_lift(ty: &ValueType) -> String {
         }
         ValueType::List(ty) => format!("ListAccessor<'_, {}>", canonical_name(ty)).into(),
 
-        ValueType::Record { name, .. } => format!("{}Borrowed<'_>", name.to_upper_camel_case()),
-        ValueType::Variant { name, .. } => format!("{}Borrowed<'_>", name.to_upper_camel_case()),
+        ValueType::Record { name, .. } | ValueType::Variant { name, .. } => {
+            if ty.is_copy() {
+                name.to_upper_camel_case()
+            } else {
+                format!("{}Borrowed<'_>", name.to_upper_camel_case())
+            }
+        }
         ValueType::Enum { name, .. } => name.to_upper_camel_case(),
     }
 }

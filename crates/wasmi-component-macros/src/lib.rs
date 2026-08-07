@@ -1,4 +1,4 @@
-#[proc_macro_derive(ComponentValue)]
+#[proc_macro_derive(ComponentValue, attributes(component_value_attrs))]
 pub fn derive_component_value(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 

@@ -186,11 +186,35 @@ impl ValueType {
         result
     }
 
-    /// Returns the inner type for a list
-    pub fn list_type(&self) -> Option<&ValueType> {
+    pub fn is_copy(&self) -> bool {
         match self {
-            Self::List(ty) => Some(ty),
-            _ => None,
+            Self::S8 => true,
+            Self::S16 => true,
+            Self::S32 => true,
+            Self::S64 => true,
+
+            Self::U8 => true,
+            Self::U16 => true,
+            Self::U32 => true,
+            Self::U64 => true,
+
+            Self::F32 => true,
+            Self::F64 => true,
+
+            Self::Bool => true,
+            Self::Char => true,
+            Self::String => false,
+
+            Self::Option(ty) => ty.is_copy(),
+            Self::Result(ok, err) => ok.is_copy() && err.is_copy(),
+            Self::Tuple(fields) => fields.iter().all(|ty| ty.is_copy()),
+            Self::List(_) => false,
+
+            Self::Record { fields, .. } => fields.iter().all(|(_name, ty)| ty.is_copy()),
+            Self::Variant { cases, .. } => cases
+                .iter()
+                .all(|(_name, ty)| ty.as_ref().is_none_or(|ty| ty.is_copy())),
+            Self::Enum { .. } => true,
         }
     }
 

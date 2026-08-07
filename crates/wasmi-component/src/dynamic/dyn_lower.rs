@@ -51,7 +51,7 @@ pub(crate) fn dyn_lower(
             Ok(())
         }
         DynValue::List(contents) => {
-            let inner_ty = ty.list_type().expect("type was checked before");
+            let inner_ty = ty.as_list().expect("type was checked before");
             let memory = writer.memory();
 
             let len = inner_ty.byte_size() * contents.len();

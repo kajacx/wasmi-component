@@ -1,3 +1,4 @@
+#[allow(unused)]
 use wasmi_component::anyhow::Result;
 #[allow(unused)]
 use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};

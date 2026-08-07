@@ -1,3 +1,4 @@
+use darling::FromDeriveInput;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::{DeriveInput, Visibility, parse_str, parse2};
@@ -5,6 +6,13 @@ use syn::{DeriveInput, Visibility, parse_str, parse2};
 mod record;
 mod variant;
 mod wit_enum;
+
+#[derive(darling::FromDeriveInput)]
+#[darling(attributes(component_value_attrs))]
+struct ComponentValueAttrs {
+    #[darling(default)]
+    copy: bool,
+}
 
 pub fn derive_component_value_str(input: &str) -> TokenStream {
     derive_component_value(parse_str(input).expect("parse derive input"))
@@ -15,8 +23,23 @@ pub fn derive_component_value_stream(input: TokenStream) -> TokenStream {
 }
 
 pub fn derive_component_value(input: DeriveInput) -> TokenStream {
+    let attrs = ComponentValueAttrs::from_derive_input(&input).unwrap();
+
     let type_name = &input.ident;
-    let generator = get_generator(&input, type_name);
+    let borrowed_name = if attrs.copy {
+        type_name.clone()
+    } else {
+        Ident::new(&format!("{}Borrowed", type_name), type_name.span())
+    };
+
+    let gen_data = GeneratorData {
+        name: type_name,
+        borrowed_name: &borrowed_name,
+        vis: &input.vis,
+        is_copy: attrs.copy,
+    };
+
+    let generator = get_generator(&input, gen_data);
 
     let value_type = generator.value_type();
     let arg_count = generator.arg_count();
@@ -27,7 +50,6 @@ pub fn derive_component_value(input: DeriveInput) -> TokenStream {
     let lift = generator.lift();
     let lower = generator.lower();
 
-    let borrowed_name = generator.borrowed_name();
     let borrowed_def = generator.borrowed_def();
 
     let lift_owned = generator.lift_owned();
@@ -100,7 +122,6 @@ trait Generator {
     fn lift(&self) -> TokenStream;
     fn lower(&self) -> TokenStream;
 
-    fn borrowed_name(&self) -> Ident;
     fn borrowed_def(&self) -> TokenStream;
 
     fn lift_owned(&self) -> TokenStream;
@@ -109,15 +130,15 @@ trait Generator {
 
 struct GeneratorData<'a> {
     name: &'a Ident,
+    borrowed_name: &'a Ident,
     vis: &'a Visibility,
+    is_copy: bool,
 }
 
-fn get_generator<'a>(input: &'a DeriveInput, name: &'a Ident) -> Box<dyn Generator + 'a> {
-    let gen_data = GeneratorData {
-        name,
-        vis: &input.vis,
-    };
-
+fn get_generator<'a>(
+    input: &'a DeriveInput,
+    gen_data: GeneratorData<'a>,
+) -> Box<dyn Generator + 'a> {
     match &input.data {
         syn::Data::Struct(data) => Box::new(record::RecordGenerator { data, gen_data }),
         syn::Data::Enum(data) => {
@@ -132,7 +153,7 @@ fn get_generator<'a>(input: &'a DeriveInput, name: &'a Ident) -> Box<dyn Generat
             }
         }
         syn::Data::Union(_) => {
-            unimplemented!("unions are currently not implemented ({})", &input.ident)
+            unimplemented!("unions are not implemented ({})", &input.ident)
         }
     }
 }

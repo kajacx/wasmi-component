@@ -1,3 +1,4 @@
+#[allow(unused)]
 use wasmi_component::anyhow::Result;
 #[allow(unused)]
 use wasmi_component::wasmi::{AsContext, AsContextMut, errors::LinkerError};
@@ -8,14 +9,16 @@ use wasmi_component::{
 };
 
 #[allow(unused)]
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+
 pub enum StreamError {
     LastOperationFailed(i32),
     Closed,
 }
 
+//NANI?
 impl wasmi_component::ComponentValue for StreamError {
-    type Borrowed<'a> = StreamErrorBorrowed<'a>;
+    type Borrowed<'a> = StreamError;
     fn value_type() -> wasmi_component::ValueType {
         wasmi_component::ValueType::Variant {
             name: std::rc::Rc::from("stream-error"),
@@ -47,10 +50,8 @@ impl wasmi_component::ComponentValue for StreamError {
         reader: &mut impl wasmi_component::lib_structs::LiftReader<'mem>,
     ) -> wasmi_component::ConvertResult<Self::Borrowed<'mem>> {
         reader.read_variant::<Self>(2usize, |reader, determinant| match determinant {
-            0usize => Ok(StreamErrorBorrowed::LastOperationFailed(<i32>::lift(
-                reader,
-            )?)),
-            1usize => Ok(StreamErrorBorrowed::Closed),
+            0usize => Ok(StreamError::LastOperationFailed(<i32>::lift(reader)?)),
+            1usize => Ok(StreamError::Closed),
             other => Err(wasmi_component::ConvertError::new(format!(
                 "invalid determinant {other} in {}::lift",
                 "StreamError"
@@ -71,12 +72,7 @@ impl wasmi_component::Lower<Self> for StreamError {
         }
     }
 }
-#[derive(Clone, Debug)]
-pub enum StreamErrorBorrowed<'a> {
-    LastOperationFailed(<i32 as wasmi_component::ComponentValue>::Borrowed<'a>),
-    Closed,
-}
-impl wasmi_component::Lift<StreamError> for StreamErrorBorrowed<'_> {
+impl wasmi_component::Lift<StreamError> for StreamError {
     fn lift_owned(&self) -> wasmi_component::ConvertResult<StreamError> {
         Ok(match self {
             Self::LastOperationFailed(value) => {

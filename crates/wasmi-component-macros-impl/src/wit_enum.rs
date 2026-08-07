@@ -1,7 +1,7 @@
 use heck::ToKebabCase;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{DataEnum, Ident};
+use syn::DataEnum;
 
 use crate::{Generator, GeneratorData};
 
@@ -73,10 +73,6 @@ impl Generator for EnumGenerator<'_> {
         }
 
         quote! { match self { #output }; Ok(()) }
-    }
-
-    fn borrowed_name(&self) -> Ident {
-        self.gen_data.name.clone()
     }
 
     fn borrowed_def(&self) -> TokenStream {

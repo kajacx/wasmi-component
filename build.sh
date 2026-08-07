@@ -12,4 +12,4 @@ cargo expand bindgen > ./src/expanded.rs
 cd ../..
 
 cargo fmt
-cargo build
+cargo build -p wasmi-component
